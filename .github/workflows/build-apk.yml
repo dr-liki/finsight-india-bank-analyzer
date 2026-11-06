@@ -23,6 +23,13 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
+      - name: Extract Version from package.json
+        id: pkg
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Building FinSight India v$VERSION (Run #${{ github.run_number }})"
+
       - name: Install Dependencies & Build Web Assets
         run: |
           npm install
@@ -35,14 +42,21 @@ jobs:
           fi
           npx cap sync android
 
+      - name: Stamp Version & Custom Vector Icon into Android Project
+        run: |
+          # Update versionName and versionCode inside android/app/build.gradle
+          sed -i 's/versionCode 1/versionCode ${{ github.run_number }}/g' android/app/build.gradle || true
+          sed -i 's/versionName "1.0"/versionName "${{ steps.pkg.outputs.version }}"/g' android/app/build.gradle || true
+
       - name: Build Debug APK with Gradle
         run: |
           cd android
           chmod +x gradlew
           ./gradlew assembleDebug
+          cp app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/FinSight-India-v${{ steps.pkg.outputs.version }}-b${{ github.run_number }}-debug.apk
 
-      - name: Upload Compiled APK Artifact
+      - name: Upload Versioned APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: FinSight-India-Debug-APK
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: FinSight-India-v${{ steps.pkg.outputs.version }}-b${{ github.run_number }}-APK
+          path: android/app/build/outputs/apk/debug/FinSight-India-v${{ steps.pkg.outputs.version }}-b${{ github.run_number }}-debug.apk

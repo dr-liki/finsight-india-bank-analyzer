@@ -1,4 +1,4 @@
-name: Build & Sign Android APK
+name: "Build and Sign Android APK"
 
 on:
   push:
@@ -61,31 +61,28 @@ jobs:
 
       - name: Configure Gradle Release Signing
         run: |
-          node -e '
-          const fs = require("fs");
-          const gradlePath = "android/app/build.gradle";
-          let content = fs.readFileSync(gradlePath, "utf8");
-          const signingBlock = `
-    signingConfigs {
-        release {
-            storeFile file("../finsight-release-key.jks")
-            storePassword "androidrelease123"
-            keyAlias "finsightkey"
-            keyPassword "androidrelease123"
-        }
-    }
-`;
-          if (!content.includes("signingConfigs {")) {
-            content = content.replace("android {", "android {" + signingBlock);
-          }
-          content = content.replace(/buildTypes\s*\{\s*release\s*\{[^}]*\}/s, `buildTypes {
-        release {
-            signingConfig signingConfigs.release
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
-        }`);
-          fs.writeFileSync(gradlePath, content);
-          console.log("Gradle build.gradle configured for automated release signing.");
+          python3 -c '
+          with open("android/app/build.gradle", "r") as f:
+              content = f.read()
+
+          signing = """
+              signingConfigs {
+                  release {
+                      storeFile file("../finsight-release-key.jks")
+                      storePassword "androidrelease123"
+                      keyAlias "finsightkey"
+                      keyPassword "androidrelease123"
+                  }
+              }
+          """
+          if "signingConfigs {" not in content:
+              content = content.replace("android {", "android {" + signing)
+
+          if "signingConfig signingConfigs.release" not in content:
+              content = content.replace("buildTypes {", "buildTypes {\\n        release {\\n            signingConfig signingConfigs.release\\n        }")
+
+          with open("android/app/build.gradle", "w") as f:
+              f.write(content)
           '
 
       - name: Build Signed Release APK with Gradle

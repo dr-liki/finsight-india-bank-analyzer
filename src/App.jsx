@@ -160,6 +160,43 @@ function detectChannel(narration) {
   return 'OTHER';
 }
 
+function applyCategorizationRules(transactionsList, rulesList) {
+  if (!transactionsList || !transactionsList.length) return { updatedTxns: [], changedCount: 0 };
+  let changedCount = 0;
+  const updatedTxns = transactionsList.map(t => {
+    const s = (t.narration || '').toLowerCase();
+    let matchedCat = null;
+
+    if (rulesList && rulesList.length) {
+      for (const r of rulesList) {
+        if (!r || !r.keys) continue;
+        for (const rawKey of r.keys) {
+          const k = String(rawKey || '').trim().toLowerCase();
+          if (k && s.includes(k)) {
+            matchedCat = r.cat;
+            break;
+          }
+        }
+        if (matchedCat) break;
+      }
+    }
+
+    if (!matchedCat) {
+      if (t.type === 'CREDIT') matchedCat = 'Salary & Income';
+      else if (s.includes('upi/')) matchedCat = 'Transfers & UPI';
+      else matchedCat = 'Uncategorized';
+    }
+
+    if (matchedCat !== t.category) {
+      changedCount++;
+      return { ...t, category: matchedCat };
+    }
+    return t;
+  });
+
+  return { updatedTxns, changedCount };
+}
+
 export default function App() {
   const [banks, setBanks] = useState(() => {
     try {
@@ -284,6 +321,16 @@ export default function App() {
     try { localStorage.setItem('finsight_rules_v120', JSON.stringify(rules)); } catch {}
   }, [rules]);
 
+  // Real-time automatic rule re-evaluation:
+  // Whenever `rules` changes, immediately re-evaluates all transactions so category updates reflect instantly across all views.
+  useEffect(() => {
+    if (!txns || txns.length === 0) return;
+    const { updatedTxns, changedCount } = applyCategorizationRules(txns, rules);
+    if (changedCount > 0) {
+      setTxns(updatedTxns);
+    }
+  }, [rules]);
+
   const showToast = (msg, isError = false) => {
     setStatusMsg({ text: msg, isError });
     setTimeout(() => setStatusMsg(null), 4000);
@@ -376,26 +423,29 @@ export default function App() {
 
   const detectCategoryWithRules = (narration, type, currentRules = rules) => {
     const s = (narration || '').toLowerCase();
-    for (const r of currentRules) {
-      if (r.keys.some(k => s.includes(k.toLowerCase()))) return r.cat;
+    if (currentRules && currentRules.length) {
+      for (const r of currentRules) {
+        if (!r || !r.keys) continue;
+        for (const rawKey of r.keys) {
+          const k = String(rawKey || '').trim().toLowerCase();
+          if (k && s.includes(k)) return r.cat;
+        }
+      }
     }
     if (type === 'CREDIT') return 'Salary & Income';
     if (s.includes('upi/')) return 'Transfers & UPI';
     return 'Uncategorized';
   };
 
-  // Re-evaluates transactions against rules and updates state immediately
-  const reEvaluateTransactions = (currentRules = rules) => {
-    let reclassified = 0;
-    setTxns(prev => prev.map(t => {
-      const newCat = detectCategoryWithRules(t.narration, t.type, currentRules);
-      if (newCat !== t.category) {
-        reclassified++;
-        return { ...t, category: newCat };
-      }
-      return t;
-    }));
-    return reclassified;
+  // Synchronously re-evaluates transactions against rules and updates state in real-time
+  const executeRulesUpdate = (newRules, successMsgPrefix) => {
+    setRules(newRules);
+    const { updatedTxns, changedCount } = applyCategorizationRules(txns, newRules);
+    if (changedCount > 0) {
+      setTxns(updatedTxns);
+    }
+    showToast(`${successMsgPrefix} • ${changedCount} transaction${changedCount === 1 ? '' : 's'} updated`);
+    return changedCount;
   };
 
   // CATEGORIES MANAGER CRUD OPERATIONS
@@ -491,40 +541,43 @@ export default function App() {
     const rawKeys = ruleKey.split(',').map(k => k.trim().toLowerCase()).filter(Boolean);
     if (!rawKeys.length) return;
 
-    let updatedRules = [...rules];
-    const existingRule = updatedRules.find(r => r.cat.toLowerCase() === ruleCat.toLowerCase());
+    // Disassociate these keys from any other categories so the user's new rule isn't shadowed
+    let cleanedRules = rules.map(r => ({
+      ...r,
+      keys: r.keys.filter(k => !rawKeys.includes(k.toLowerCase()))
+    })).filter(r => r.keys.length > 0 || r.cat.toLowerCase() === ruleCat.toLowerCase());
 
-    if (existingRule) {
-      const mergedKeys = Array.from(new Set([...existingRule.keys, ...rawKeys]));
-      updatedRules = updatedRules.map(r => r.cat.toLowerCase() === ruleCat.toLowerCase() ? { ...r, keys: mergedKeys } : r);
+    const existingIndex = cleanedRules.findIndex(r => r.cat.toLowerCase() === ruleCat.toLowerCase());
+    if (existingIndex !== -1) {
+      const merged = Array.from(new Set([...rawKeys, ...cleanedRules[existingIndex].keys]));
+      cleanedRules[existingIndex] = { ...cleanedRules[existingIndex], keys: merged };
+      // Move this updated rule to the TOP for immediate highest priority
+      const [promoted] = cleanedRules.splice(existingIndex, 1);
+      cleanedRules.unshift(promoted);
     } else {
-      updatedRules.push({ cat: ruleCat, keys: rawKeys });
+      // New category rule added at top
+      cleanedRules.unshift({ cat: ruleCat, keys: rawKeys });
     }
 
-    setRules(updatedRules);
     setRuleKey('');
-    const updatedCount = reEvaluateTransactions(updatedRules);
-    showToast(`Rule updated for "${ruleCat}" • ${updatedCount} transactions re-evaluated`);
+    executeRulesUpdate(cleanedRules, `Rule updated for "${ruleCat}"`);
   };
 
   const handleRemoveKeyword = (catName, keyword) => {
+    const cleanKey = keyword.trim().toLowerCase();
     const updatedRules = rules.map(r => {
       if (r.cat === catName) {
-        return { ...r, keys: r.keys.filter(k => k.toLowerCase() !== keyword.toLowerCase()) };
+        return { ...r, keys: r.keys.filter(k => k.toLowerCase() !== cleanKey) };
       }
       return r;
     }).filter(r => r.keys.length > 0);
 
-    setRules(updatedRules);
-    const updatedCount = reEvaluateTransactions(updatedRules);
-    showToast(`Removed keyword "${keyword}" • ${updatedCount} transactions re-evaluated`);
+    executeRulesUpdate(updatedRules, `Removed keyword "${keyword}" from ${catName}`);
   };
 
   const handleDeleteRule = (catName) => {
     const updatedRules = rules.filter(r => r.cat !== catName);
-    setRules(updatedRules);
-    const updatedCount = reEvaluateTransactions(updatedRules);
-    showToast(`Removed rule for "${catName}" • ${updatedCount} transactions re-evaluated`);
+    executeRulesUpdate(updatedRules, `Removed rule for "${catName}"`);
   };
 
   const handleSaveEditRule = () => {
@@ -535,11 +588,16 @@ export default function App() {
       setEditingRule(null);
       return;
     }
-    const updatedRules = rules.map(r => r.cat === editingRule.cat ? { ...r, keys: cleanKeys } : r);
-    setRules(updatedRules);
-    const updatedCount = reEvaluateTransactions(updatedRules);
+    // Remove these keys from other categories to prevent shadowing
+    const updatedRules = rules.map(r => {
+      if (r.cat === editingRule.cat) {
+        return { ...r, keys: cleanKeys };
+      }
+      return { ...r, keys: r.keys.filter(k => !cleanKeys.includes(k.toLowerCase())) };
+    }).filter(r => r.keys.length > 0);
+
     setEditingRule(null);
-    showToast(`Updated rule for "${editingRule.cat}" • ${updatedCount} transactions re-evaluated`);
+    executeRulesUpdate(updatedRules, `Updated keywords for "${editingRule.cat}"`);
   };
 
   // Tabular matrix parser with UBI and multi-bank support
@@ -1718,8 +1776,9 @@ export default function App() {
                 </div>
                 <button
                   onClick={() => {
-                    const count = reEvaluateTransactions(rules);
-                    showToast(`Re-evaluated ${txns.length} transactions (${count} updated)`);
+                    const { updatedTxns, changedCount } = applyCategorizationRules(txns, rules);
+                    if (changedCount > 0) setTxns(updatedTxns);
+                    showToast(`Re-evaluated ${txns.length} transactions (${changedCount} updated)`);
                   }}
                   className="bg-purple-950/80 hover:bg-purple-900 text-purple-300 border border-purple-800 text-xs px-2.5 py-1.5 rounded-xl flex items-center gap-1 font-semibold"
                   title="Re-apply all rules across all transactions"
@@ -1755,33 +1814,38 @@ export default function App() {
 
               {/* Interactive Rules List */}
               <div className="space-y-2.5 max-h-96 overflow-y-auto pr-1">
-                {rules.map((rule, idx) => (
-                  <div key={rule.cat + idx} className="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
-                        <span className="text-xs font-bold text-white">{rule.cat}</span>
-                        <span className="text-[10px] text-slate-400 bg-slate-900 px-2 py-0.5 rounded-full border border-slate-800">
-                          {rule.keys.length} keywords
-                        </span>
+                {rules.map((rule, idx) => {
+                  const matchedTxnCount = txns.filter(t => t.category === rule.cat).length;
+                  return (
+                    <div key={rule.cat + idx} className="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+                          <span className="text-xs font-bold text-white">{rule.cat}</span>
+                          <span className="text-[10px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full font-medium">
+                            {matchedTxnCount} {matchedTxnCount === 1 ? 'txn' : 'txns'}
+                          </span>
+                          <span className="text-[10px] text-slate-400 bg-slate-900 px-2 py-0.5 rounded-full border border-slate-800">
+                            {rule.keys.length} keywords
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => setEditingRule({ cat: rule.cat, keysStr: rule.keys.join(', ') })}
+                            className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800"
+                            title="Edit Keywords"
+                          >
+                            <Edit3 size={12} />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteRule(rule.cat)}
+                            className="p-1 text-slate-500 hover:text-rose-400 rounded-lg hover:bg-rose-950/40"
+                            title="Delete Rule"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => setEditingRule({ cat: rule.cat, keysStr: rule.keys.join(', ') })}
-                          className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800"
-                          title="Edit Keywords"
-                        >
-                          <Edit3 size={12} />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteRule(rule.cat)}
-                          className="p-1 text-slate-500 hover:text-rose-400 rounded-lg hover:bg-rose-950/40"
-                          title="Delete Rule"
-                        >
-                          <Trash2 size={12} />
-                        </button>
-                      </div>
-                    </div>
 
                     {/* Keyword Badges */}
                     <div className="flex flex-wrap gap-1.5">
@@ -1802,7 +1866,8 @@ export default function App() {
                       ))}
                     </div>
                   </div>
-                ))}
+                );
+              })}
               </div>
             </div>
 

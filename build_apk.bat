@@ -6,6 +6,9 @@ if not exist "android" (
   call npx cap add android
 )
 call npx cap sync android
+if exist "android-res" (
+  xcopy /s /y "android-res\*" "android\app\src\main\res\"
+)
 cd android
 call gradlew.bat assembleDebug
 echo =====================================================

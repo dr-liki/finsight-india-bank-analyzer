@@ -1,63 +1,57 @@
 # FinSight India — Release Notes
 
-## Version 1.2.0 (November 2026)
+## Version 1.3.0 (November 2026)
 
-FinSight India v1.2.0 introduces **Union Bank of India (UBI)** bank statement support, an expanded Indian financial taxonomy with a dedicated **Categories Manager UI**, an interactive **Auto-Categorization Rules Engine** with instant transaction re-evaluation, a multi-preset **Duration / Date-Range Filter** in the Transactions Ledger, and **Automated Cloud Release APK Signing** via GitHub Actions.
+FinSight India v1.3.0 brings full **Material Design 3 (MD3) Adaptive Icon Compliance**, **Conflict-Free Updates** with a persistent release signing keystore, **Smart Bank Transfer Matching** between accounts, a comprehensive **Backup & Restore Manager** with granular item selection, and **Dual Category Analysis** showing both Spend and Earning breakdowns independently.
 
 ---
 
 ### Highlights & Key Improvements
 
-#### 1. Union Bank of India (UBI) Statement Parsing
-- **Auto-Detection**: Recognizes UBI statements via IFSC prefixes and institution headers (`UBIN`, `Union Bank`, `Union Bank of India`).
-- **Tabular Mapping (XLSX / CSV / XLS)**:
-  - **Date**: Matches `Tran Date`, `Value Date`, `TransactionDate`, and `Txn Dt`.
-  - **Narration**: Extracts `Particulars`, `Remarks`, `Narration`, and transaction descriptions.
-  - **Amounts**: Normalizes `Debit` / `Withdrawal` (`DR`) and `Credit` / `Deposit` (`CR`).
-  - **Identifiers**: Identifies `Tran Id` and `Chq/Ref No`.
-- **PDF Parser**: Enhanced regular expression engine supporting Indian alphanumeric and hyphenated date tokens (`DD-Mon-YYYY`, `DD/MM/YYYY`, `DD-MM-YYYY`) and debit/credit balance markers.
+#### 1. Material Design 3 (MD3) Launcher Icon Compliance & App Drawer Fix
+- **Visibility Fix**: Resolves the invisible launcher icon issue in modern Android app drawers caused by default white-on-white asset templates.
+- **Adaptive Icon Architecture**:
+  - **Background**: Deep brand slate `#0f172a` with subtle emerald gradient arc.
+  - **Foreground**: Precision-centered vector containing the FinSight Rupee-Pulse Lens and stylized ascending bars, scaled within the strict 66% safe zone (72dp within 108dp canvas) so no OEM mask (circle, squircle, teardrop) clips the logo.
+  - **Themed Icons (Monochrome)**: Full Android 13+ dynamic Material You themed icon support (`ic_launcher_monochrome.xml`) tinting with user wallpaper accents.
+- **Multi-Density Fallbacks**: Full raster PNG suites across `mdpi`, `hdpi`, `xhdpi`, `xxhdpi`, and `xxxhdpi` for legacy Android OS and third-party launchers.
 
-#### 2. Expanded Financial Categories & Categories Manager UI
-- **5 New Default Categories**:
-  - `Bank Transfer` (NEFT, RTGS, IMPS, internal account transfers)
-  - `Interest/Cashback` (Savings bank interest, credit card rewards, refunds)
-  - `Friend` (Splitwise, peer repayments, shared expenses)
-  - `Family` (Remittances, parents/home expenses)
-  - `Cash Out` (ATM and self withdrawals)
-- **Categories Manager UI**:
-  - Accessible via the **Categories** button in the top navigation app bar and inside the **Banks & Rules** management tab.
-  - **Add Category**: Add custom personal spending verticals.
-  - **Edit / Rename Category**: Cascades updates across all historical transactions and active auto-categorization rules.
-  - **Delete Category**: Safely removes categories while gracefully migrating associated transactions to `Uncategorized`.
+#### 2. Conflict-Free Update Installation Over Previous Versions
+- **Persistent Release Keystore**: Added a dedicated, permanent release keystore (`certs/finsight-release-key.keystore` and base64 fallback) committed to the repository.
+- **Consistent Signatures**: Eliminates `INSTALL_FAILED_UPDATE_INCOMPATIBLE` signature mismatch errors when updating newer APK releases over older builds without uninstalling.
+- **Auto-Incrementing Version Code**: GitHub Actions automatically computes strictly increasing `versionCode` ($1000 + \text{run\_number}$) preventing package manager version regressions.
 
-#### 3. Interactive Auto-Categorization Rules Engine
-- **Visual Rule Cards**: Displays all active categorization rules alongside their assigned merchant keywords as removable chip badges.
-- **Granular Keyword Management**:
-  - Add individual or comma-separated keywords directly into any category.
-  - Delete individual keywords with a single tap on the `x` badge.
-  - Edit complete keyword strings through a dedicated modal.
-- **Instant Re-Evaluation**: Modifying, adding, or deleting a rule immediately triggers a client-side sweep that re-evaluates all transactions in real time.
-- **Manual "Re-apply Rules"**: One-click action to recalculate transaction categories across the entire workspace.
+#### 3. Smart Bank Transfer Detection Between Accounts
+- **Automated Transfer Pairing**: Scans transactions across accounts to detect when money transferred out of Bank A matches a deposit into Bank B:
+  - Opposite transaction types (DEBIT in Bank A $\leftrightarrow$ CREDIT in Bank B)
+  - Identical transaction amount
+  - Matching within a 2-day date clearing window
+  - Keyword and 6-16 digit reference token (UTR/RRN) matching
+- **Internal Transfer Exclusion Toggle**: Option to exclude internal bank transfers from total spend and total income calculations to prevent artificial inflation of expenses and earnings.
+- **Interactive Transfer Badges**: Visual indicator in the Ledger (`↔ Transfer Bank A ➔ Bank B`) with a dedicated details modal showing both paired debit and credit records.
 
-#### 4. Transactions Ledger Duration & Date-Range Filter
-- **Quick Preset Selectors**:
-  - `All Time`
-  - `Last 7 Days`
-  - `Last 30 Days`
-  - `This Month`
-  - `Last 3 Months`
-  - `This Year`
-- **Custom Date Range**:
-  - Compact `From` and `To` native date pickers.
-  - Interactive range badge showing active bounds and transaction counts.
-  - One-click reset and clear controls.
+#### 4. Granular Backup & Restore Manager
+- **Complete Workspace Export**: One-click download of a structured JSON backup file (`FinSight_India_Backup_v1.3.0_YYYY-MM-DD.json`).
+- **Itemized Restore Selection**:
+  - ☑ Banks
+  - ☑ Statement Files Metadata
+  - ☑ Custom Categories
+  - ☑ Auto-Categorization Rules & Keywords
+  - ☑ Transactions Ledger
+- **Flexible Restoration Modes**:
+  - **Merge with existing**: Combines imported records without creating duplicates.
+  - **Replace entire data**: Overwrites workspace cleanly with the backup file.
 
-#### 5. Automated Cloud Release APK Signing (Option A)
-- **CI/CD Pipeline**: GitHub Actions workflow (`.github/workflows/build-apk.yml`) upgraded to compile and sign production-ready release builds.
-- **Automated Keystore Generation**: Employs `keytool` on Ubuntu runners to generate an RSA 2048-bit keystore (`finsight-release-key.jks`) on demand.
-- **Release Signing**: Automatically configures Gradle `signingConfigs.release` before running `./gradlew assembleRelease`.
-- **Artifact Output**: Publishes installable signed APK:
-  `FinSight-India-v1.2.0-b<run>-release-signed.apk`
+#### 5. Dual Category Analysis (Spend AND Earnings Breakdown)
+- **Spend Breakdown (Outflow)**: Donut chart, category percentage distribution, outflow channels, and top merchants for debits.
+- **Earnings Breakdown (Inflow)**: Donut chart, income source distribution, inflow channels, and top deposit payers for credits.
+- **Net Flow Comparison**: Side-by-side comparison table showing Spend, Earning, and Net Balance (surplus/deficit) per category.
+
+---
+
+## Version 1.2.0 (November 2026)
+
+FinSight India v1.2.0 introduces **Union Bank of India (UBI)** bank statement support, an expanded Indian financial taxonomy with a dedicated **Categories Manager UI**, an interactive **Auto-Categorization Rules Engine** with instant transaction re-evaluation, a multi-preset **Duration / Date-Range Filter** in the Transactions Ledger, and **Automated Cloud Release APK Signing** via GitHub Actions.
 
 ---
 

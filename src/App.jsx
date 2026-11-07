@@ -3,7 +3,8 @@ import {
   Upload, FileSpreadsheet, FileText, PieChart as PieIcon, BarChart3,
   Trash2, Building2, Download, Search, ArrowUpRight,
   ArrowDownRight, Plus, Edit3, X, Lock, AlertCircle, FolderOpen, Save,
-  Check, Tag, Layers, Sparkles, Calendar, Filter, RefreshCw
+  Check, Tag, Layers, Sparkles, Calendar, Filter, RefreshCw,
+  ArrowLeftRight, Database, TrendingUp, TrendingDown, CheckSquare, Square
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import * as pdfjsLib from 'pdfjs-dist';
@@ -12,12 +13,13 @@ import {
   PieChart, Pie, Cell, CartesianGrid, Legend
 } from 'recharts';
 
-const APP_VERSION = '1.2.0';
+const APP_VERSION = '1.3.0';
 
 // Configure PDF.js worker via CDN for Android WebView compatibility
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`;
 
 const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#64748b', '#a855f7', '#06b6d4', '#eab308', '#f97316', '#84cc16'];
+const EARN_COLORS = ['#10b981', '#06b6d4', '#3b82f6', '#8b5cf6', '#14b8a6', '#84cc16', '#22c55e', '#a855f7', '#38bdf8', '#f59e0b'];
 
 const BANK_COLOR_PALETTE = [
   '#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'
@@ -109,7 +111,6 @@ function normalizeDate(raw) {
     if (year.length === 2) year = (parseInt(year, 10) > 50 ? '19' : '20') + year;
     return `${year}-${month}-${day}`;
   }
-  // Try month names like 05-Nov-2026 or 05/Nov/2026 or 05 Nov 2026
   const monMatch = str.match(/^(\d{1,2})[\/\-\s]+([A-Za-z]{3})[\/\-\s]+(\d{2,4})/);
   if (monMatch) {
     const day = monMatch[1].padStart(2, '0');
@@ -197,10 +198,77 @@ function applyCategorizationRules(transactionsList, rulesList) {
   return { updatedTxns, changedCount };
 }
 
+// SMART BANK TRANSFER PAIR DETECTION ENGINE
+// Identifies matching debit in Bank A and credit in Bank B with same amount within 2 days
+function detectTransferPairs(transactionsList) {
+  if (!transactionsList || transactionsList.length < 2) return [];
+  const pairs = [];
+  const matchedDebitIds = new Set();
+  const matchedCreditIds = new Set();
+
+  const debits = transactionsList.filter(t => t.type === 'DEBIT');
+  const credits = transactionsList.filter(t => t.type === 'CREDIT');
+
+  for (const d of debits) {
+    if (matchedDebitIds.has(d.id)) continue;
+    const dDateStr = d.date || '2026-01-01';
+    const dDate = new Date(dDateStr).getTime();
+    const dAmt = Number(d.amount);
+    if (!dAmt || dAmt <= 0) continue;
+    const dNarr = (d.narration || '').toLowerCase();
+    const dBank = (d.bank || '').toLowerCase();
+
+    for (const c of credits) {
+      if (matchedCreditIds.has(c.id)) continue;
+      const cBank = (c.bank || '').toLowerCase();
+      // Must be between different banks if bank names are populated
+      if (dBank && cBank && dBank === cBank) continue;
+
+      const cAmt = Number(c.amount);
+      if (Math.abs(dAmt - cAmt) > 0.01) continue;
+
+      const cDateStr = c.date || '2026-01-01';
+      const cDate = new Date(cDateStr).getTime();
+      const diffDays = Math.abs(dDate - cDate) / (1000 * 60 * 60 * 24);
+      if (diffDays > 2) continue;
+
+      const cNarr = (c.narration || '').toLowerCase();
+      const transferKeywords = [
+        'upi', 'neft', 'imps', 'rtgs', 'fund transfer', 'transfer', 'trf', 'self',
+        'internal', 'own a/c', 'own ac', 'to ', 'from '
+      ];
+      const hasKeyword = transferKeywords.some(k => dNarr.includes(k) || cNarr.includes(k));
+
+      // Extract 6-16 digit transaction references (e.g. UTR, RRN)
+      const dDigits = (dNarr.match(/\b\d{6,16}\b/g) || []);
+      const cDigits = (cNarr.match(/\b\d{6,16}\b/g) || []);
+      const hasMatchingRef = dDigits.some(dig => cDigits.includes(dig));
+
+      if (diffDays === 0 || hasKeyword || hasMatchingRef) {
+        matchedDebitIds.add(d.id);
+        matchedCreditIds.add(c.id);
+        const pairId = `pair-${d.id}-${c.id}`;
+        pairs.push({
+          pairId,
+          debitTxnId: d.id,
+          creditTxnId: c.id,
+          fromBank: d.bank,
+          toBank: c.bank,
+          amount: dAmt,
+          date: d.date,
+          diffDays
+        });
+        break;
+      }
+    }
+  }
+  return pairs;
+}
+
 export default function App() {
   const [banks, setBanks] = useState(() => {
     try {
-      const saved = localStorage.getItem('finsight_banks_v120') || localStorage.getItem('finsight_banks_v110');
+      const saved = localStorage.getItem('finsight_banks_v130') || localStorage.getItem('finsight_banks_v120') || localStorage.getItem('finsight_banks_v110');
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
@@ -209,7 +277,7 @@ export default function App() {
 
   const [txns, setTxns] = useState(() => {
     try {
-      const saved = localStorage.getItem('finsight_txns_v120') || localStorage.getItem('finsight_txns_v110');
+      const saved = localStorage.getItem('finsight_txns_v130') || localStorage.getItem('finsight_txns_v120') || localStorage.getItem('finsight_txns_v110');
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
@@ -218,7 +286,7 @@ export default function App() {
 
   const [uploadedFiles, setUploadedFiles] = useState(() => {
     try {
-      const saved = localStorage.getItem('finsight_files_v120') || localStorage.getItem('finsight_files_v110');
+      const saved = localStorage.getItem('finsight_files_v130') || localStorage.getItem('finsight_files_v120') || localStorage.getItem('finsight_files_v110');
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
@@ -227,10 +295,9 @@ export default function App() {
 
   const [categories, setCategories] = useState(() => {
     try {
-      const saved = localStorage.getItem('finsight_categories_v120') || localStorage.getItem('finsight_categories_v110');
+      const saved = localStorage.getItem('finsight_categories_v130') || localStorage.getItem('finsight_categories_v120') || localStorage.getItem('finsight_categories_v110');
       if (saved) {
         const parsed = JSON.parse(saved);
-        // Ensure all DEFAULT_CATEGORIES are present in case existing user stored an earlier subset
         const combined = Array.from(new Set([...DEFAULT_CATEGORIES, ...parsed]));
         return combined;
       }
@@ -242,10 +309,19 @@ export default function App() {
 
   const [rules, setRules] = useState(() => {
     try {
-      const saved = localStorage.getItem('finsight_rules_v120') || localStorage.getItem('finsight_rules_v110');
+      const saved = localStorage.getItem('finsight_rules_v130') || localStorage.getItem('finsight_rules_v120') || localStorage.getItem('finsight_rules_v110');
       return saved ? JSON.parse(saved) : DEFAULT_RULES;
     } catch {
       return DEFAULT_RULES;
+    }
+  });
+
+  const [excludeTransfersFromTotals, setExcludeTransfersFromTotals] = useState(() => {
+    try {
+      const saved = localStorage.getItem('finsight_exclude_transfers_v130');
+      return saved !== null ? JSON.parse(saved) : true;
+    } catch {
+      return true;
     }
   });
 
@@ -257,6 +333,9 @@ export default function App() {
   const [search, setSearch] = useState('');
   const [statusMsg, setStatusMsg] = useState(null);
 
+  // Category Analysis Tab Sub-Mode: 'SPEND', 'EARN', 'NET'
+  const [categoryAnalysisMode, setCategoryAnalysisMode] = useState('SPEND');
+
   // Date Range Filter State for Transactions Tab
   const [datePreset, setDatePreset] = useState('ALL'); // ALL, 7D, 30D, THIS_MONTH, 3M, THIS_YEAR, CUSTOM
   const [customFrom, setCustomFrom] = useState('');
@@ -265,6 +344,19 @@ export default function App() {
   // Target bank selection for file upload
   const [uploadTargetBank, setUploadTargetBank] = useState('AUTO');
   const fileInputRef = useRef(null);
+
+  // Backup & Restore state
+  const restoreFileInputRef = useRef(null);
+  const [showRestoreModal, setShowRestoreModal] = useState(false);
+  const [backupDataToRestore, setBackupDataToRestore] = useState(null);
+  const [restoreSelection, setRestoreSelection] = useState({
+    banks: true,
+    files: true,
+    categories: true,
+    rules: true,
+    txns: true
+  });
+  const [restoreMode, setRestoreMode] = useState('MERGE'); // 'MERGE' or 'REPLACE'
 
   // Bank Management Modals (Add / Edit Bank)
   const [showBankModal, setShowBankModal] = useState(false);
@@ -294,35 +386,42 @@ export default function App() {
   // Categories Manager Modal & State
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
-  const [editingCategory, setEditingCategory] = useState(null); // { oldName, newName }
+  const [editingCategory, setEditingCategory] = useState(null);
 
   // Rules Engine State & Modals
   const [ruleKey, setRuleKey] = useState('');
   const [ruleCat, setRuleCat] = useState('Food & Dining');
-  const [editingRule, setEditingRule] = useState(null); // { cat, keysStr }
+  const [editingRule, setEditingRule] = useState(null);
 
+  // Transfer Pair Inspector Modal
+  const [selectedTransferPair, setSelectedTransferPair] = useState(null);
+
+  // PERSISTENCE EFFECT (v1.3.0 Keys)
   useEffect(() => {
-    try { localStorage.setItem('finsight_banks_v120', JSON.stringify(banks)); } catch {}
+    try { localStorage.setItem('finsight_banks_v130', JSON.stringify(banks)); } catch {}
   }, [banks]);
 
   useEffect(() => {
-    try { localStorage.setItem('finsight_txns_v120', JSON.stringify(txns)); } catch {}
+    try { localStorage.setItem('finsight_txns_v130', JSON.stringify(txns)); } catch {}
   }, [txns]);
 
   useEffect(() => {
-    try { localStorage.setItem('finsight_files_v120', JSON.stringify(uploadedFiles)); } catch {}
+    try { localStorage.setItem('finsight_files_v130', JSON.stringify(uploadedFiles)); } catch {}
   }, [uploadedFiles]);
 
   useEffect(() => {
-    try { localStorage.setItem('finsight_categories_v120', JSON.stringify(categories)); } catch {}
+    try { localStorage.setItem('finsight_categories_v130', JSON.stringify(categories)); } catch {}
   }, [categories]);
 
   useEffect(() => {
-    try { localStorage.setItem('finsight_rules_v120', JSON.stringify(rules)); } catch {}
+    try { localStorage.setItem('finsight_rules_v130', JSON.stringify(rules)); } catch {}
   }, [rules]);
 
+  useEffect(() => {
+    try { localStorage.setItem('finsight_exclude_transfers_v130', JSON.stringify(excludeTransfersFromTotals)); } catch {}
+  }, [excludeTransfersFromTotals]);
+
   // Real-time automatic rule re-evaluation:
-  // Whenever `rules` changes, immediately re-evaluates all transactions so category updates reflect instantly across all views.
   useEffect(() => {
     if (!txns || txns.length === 0) return;
     const { updatedTxns, changedCount } = applyCategorizationRules(txns, rules);
@@ -331,12 +430,41 @@ export default function App() {
     }
   }, [rules]);
 
+  // SMART BANK TRANSFERS: Pair Detection and Quick Lookup Map
+  const transferPairs = useMemo(() => {
+    return detectTransferPairs(txns);
+  }, [txns]);
+
+  const transferMap = useMemo(() => {
+    const map = new Map();
+    transferPairs.forEach(pair => {
+      map.set(pair.debitTxnId, {
+        isDebit: true,
+        partnerBank: pair.toBank,
+        pairId: pair.pairId,
+        amount: pair.amount,
+        partnerTxnId: pair.creditTxnId
+      });
+      map.set(pair.creditTxnId, {
+        isDebit: false,
+        partnerBank: pair.fromBank,
+        pairId: pair.pairId,
+        amount: pair.amount,
+        partnerTxnId: pair.debitTxnId
+      });
+    });
+    return map;
+  }, [transferPairs]);
+
+  const totalTransfersAmount = useMemo(() => {
+    return transferPairs.reduce((sum, p) => sum + p.amount, 0);
+  }, [transferPairs]);
+
   const showToast = (msg, isError = false) => {
     setStatusMsg({ text: msg, isError });
     setTimeout(() => setStatusMsg(null), 4000);
   };
 
-  // Ensure a bank exists in the `banks` list; if not, register it automatically
   const ensureBankRegistered = (bankName) => {
     const clean = (bankName || 'My Bank').trim();
     setBanks(prev => {
@@ -353,7 +481,6 @@ export default function App() {
     return clean;
   };
 
-  // Add or Edit a Bank
   const handleSaveBank = () => {
     const cleanName = bankForm.name.trim();
     if (!cleanName) {
@@ -364,7 +491,6 @@ export default function App() {
     if (editingBank) {
       const oldName = editingBank.name;
       setBanks(prev => prev.map(b => b.id === editingBank.id ? { ...b, name: cleanName, accountHint: bankForm.accountHint.trim(), color: bankForm.color } : b));
-      // Cascade bank rename to transactions and files
       if (oldName !== cleanName) {
         setTxns(prev => prev.map(t => t.bank === oldName ? { ...t, bank: cleanName } : t));
         setUploadedFiles(prev => prev.map(f => f.bank === oldName ? { ...f, bank: cleanName } : f));
@@ -392,7 +518,6 @@ export default function App() {
     setBankForm({ name: '', accountHint: '', color: BANK_COLOR_PALETTE[0] });
   };
 
-  // Delete a Bank and its files & transactions
   const handleDeleteBank = (bankObj) => {
     setBanks(prev => prev.filter(b => b.id !== bankObj.id));
     setUploadedFiles(prev => prev.filter(f => f.bank !== bankObj.name));
@@ -401,7 +526,6 @@ export default function App() {
     showToast(`Removed bank "${bankObj.name}" and its transactions`);
   };
 
-  // Edit / Reassign an Uploaded File
   const handleSaveFileEdit = () => {
     if (!editingFile) return;
     const cleanName = editingFile.name.trim() || 'Statement';
@@ -413,7 +537,6 @@ export default function App() {
     showToast(`Updated file "${cleanName}"`);
   };
 
-  // Delete an Uploaded File and all transactions linked to it
   const handleDeleteFile = (fileObj) => {
     setUploadedFiles(prev => prev.filter(f => f.id !== fileObj.id));
     setTxns(prev => prev.filter(t => t.fileId !== fileObj.id));
@@ -437,7 +560,6 @@ export default function App() {
     return 'Uncategorized';
   };
 
-  // Synchronously re-evaluates transactions against rules and updates state in real-time
   const executeRulesUpdate = (newRules, successMsgPrefix) => {
     setRules(newRules);
     const { updatedTxns, changedCount } = applyCategorizationRules(txns, newRules);
@@ -448,7 +570,7 @@ export default function App() {
     return changedCount;
   };
 
-  // CATEGORIES MANAGER CRUD OPERATIONS
+  // CATEGORIES MANAGER
   const handleAddCategory = () => {
     const clean = (newCategoryName || '').trim();
     if (!clean) {
@@ -475,9 +597,7 @@ export default function App() {
       showToast('A category with this name already exists', true);
       return;
     }
-    // 1. Update categories list
     setCategories(prev => prev.map(c => c === oldName ? clean : c));
-    // 2. Cascade to transactions
     let txnCount = 0;
     setTxns(prev => prev.map(t => {
       if (t.category === oldName) {
@@ -486,7 +606,6 @@ export default function App() {
       }
       return t;
     }));
-    // 3. Cascade to rules
     let ruleCount = 0;
     setRules(prev => prev.map(r => {
       if (r.cat === oldName) {
@@ -495,7 +614,6 @@ export default function App() {
       }
       return r;
     }));
-    // 4. Cascade to active filters & forms
     if (categoryFilter === oldName) setCategoryFilter(clean);
     if (ruleCat === oldName) setRuleCat(clean);
 
@@ -512,9 +630,7 @@ export default function App() {
       showToast('At least one category must remain', true);
       return;
     }
-    // 1. Remove from categories
     setCategories(prev => prev.filter(c => c !== catName));
-    // 2. Cascade to transactions -> move to 'Uncategorized'
     let txnCount = 0;
     setTxns(prev => prev.map(t => {
       if (t.category === catName) {
@@ -523,16 +639,14 @@ export default function App() {
       }
       return t;
     }));
-    // 3. Cascade to rules -> remove rule
     setRules(prev => prev.filter(r => r.cat !== catName));
-    // 4. Cascade to filter
     if (categoryFilter === catName) setCategoryFilter('ALL');
     if (ruleCat === catName) setRuleCat(categories[0] || 'Uncategorized');
 
     showToast(`Removed category "${catName}" (${txnCount} txns moved to Uncategorized)`);
   };
 
-  // RULES ENGINE INTERACTIVE OPERATIONS
+  // RULES ENGINE
   const handleAddRule = () => {
     if (!ruleKey.trim()) {
       showToast('Please enter a keyword', true);
@@ -541,7 +655,6 @@ export default function App() {
     const rawKeys = ruleKey.split(',').map(k => k.trim().toLowerCase()).filter(Boolean);
     if (!rawKeys.length) return;
 
-    // Disassociate these keys from any other categories so the user's new rule isn't shadowed
     let cleanedRules = rules.map(r => ({
       ...r,
       keys: r.keys.filter(k => !rawKeys.includes(k.toLowerCase()))
@@ -551,11 +664,9 @@ export default function App() {
     if (existingIndex !== -1) {
       const merged = Array.from(new Set([...rawKeys, ...cleanedRules[existingIndex].keys]));
       cleanedRules[existingIndex] = { ...cleanedRules[existingIndex], keys: merged };
-      // Move this updated rule to the TOP for immediate highest priority
       const [promoted] = cleanedRules.splice(existingIndex, 1);
       cleanedRules.unshift(promoted);
     } else {
-      // New category rule added at top
       cleanedRules.unshift({ cat: ruleCat, keys: rawKeys });
     }
 
@@ -588,7 +699,6 @@ export default function App() {
       setEditingRule(null);
       return;
     }
-    // Remove these keys from other categories to prevent shadowing
     const updatedRules = rules.map(r => {
       if (r.cat === editingRule.cat) {
         return { ...r, keys: cleanKeys };
@@ -598,6 +708,139 @@ export default function App() {
 
     setEditingRule(null);
     executeRulesUpdate(updatedRules, `Updated keywords for "${editingRule.cat}"`);
+  };
+
+  // BACKUP & RESTORE IMPLEMENTATION
+  const handleExportBackup = () => {
+    const backupPayload = {
+      app: 'FinSight India',
+      version: APP_VERSION,
+      exportedAt: new Date().toISOString(),
+      data: {
+        banks,
+        uploadedFiles,
+        categories,
+        rules,
+        txns
+      }
+    };
+    const jsonStr = JSON.stringify(backupPayload, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `FinSight_India_Backup_v${APP_VERSION}_${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('Workspace backup exported successfully');
+  };
+
+  const handleRestoreFileSelect = (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const parsed = JSON.parse(event.target.result);
+        const data = parsed.data || parsed;
+        if (!data || typeof data !== 'object') throw new Error('Unrecognized backup format');
+        setBackupDataToRestore(data);
+        setRestoreSelection({
+          banks: Array.isArray(data.banks) && data.banks.length > 0,
+          files: Array.isArray(data.uploadedFiles) && data.uploadedFiles.length > 0,
+          categories: Array.isArray(data.categories) && data.categories.length > 0,
+          rules: Array.isArray(data.rules) && data.rules.length > 0,
+          txns: Array.isArray(data.txns) && data.txns.length > 0
+        });
+        setShowRestoreModal(true);
+      } catch (err) {
+        showToast(`Could not parse backup file: ${err.message}`, true);
+      }
+    };
+    reader.readAsText(file);
+    if (restoreFileInputRef.current) restoreFileInputRef.current.value = '';
+  };
+
+  const handleConfirmRestore = () => {
+    if (!backupDataToRestore) return;
+    const data = backupDataToRestore;
+    const summaryParts = [];
+
+    if (restoreMode === 'REPLACE') {
+      if (restoreSelection.banks && Array.isArray(data.banks)) {
+        setBanks(data.banks);
+        summaryParts.push(`${data.banks.length} banks`);
+      }
+      if (restoreSelection.files && Array.isArray(data.uploadedFiles)) {
+        setUploadedFiles(data.uploadedFiles);
+        summaryParts.push(`${data.uploadedFiles.length} files`);
+      }
+      if (restoreSelection.categories && Array.isArray(data.categories)) {
+        setCategories(Array.from(new Set([...DEFAULT_CATEGORIES, ...data.categories])));
+        summaryParts.push(`${data.categories.length} categories`);
+      }
+      if (restoreSelection.rules && Array.isArray(data.rules)) {
+        setRules(data.rules);
+        summaryParts.push(`${data.rules.length} rules`);
+      }
+      if (restoreSelection.txns && Array.isArray(data.txns)) {
+        setTxns(data.txns);
+        summaryParts.push(`${data.txns.length} txns`);
+      }
+    } else {
+      // MERGE mode
+      if (restoreSelection.banks && Array.isArray(data.banks)) {
+        setBanks(prev => {
+          const existingNames = new Set(prev.map(b => b.name.toLowerCase()));
+          const toAdd = data.banks.filter(b => !existingNames.has((b.name || '').toLowerCase()));
+          return [...prev, ...toAdd];
+        });
+        summaryParts.push(`banks merged`);
+      }
+      if (restoreSelection.files && Array.isArray(data.uploadedFiles)) {
+        setUploadedFiles(prev => {
+          const existingIds = new Set(prev.map(f => f.id));
+          const toAdd = data.uploadedFiles.filter(f => !existingIds.has(f.id));
+          return [...toAdd, ...prev];
+        });
+        summaryParts.push(`files merged`);
+      }
+      if (restoreSelection.categories && Array.isArray(data.categories)) {
+        setCategories(prev => Array.from(new Set([...prev, ...data.categories])));
+        summaryParts.push(`categories merged`);
+      }
+      if (restoreSelection.rules && Array.isArray(data.rules)) {
+        setRules(prev => {
+          const map = new Map();
+          prev.forEach(r => map.set(r.cat.toLowerCase(), { cat: r.cat, keys: [...r.keys] }));
+          data.rules.forEach(r => {
+            const k = r.cat.toLowerCase();
+            if (map.has(k)) {
+              const mergedKeys = Array.from(new Set([...map.get(k).keys, ...r.keys]));
+              map.set(k, { cat: r.cat, keys: mergedKeys });
+            } else {
+              map.set(k, r);
+            }
+          });
+          return Array.from(map.values());
+        });
+        summaryParts.push(`rules merged`);
+      }
+      if (restoreSelection.txns && Array.isArray(data.txns)) {
+        setTxns(prev => {
+          const existingIds = new Set(prev.map(t => t.id));
+          const toAdd = data.txns.filter(t => !existingIds.has(t.id));
+          return [...toAdd, ...prev];
+        });
+        summaryParts.push(`txns merged`);
+      }
+    }
+
+    setShowRestoreModal(false);
+    setBackupDataToRestore(null);
+    showToast(`Restored: ${summaryParts.join(', ')}`);
   };
 
   // Tabular matrix parser with UBI and multi-bank support
@@ -957,17 +1200,27 @@ export default function App() {
     }).sort((a, b) => b.date.localeCompare(a.date));
   }, [txns, bankFilter, categoryFilter, typeFilter, search, dateRangeBounds]);
 
+  // TOTALS COMPUTATION (Respects Internal Transfer Exclusion)
   const totals = useMemo(() => {
-    const credit = filtered.filter(t => t.type === 'CREDIT').reduce((a, b) => a + b.amount, 0);
-    const debit = filtered.filter(t => t.type === 'DEBIT').reduce((a, b) => a + b.amount, 0);
+    const credit = filtered
+      .filter(t => t.type === 'CREDIT' && (!excludeTransfersFromTotals || !transferMap.has(t.id)))
+      .reduce((a, b) => a + b.amount, 0);
+
+    const debit = filtered
+      .filter(t => t.type === 'DEBIT' && (!excludeTransfersFromTotals || !transferMap.has(t.id)))
+      .reduce((a, b) => a + b.amount, 0);
+
     const net = credit - debit;
     const savingsRate = credit > 0 ? Math.max(0, ((credit - debit) / credit) * 100).toFixed(1) : '0.0';
     return { credit, debit, net, savingsRate };
-  }, [filtered]);
+  }, [filtered, excludeTransfersFromTotals, transferMap]);
 
   const periodGroups = useMemo(() => {
     const map = {};
     filtered.forEach(t => {
+      // Exclude transfers if option enabled
+      if (excludeTransfersFromTotals && transferMap.has(t.id)) return;
+
       const d = t.date || '2026-01-01';
       const [yr, mo] = d.split('-');
       const q = `Q${Math.ceil((parseInt(mo || '1', 10)) / 3)}`;
@@ -982,46 +1235,130 @@ export default function App() {
       map[key].count += 1;
     });
     return Object.values(map).sort((a, b) => a.period.localeCompare(b.period));
-  }, [filtered, granularity]);
+  }, [filtered, granularity, excludeTransfersFromTotals, transferMap]);
 
-  const categoryBreakdown = useMemo(() => {
+  // CATEGORY SPEND BREAKDOWN (DEBITS)
+  const categorySpendBreakdown = useMemo(() => {
     const map = {};
     let totalDebit = 0;
-    filtered.filter(t => t.type === 'DEBIT').forEach(t => {
-      map[t.category] = (map[t.category] || 0) + t.amount;
-      totalDebit += t.amount;
-    });
-    return Object.entries(map)
-      .map(([name, value]) => ({
-        name,
-        value,
-        pct: totalDebit > 0 ? ((value / totalDebit) * 100).toFixed(1) : '0'
-      }))
-      .sort((a, b) => b.value - a.value);
-  }, [filtered]);
+    filtered
+      .filter(t => t.type === 'DEBIT' && (!excludeTransfersFromTotals || !transferMap.has(t.id)))
+      .forEach(t => {
+        map[t.category] = (map[t.category] || 0) + t.amount;
+        totalDebit += t.amount;
+      });
+    return {
+      total: totalDebit,
+      items: Object.entries(map)
+        .map(([name, value]) => ({
+          name,
+          value,
+          pct: totalDebit > 0 ? ((value / totalDebit) * 100).toFixed(1) : '0'
+        }))
+        .sort((a, b) => b.value - a.value)
+    };
+  }, [filtered, excludeTransfersFromTotals, transferMap]);
 
+  // CATEGORY EARNING BREAKDOWN (CREDITS)
+  const categoryEarnBreakdown = useMemo(() => {
+    const map = {};
+    let totalCredit = 0;
+    filtered
+      .filter(t => t.type === 'CREDIT' && (!excludeTransfersFromTotals || !transferMap.has(t.id)))
+      .forEach(t => {
+        map[t.category] = (map[t.category] || 0) + t.amount;
+        totalCredit += t.amount;
+      });
+    return {
+      total: totalCredit,
+      items: Object.entries(map)
+        .map(([name, value]) => ({
+          name,
+          value,
+          pct: totalCredit > 0 ? ((value / totalCredit) * 100).toFixed(1) : '0'
+        }))
+        .sort((a, b) => b.value - a.value)
+    };
+  }, [filtered, excludeTransfersFromTotals, transferMap]);
+
+  // COMBINED NET FLOW BY CATEGORY (SPEND VS EARN)
+  const categoryCombinedBreakdown = useMemo(() => {
+    const allCats = new Set([...categories]);
+    const res = [];
+    allCats.forEach(cat => {
+      const spend = filtered
+        .filter(t => t.category === cat && t.type === 'DEBIT' && (!excludeTransfersFromTotals || !transferMap.has(t.id)))
+        .reduce((sum, t) => sum + t.amount, 0);
+
+      const earn = filtered
+        .filter(t => t.category === cat && t.type === 'CREDIT' && (!excludeTransfersFromTotals || !transferMap.has(t.id)))
+        .reduce((sum, t) => sum + t.amount, 0);
+
+      if (spend > 0 || earn > 0) {
+        res.push({
+          name: cat,
+          spend,
+          earn,
+          net: earn - spend
+        });
+      }
+    });
+    return res.sort((a, b) => (b.spend + b.earn) - (a.spend + a.earn));
+  }, [filtered, categories, excludeTransfersFromTotals, transferMap]);
+
+  // Outflow by Channel (Spend)
   const channelBreakdown = useMemo(() => {
     const map = {};
-    filtered.filter(t => t.type === 'DEBIT').forEach(t => {
-      map[t.channel || 'OTHER'] = (map[t.channel || 'OTHER'] || 0) + t.amount;
-    });
+    filtered
+      .filter(t => t.type === 'DEBIT' && (!excludeTransfersFromTotals || !transferMap.has(t.id)))
+      .forEach(t => {
+        map[t.channel || 'OTHER'] = (map[t.channel || 'OTHER'] || 0) + t.amount;
+      });
     return Object.entries(map).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
-  }, [filtered]);
+  }, [filtered, excludeTransfersFromTotals, transferMap]);
 
+  // Inflow by Channel (Earnings)
+  const inflowChannelBreakdown = useMemo(() => {
+    const map = {};
+    filtered
+      .filter(t => t.type === 'CREDIT' && (!excludeTransfersFromTotals || !transferMap.has(t.id)))
+      .forEach(t => {
+        map[t.channel || 'OTHER'] = (map[t.channel || 'OTHER'] || 0) + t.amount;
+      });
+    return Object.entries(map).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
+  }, [filtered, excludeTransfersFromTotals, transferMap]);
+
+  // Top Payees & Merchants (Spend)
   const topMerchants = useMemo(() => {
     const map = {};
-    filtered.filter(t => t.type === 'DEBIT').forEach(t => {
-      const label = t.narration.split('/').slice(0, 3).join('/').slice(0, 28);
-      if (!map[label]) map[label] = { name: label, amount: 0, count: 0, category: t.category };
-      map[label].amount += t.amount;
-      map[label].count += 1;
-    });
+    filtered
+      .filter(t => t.type === 'DEBIT' && (!excludeTransfersFromTotals || !transferMap.has(t.id)))
+      .forEach(t => {
+        const label = t.narration.split('/').slice(0, 3).join('/').slice(0, 28);
+        if (!map[label]) map[label] = { name: label, amount: 0, count: 0, category: t.category };
+        map[label].amount += t.amount;
+        map[label].count += 1;
+      });
     return Object.values(map).sort((a, b) => b.amount - a.amount).slice(0, 6);
-  }, [filtered]);
+  }, [filtered, excludeTransfersFromTotals, transferMap]);
+
+  // Top Inflow Sources (Earnings)
+  const topEarningSources = useMemo(() => {
+    const map = {};
+    filtered
+      .filter(t => t.type === 'CREDIT' && (!excludeTransfersFromTotals || !transferMap.has(t.id)))
+      .forEach(t => {
+        const label = t.narration.split('/').slice(0, 3).join('/').slice(0, 28);
+        if (!map[label]) map[label] = { name: label, amount: 0, count: 0, category: t.category };
+        map[label].amount += t.amount;
+        map[label].count += 1;
+      });
+    return Object.values(map).sort((a, b) => b.amount - a.amount).slice(0, 6);
+  }, [filtered, excludeTransfersFromTotals, transferMap]);
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 pb-24 select-none">
-      {/* Hidden Multi-File Input */}
+      {/* Hidden Multi-File Input for Statements */}
       <input
         ref={fileInputRef}
         type="file"
@@ -1029,6 +1366,15 @@ export default function App() {
         accept=".csv,.xlsx,.xls,.pdf,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv"
         className="hidden"
         onChange={handleFileUpload}
+      />
+
+      {/* Hidden File Input for JSON Backup Restore */}
+      <input
+        ref={restoreFileInputRef}
+        type="file"
+        accept=".json,application/json"
+        className="hidden"
+        onChange={handleRestoreFileSelect}
       />
 
       {/* Top App Bar with Custom FinSight Icon & Version Badge */}
@@ -1043,11 +1389,22 @@ export default function App() {
               </span>
             </div>
             <p className="text-[11px] text-slate-400">
-              {banks.length} {banks.length === 1 ? 'Bank' : 'Banks'} • {uploadedFiles.length} {uploadedFiles.length === 1 ? 'File' : 'Files'} • {txns.length} Txns
+              {banks.length} {banks.length === 1 ? 'Bank' : 'Banks'} • {uploadedFiles.length} Files • {txns.length} Txns
+              {transferPairs.length > 0 && (
+                <span className="text-sky-400 ml-1">• {transferPairs.length} Transfers</span>
+              )}
             </p>
           </div>
         </div>
         <div className="flex items-center gap-1.5 sm:gap-2">
+          {/* Backup & Restore Quick Access */}
+          <button
+            onClick={handleExportBackup}
+            className="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium px-2.5 py-2 rounded-xl border border-slate-700 flex items-center gap-1"
+            title="Download JSON Backup"
+          >
+            <Download size={13} className="text-sky-400" /> <span className="hidden sm:inline">Backup</span>
+          </button>
           {/* Categories Manager Quick Access */}
           <button
             onClick={() => setShowCategoryModal(true)}
@@ -1100,278 +1457,438 @@ export default function App() {
           <button
             key={b.id}
             onClick={() => setBankFilter(b.name)}
-            className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap flex items-center gap-1.5 transition ${
+            className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition flex items-center gap-1.5 ${
               bankFilter === b.name
                 ? 'bg-emerald-500 text-slate-950 font-semibold'
-                : 'bg-slate-900 text-slate-300 border border-slate-800 hover:text-white'
+                : 'bg-slate-900 text-slate-300 border border-slate-800 hover:border-slate-700'
             }`}
           >
             <span className="w-2 h-2 rounded-full" style={{ backgroundColor: b.color || '#10b981' }} />
             <span>{b.name}</span>
+            {b.accountHint && <span className="text-[10px] opacity-75">({b.accountHint})</span>}
           </button>
         ))}
-        <button
-          onClick={() => {
-            setEditingBank(null);
-            setBankForm({ name: '', accountHint: '', color: BANK_COLOR_PALETTE[banks.length % BANK_COLOR_PALETTE.length] });
-            setShowBankModal(true);
-          }}
-          className="px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap bg-slate-900/90 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/10 flex items-center gap-1"
-        >
-          <Plus size={12} /> Add Bank
-        </button>
       </div>
 
-      {/* Main Content Container */}
-      <main className="p-4 max-w-4xl mx-auto space-y-4">
-
-        {/* CLEAN STARTUP ONBOARDING STATE */}
-        {txns.length === 0 && activeTab !== 'BANKS' && (
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 text-center space-y-4 my-4">
-            <div className="mx-auto w-16 h-16 flex items-center justify-center">
-              <FinSightLogo size={60} />
-            </div>
-            <div className="space-y-1 max-w-md mx-auto">
-              <h2 className="text-base font-bold text-white">Welcome to FinSight India v{APP_VERSION}</h2>
-              <p className="text-xs text-slate-400">
-                Offline-first multi-bank analyzer with full support for <strong className="text-emerald-400">Union Bank of India (UBI)</strong>, SBI, HDFC, ICICI, Axis, Kotak, and more. Upload your statements to begin.
-              </p>
-            </div>
-            <div className="flex flex-wrap justify-center gap-2.5 pt-1">
-              <button
-                onClick={() => {
-                  setEditingBank(null);
-                  setBankForm({ name: '', accountHint: '', color: BANK_COLOR_PALETTE[0] });
-                  setShowBankModal(true);
-                }}
-                className="bg-slate-800 hover:bg-slate-700 text-slate-100 font-semibold text-xs px-4 py-2.5 rounded-xl border border-slate-700 flex items-center gap-1.5"
-              >
-                <Building2 size={15} className="text-emerald-400" /> 1. Add a Bank
-              </button>
-              <button
-                onClick={() => triggerFilePicker('AUTO')}
-                className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs px-4 py-2.5 rounded-xl flex items-center gap-1.5 shadow-lg shadow-emerald-500/10"
-              >
-                <Upload size={15} /> 2. Upload Statement Files
-              </button>
-              <button
-                onClick={() => setShowAddModal(true)}
-                className="bg-slate-950 hover:bg-slate-800 text-slate-300 font-medium text-xs px-3.5 py-2.5 rounded-xl border border-slate-800 flex items-center gap-1"
-              >
-                <Plus size={14} /> Add Manual Txn
-              </button>
-            </div>
+      {/* SMART BANK TRANSFERS BANNER / TOGGLE */}
+      {transferPairs.length > 0 && (
+        <div className="bg-sky-950/40 border-b border-sky-900/60 px-4 py-2 flex items-center justify-between gap-2 text-xs flex-wrap">
+          <div className="flex items-center gap-2">
+            <ArrowLeftRight size={14} className="text-sky-400 shrink-0" />
+            <span className="text-slate-200">
+              <strong className="text-sky-300">{transferPairs.length} Smart Bank Transfers</strong> detected across your accounts (₹{totalTransfersAmount.toLocaleString('en-IN')})
+            </span>
           </div>
-        )}
+          <label className="flex items-center gap-2 cursor-pointer text-[11px] text-sky-200 font-medium">
+            <input
+              type="checkbox"
+              checked={excludeTransfersFromTotals}
+              onChange={e => setExcludeTransfersFromTotals(e.target.checked)}
+              className="accent-sky-500 rounded"
+            />
+            <span>Exclude transfers from spend/earning totals</span>
+          </label>
+        </div>
+      )}
 
-        {/* TAB 1: DASHBOARD (Daywise / Monthwise / Quarterly / Yearly) */}
-        {activeTab === 'DASHBOARD' && txns.length > 0 && (
-          <>
+      {/* MAIN CONTENT AREA */}
+      <main className="max-w-6xl mx-auto p-4 space-y-4">
+        {/* TAB 1: OVERVIEW & CASHFLOW DASHBOARD */}
+        {activeTab === 'DASHBOARD' && (
+          <div className="space-y-4">
             {/* KPI Summary Cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-              <div className="bg-slate-900 border border-slate-800 p-3 rounded-2xl">
-                <span className="text-[11px] text-slate-400 flex items-center justify-between">
-                  Total Inflow <ArrowDownRight size={13} className="text-emerald-400" />
-                </span>
-                <p className="text-sm sm:text-base font-bold text-emerald-400 mt-1">₹{totals.credit.toLocaleString('en-IN')}</p>
-              </div>
-              <div className="bg-slate-900 border border-slate-800 p-3 rounded-2xl">
-                <span className="text-[11px] text-slate-400 flex items-center justify-between">
-                  Total Outflow <ArrowUpRight size={13} className="text-rose-400" />
-                </span>
-                <p className="text-sm sm:text-base font-bold text-rose-400 mt-1">₹{totals.debit.toLocaleString('en-IN')}</p>
-              </div>
-              <div className="bg-slate-900 border border-slate-800 p-3 rounded-2xl">
-                <span className="text-[11px] text-slate-400">Net Cash Surplus</span>
-                <p className={`text-sm sm:text-base font-bold mt-1 ${totals.net >= 0 ? 'text-sky-400' : 'text-amber-400'}`}>
-                  ₹{totals.net.toLocaleString('en-IN')}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="bg-slate-900 border border-slate-800 p-3.5 rounded-2xl">
+                <div className="flex items-center justify-between text-slate-400 text-xs">
+                  <span>Total Inflow</span>
+                  <ArrowDownRight size={14} className="text-emerald-400" />
+                </div>
+                <p className="text-lg font-bold text-emerald-400 mt-1">₹{totals.credit.toLocaleString('en-IN')}</p>
+                <p className="text-[10px] text-slate-500 mt-0.5">
+                  {excludeTransfersFromTotals && transferPairs.length > 0 ? 'Excl. internal transfers' : 'All accounts'}
                 </p>
               </div>
-              <div className="bg-slate-900 border border-slate-800 p-3 rounded-2xl">
-                <span className="text-[11px] text-slate-400">Savings Rate</span>
-                <p className="text-sm sm:text-base font-bold text-purple-400 mt-1">{totals.savingsRate}%</p>
+
+              <div className="bg-slate-900 border border-slate-800 p-3.5 rounded-2xl">
+                <div className="flex items-center justify-between text-slate-400 text-xs">
+                  <span>Total Outflow</span>
+                  <ArrowUpRight size={14} className="text-rose-400" />
+                </div>
+                <p className="text-lg font-bold text-rose-400 mt-1">₹{totals.debit.toLocaleString('en-IN')}</p>
+                <p className="text-[10px] text-slate-500 mt-0.5">
+                  {excludeTransfersFromTotals && transferPairs.length > 0 ? 'Excl. internal transfers' : 'All accounts'}
+                </p>
+              </div>
+
+              <div className="bg-slate-900 border border-slate-800 p-3.5 rounded-2xl">
+                <div className="flex items-center justify-between text-slate-400 text-xs">
+                  <span>Net Savings</span>
+                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${totals.net >= 0 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}`}>
+                    {totals.savingsRate}%
+                  </span>
+                </div>
+                <p className={`text-lg font-bold mt-1 ${totals.net >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                  {totals.net >= 0 ? '+' : ''}₹{totals.net.toLocaleString('en-IN')}
+                </p>
+                <p className="text-[10px] text-slate-500 mt-0.5">Net cashflow surplus</p>
+              </div>
+
+              <div className="bg-slate-900 border border-slate-800 p-3.5 rounded-2xl">
+                <div className="flex items-center justify-between text-slate-400 text-xs">
+                  <span>Internal Transfers</span>
+                  <ArrowLeftRight size={14} className="text-sky-400" />
+                </div>
+                <p className="text-lg font-bold text-sky-400 mt-1">₹{totalTransfersAmount.toLocaleString('en-IN')}</p>
+                <p className="text-[10px] text-slate-500 mt-0.5">{transferPairs.length} transfer pairs linked</p>
               </div>
             </div>
 
-            {/* Granularity Selector & Bar Chart */}
-            <div className="bg-slate-900 border border-slate-800 p-3.5 rounded-2xl space-y-3">
-              <div className="flex flex-wrap items-center justify-between gap-2">
+            {/* Granularity & Cashflow Chart */}
+            <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-3">
+              <div className="flex items-center justify-between flex-wrap gap-2">
                 <div>
-                  <h2 className="text-xs font-bold text-slate-200 uppercase tracking-wider">Time-Horizon Segregation</h2>
-                  <p className="text-[11px] text-slate-400">Daywise, Monthwise, Quarterly & Yearly Cash Flow</p>
+                  <h2 className="text-xs font-bold text-slate-200 uppercase tracking-wider">Multi-Bank Cashflow Trend</h2>
+                  <p className="text-[11px] text-slate-400">Monthly, quarterly, or yearly financial movement across your banks</p>
                 </div>
-                <div className="flex bg-slate-950 p-1 rounded-xl border border-slate-800">
-                  {[
-                    { id: 'DAILY', label: 'Daywise' },
-                    { id: 'MONTHLY', label: 'Monthwise' },
-                    { id: 'QUARTERLY', label: 'Quarterly' },
-                    { id: 'YEARLY', label: 'Yearly' }
-                  ].map(g => (
+                <div className="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs">
+                  {['DAILY', 'MONTHLY', 'QUARTERLY', 'YEARLY'].map(g => (
                     <button
-                      key={g.id}
-                      onClick={() => setGranularity(g.id)}
-                      className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition ${
-                        granularity === g.id ? 'bg-emerald-500 text-slate-950' : 'text-slate-400 hover:text-slate-200'
-                      }`}
+                      key={g}
+                      onClick={() => setGranularity(g)}
+                      className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition ${granularity === g ? 'bg-emerald-500 text-slate-950' : 'text-slate-400 hover:text-slate-200'}`}
                     >
-                      {g.label}
+                      {g}
                     </button>
                   ))}
                 </div>
               </div>
 
-              <div className="h-60 w-full pt-2">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={periodGroups}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                    <XAxis dataKey="period" stroke="#64748b" fontSize={11} />
-                    <YAxis stroke="#64748b" fontSize={11} />
-                    <Tooltip
-                      contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '12px', fontSize: '12px' }}
-                      formatter={(val) => `₹${Number(val).toLocaleString('en-IN')}`}
-                    />
-                    <Legend wrapperStyle={{ fontSize: '11px' }} />
-                    <Bar dataKey="credit" name="Inflow (₹)" fill="#10b981" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="debit" name="Outflow (₹)" fill="#f43f5e" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            {/* Period Breakdown Table */}
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 space-y-2.5">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xs font-bold text-slate-200 uppercase tracking-wider">
-                  {granularity} Segregation Ledger ({periodGroups.length} periods)
-                </h2>
-                <button onClick={exportCsv} className="text-xs text-emerald-400 hover:underline flex items-center gap-1">
-                  <Download size={13} /> Export XLSX
-                </button>
-              </div>
-              <div className="divide-y divide-slate-800/80 text-xs max-h-80 overflow-y-auto">
-                {periodGroups.map(p => (
-                  <div key={p.period} className="py-2.5 flex items-center justify-between">
-                    <div>
-                      <span className="font-semibold text-slate-100">{p.period}</span>
-                      <span className="text-[11px] text-slate-400 ml-2 bg-slate-800 px-2 py-0.5 rounded-full">{p.count} txns</span>
-                    </div>
-                    <div className="flex items-center gap-3 text-right">
-                      <div>
-                        <span className="text-[10px] text-slate-500 block">Inflow</span>
-                        <span className="text-emerald-400 font-medium">+₹{p.credit.toLocaleString('en-IN')}</span>
-                      </div>
-                      <div>
-                        <span className="text-[10px] text-slate-500 block">Outflow</span>
-                        <span className="text-rose-400 font-medium">-₹{p.debit.toLocaleString('en-IN')}</span>
-                      </div>
-                      <div className="min-w-[75px]">
-                        <span className="text-[10px] text-slate-500 block">Net</span>
-                        <span className={`font-bold ${p.net >= 0 ? 'text-sky-400' : 'text-amber-400'}`}>
-                          {p.net >= 0 ? '+' : ''}₹{p.net.toLocaleString('en-IN')}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </>
-        )}
-
-        {/* TAB 2: SPEND ANALYSIS */}
-        {activeTab === 'SPEND' && txns.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Category Donut Chart */}
-            <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-3">
-              <div>
-                <h2 className="text-xs font-bold text-slate-200 uppercase tracking-wider">Spend by Category</h2>
-                <p className="text-[11px] text-slate-400">Tap any category below to inspect transactions in Ledger</p>
-              </div>
-              <div className="h-56 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={categoryBreakdown}
-                      dataKey="value"
-                      nameKey="name"
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={52}
-                      outerRadius={82}
-                      paddingAngle={3}
-                    >
-                      {categoryBreakdown.map((entry, index) => (
-                        <Cell key={entry.name} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '12px', fontSize: '12px' }}
-                      formatter={(val) => `₹${Number(val).toLocaleString('en-IN')}`}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
-                {categoryBreakdown.map((c, i) => (
-                  <div
-                    key={c.name}
-                    onClick={() => {
-                      setCategoryFilter(c.name);
-                      setActiveTab('LEDGER');
-                    }}
-                    className="flex items-center justify-between p-2 rounded-xl bg-slate-950/60 hover:bg-slate-800/80 cursor-pointer border border-slate-800/60"
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-                      <span className="text-xs font-medium text-slate-200">{c.name}</span>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-xs font-bold text-slate-100">₹{c.value.toLocaleString('en-IN')}</span>
-                      <span className="text-[10px] text-slate-400 ml-1.5">({c.pct}%)</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Payment Channel & Top Payees */}
-            <div className="space-y-4">
-              <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-3">
-                <h2 className="text-xs font-bold text-slate-200 uppercase tracking-wider">Outflow by Channel (UPI / NACH / NEFT / POS)</h2>
-                <div className="h-44 w-full">
+              {periodGroups.length === 0 ? (
+                <div className="h-56 flex flex-col items-center justify-center text-slate-500 text-xs border border-dashed border-slate-800 rounded-xl">
+                  <FileSpreadsheet size={28} className="mb-2 text-slate-600" />
+                  <p>No transaction data available.</p>
+                  <button onClick={() => triggerFilePicker('AUTO')} className="mt-2 text-emerald-400 font-semibold underline">
+                    Upload Bank Statement
+                  </button>
+                </div>
+              ) : (
+                <div className="h-64 w-full">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={channelBreakdown} layout="vertical">
-                      <XAxis type="number" stroke="#64748b" fontSize={11} />
-                      <YAxis dataKey="name" type="category" stroke="#94a3b8" fontSize={11} width={55} />
+                    <BarChart data={periodGroups} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                      <XAxis dataKey="period" stroke="#64748b" fontSize={11} />
+                      <YAxis stroke="#64748b" fontSize={11} />
                       <Tooltip
                         contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '12px', fontSize: '12px' }}
                         formatter={(val) => `₹${Number(val).toLocaleString('en-IN')}`}
                       />
-                      <Bar dataKey="value" name="Outflow (₹)" fill="#3b82f6" radius={[0, 4, 4, 0]} />
+                      <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '6px' }} />
+                      <Bar dataKey="credit" name="Inflow (₹)" fill="#10b981" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="debit" name="Outflow (₹)" fill="#f43f5e" radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
-              </div>
-
-              <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-2.5">
-                <h2 className="text-xs font-bold text-slate-200 uppercase tracking-wider">Top Payees & Merchants</h2>
-                <div className="divide-y divide-slate-800 text-xs">
-                  {topMerchants.map((m, idx) => (
-                    <div key={idx} className="py-2 flex items-center justify-between">
-                      <div>
-                        <p className="font-semibold text-slate-200 truncate max-w-[200px]">{m.name}</p>
-                        <p className="text-[10px] text-slate-400">{m.category} • {m.count} txns</p>
-                      </div>
-                      <span className="font-bold text-rose-400">₹{m.amount.toLocaleString('en-IN')}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              )}
             </div>
           </div>
         )}
 
-        {/* TAB 3: TRANSACTIONS LEDGER (With Date Range / Duration Filter) */}
+        {/* TAB 2: CATEGORY ANALYSIS (SPEND & EARNING SEPARATELY + NET FLOW) */}
+        {activeTab === 'SPEND' && (
+          <div className="space-y-4">
+            {/* Top Analysis Mode Pill Switcher */}
+            <div className="bg-slate-900 border border-slate-800 p-2 rounded-2xl flex items-center justify-between gap-2 flex-wrap">
+              <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800/80">
+                <button
+                  onClick={() => setCategoryAnalysisMode('SPEND')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+                    categoryAnalysisMode === 'SPEND'
+                      ? 'bg-rose-500 text-white shadow-sm'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <TrendingDown size={13} />
+                  <span>Spend Breakdown (₹{categorySpendBreakdown.total.toLocaleString('en-IN')})</span>
+                </button>
+                <button
+                  onClick={() => setCategoryAnalysisMode('EARN')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+                    categoryAnalysisMode === 'EARN'
+                      ? 'bg-emerald-500 text-slate-950 shadow-sm'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <TrendingUp size={13} />
+                  <span>Earnings Breakdown (₹{categoryEarnBreakdown.total.toLocaleString('en-IN')})</span>
+                </button>
+                <button
+                  onClick={() => setCategoryAnalysisMode('NET')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+                    categoryAnalysisMode === 'NET'
+                      ? 'bg-sky-500 text-slate-950 shadow-sm'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <Layers size={13} />
+                  <span>Net Flow / Comparison</span>
+                </button>
+              </div>
+
+              <button
+                onClick={() => setShowCategoryModal(true)}
+                className="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs px-2.5 py-1.5 rounded-xl border border-slate-700 flex items-center gap-1 font-medium"
+              >
+                <Tag size={12} className="text-emerald-400" /> Manage Categories
+              </button>
+            </div>
+
+            {/* MODE 1: SPEND BREAKDOWN */}
+            {categoryAnalysisMode === 'SPEND' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Donut Chart & List */}
+                <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-xs font-bold text-slate-200 uppercase tracking-wider">Outflow by Category</h2>
+                    <span className="text-xs font-bold text-rose-400">₹{categorySpendBreakdown.total.toLocaleString('en-IN')}</span>
+                  </div>
+
+                  {categorySpendBreakdown.items.length === 0 ? (
+                    <p className="text-xs text-slate-400 text-center py-10">No debit transactions found in selected range.</p>
+                  ) : (
+                    <>
+                      <div className="h-56 w-full flex items-center justify-center">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <Pie
+                              data={categorySpendBreakdown.items}
+                              dataKey="value"
+                              nameKey="name"
+                              cx="50%"
+                              cy="50%"
+                              innerRadius={55}
+                              outerRadius={82}
+                              paddingAngle={3}
+                            >
+                              {categorySpendBreakdown.items.map((entry, index) => (
+                                <Cell key={entry.name} fill={COLORS[index % COLORS.length]} />
+                              ))}
+                            </Pie>
+                            <Tooltip
+                              contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '12px', fontSize: '12px' }}
+                              formatter={(val) => `₹${Number(val).toLocaleString('en-IN')}`}
+                            />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </div>
+
+                      <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                        {categorySpendBreakdown.items.map((c, i) => (
+                          <div
+                            key={c.name}
+                            onClick={() => {
+                              setCategoryFilter(c.name);
+                              setTypeFilter('DEBIT');
+                              setActiveTab('LEDGER');
+                            }}
+                            className="flex items-center justify-between p-2 rounded-xl bg-slate-950/60 hover:bg-slate-800/80 cursor-pointer border border-slate-800/60"
+                          >
+                            <div className="flex items-center gap-2">
+                              <span className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+                              <span className="text-xs font-medium text-slate-200">{c.name}</span>
+                            </div>
+                            <div className="text-right">
+                              <span className="text-xs font-bold text-rose-400">₹{c.value.toLocaleString('en-IN')}</span>
+                              <span className="text-[10px] text-slate-400 ml-1.5">({c.pct}%)</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* Spend Channel & Top Payees */}
+                <div className="space-y-4">
+                  <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-3">
+                    <h2 className="text-xs font-bold text-slate-200 uppercase tracking-wider">Outflow by Channel (UPI / NACH / NEFT / POS)</h2>
+                    <div className="h-44 w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={channelBreakdown} layout="vertical">
+                          <XAxis type="number" stroke="#64748b" fontSize={11} />
+                          <YAxis dataKey="name" type="category" stroke="#94a3b8" fontSize={11} width={55} />
+                          <Tooltip
+                            contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '12px', fontSize: '12px' }}
+                            formatter={(val) => `₹${Number(val).toLocaleString('en-IN')}`}
+                          />
+                          <Bar dataKey="value" name="Outflow (₹)" fill="#f43f5e" radius={[0, 4, 4, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-2.5">
+                    <h2 className="text-xs font-bold text-slate-200 uppercase tracking-wider">Top Spend Merchants & Payees</h2>
+                    <div className="divide-y divide-slate-800 text-xs">
+                      {topMerchants.map((m, idx) => (
+                        <div key={idx} className="py-2 flex items-center justify-between">
+                          <div>
+                            <p className="font-semibold text-slate-200 truncate max-w-[200px]">{m.name}</p>
+                            <p className="text-[10px] text-slate-400">{m.category} • {m.count} txns</p>
+                          </div>
+                          <span className="font-bold text-rose-400">₹{m.amount.toLocaleString('en-IN')}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* MODE 2: EARNINGS BREAKDOWN */}
+            {categoryAnalysisMode === 'EARN' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Donut Chart & List */}
+                <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-xs font-bold text-slate-200 uppercase tracking-wider">Earnings / Inflow by Category</h2>
+                    <span className="text-xs font-bold text-emerald-400">₹{categoryEarnBreakdown.total.toLocaleString('en-IN')}</span>
+                  </div>
+
+                  {categoryEarnBreakdown.items.length === 0 ? (
+                    <p className="text-xs text-slate-400 text-center py-10">No credit/income transactions found in selected range.</p>
+                  ) : (
+                    <>
+                      <div className="h-56 w-full flex items-center justify-center">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <Pie
+                              data={categoryEarnBreakdown.items}
+                              dataKey="value"
+                              nameKey="name"
+                              cx="50%"
+                              cy="50%"
+                              innerRadius={55}
+                              outerRadius={82}
+                              paddingAngle={3}
+                            >
+                              {categoryEarnBreakdown.items.map((entry, index) => (
+                                <Cell key={entry.name} fill={EARN_COLORS[index % EARN_COLORS.length]} />
+                              ))}
+                            </Pie>
+                            <Tooltip
+                              contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '12px', fontSize: '12px' }}
+                              formatter={(val) => `₹${Number(val).toLocaleString('en-IN')}`}
+                            />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </div>
+
+                      <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                        {categoryEarnBreakdown.items.map((c, i) => (
+                          <div
+                            key={c.name}
+                            onClick={() => {
+                              setCategoryFilter(c.name);
+                              setTypeFilter('CREDIT');
+                              setActiveTab('LEDGER');
+                            }}
+                            className="flex items-center justify-between p-2 rounded-xl bg-slate-950/60 hover:bg-slate-800/80 cursor-pointer border border-slate-800/60"
+                          >
+                            <div className="flex items-center gap-2">
+                              <span className="w-3 h-3 rounded-full" style={{ backgroundColor: EARN_COLORS[i % EARN_COLORS.length] }} />
+                              <span className="text-xs font-medium text-slate-200">{c.name}</span>
+                            </div>
+                            <div className="text-right">
+                              <span className="text-xs font-bold text-emerald-400">₹{c.value.toLocaleString('en-IN')}</span>
+                              <span className="text-[10px] text-slate-400 ml-1.5">({c.pct}%)</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* Earning Channel & Top Sources */}
+                <div className="space-y-4">
+                  <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-3">
+                    <h2 className="text-xs font-bold text-slate-200 uppercase tracking-wider">Inflow by Channel (NEFT / IMPS / UPI / ACH)</h2>
+                    <div className="h-44 w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={inflowChannelBreakdown} layout="vertical">
+                          <XAxis type="number" stroke="#64748b" fontSize={11} />
+                          <YAxis dataKey="name" type="category" stroke="#94a3b8" fontSize={11} width={55} />
+                          <Tooltip
+                            contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '12px', fontSize: '12px' }}
+                            formatter={(val) => `₹${Number(val).toLocaleString('en-IN')}`}
+                          />
+                          <Bar dataKey="value" name="Inflow (₹)" fill="#10b981" radius={[0, 4, 4, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-2.5">
+                    <h2 className="text-xs font-bold text-slate-200 uppercase tracking-wider">Top Income Sources & Payers</h2>
+                    <div className="divide-y divide-slate-800 text-xs">
+                      {topEarningSources.map((m, idx) => (
+                        <div key={idx} className="py-2 flex items-center justify-between">
+                          <div>
+                            <p className="font-semibold text-slate-200 truncate max-w-[200px]">{m.name}</p>
+                            <p className="text-[10px] text-slate-400">{m.category} • {m.count} txns</p>
+                          </div>
+                          <span className="font-bold text-emerald-400">₹{m.amount.toLocaleString('en-IN')}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* MODE 3: COMBINED DUAL VIEW / NET FLOW */}
+            {categoryAnalysisMode === 'NET' && (
+              <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-3">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div>
+                    <h2 className="text-xs font-bold text-slate-200 uppercase tracking-wider">Spend vs Earning Net Flow Comparison</h2>
+                    <p className="text-[11px] text-slate-400">Compare incoming earnings against outgoing expenses across every category</p>
+                  </div>
+                  <div className="flex items-center gap-3 text-xs">
+                    <span className="text-rose-400 font-semibold">Total Outflow: ₹{categorySpendBreakdown.total.toLocaleString('en-IN')}</span>
+                    <span className="text-emerald-400 font-semibold">Total Inflow: ₹{categoryEarnBreakdown.total.toLocaleString('en-IN')}</span>
+                  </div>
+                </div>
+
+                <div className="divide-y divide-slate-800/80 text-xs overflow-x-auto">
+                  <div className="py-2 grid grid-cols-12 font-bold text-slate-400 border-b border-slate-800 text-[11px]">
+                    <span className="col-span-4">Category</span>
+                    <span className="col-span-3 text-right">Spend (Outflow)</span>
+                    <span className="col-span-3 text-right">Earning (Inflow)</span>
+                    <span className="col-span-2 text-right">Net Flow</span>
+                  </div>
+
+                  {categoryCombinedBreakdown.map(item => (
+                    <div key={item.name} className="py-2.5 grid grid-cols-12 items-center hover:bg-slate-800/40 px-1 rounded-lg">
+                      <span className="col-span-4 font-semibold text-slate-200 truncate">{item.name}</span>
+                      <span className="col-span-3 text-right text-rose-400 font-medium">
+                        {item.spend > 0 ? `₹${item.spend.toLocaleString('en-IN')}` : '—'}
+                      </span>
+                      <span className="col-span-3 text-right text-emerald-400 font-medium">
+                        {item.earn > 0 ? `₹${item.earn.toLocaleString('en-IN')}` : '—'}
+                      </span>
+                      <span className={`col-span-2 text-right font-bold ${item.net >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                        {item.net >= 0 ? '+' : ''}₹{item.net.toLocaleString('en-IN')}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB 3: TRANSACTIONS LEDGER (With Duration Filter & Smart Bank Transfer Badges) */}
         {activeTab === 'LEDGER' && txns.length > 0 && (
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 space-y-3">
             {/* Search and Filters Header */}
@@ -1445,7 +1962,6 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Custom Date Pickers (Shown when CUSTOM is selected) */}
               {datePreset === 'CUSTOM' && (
                 <div className="pt-2 border-t border-slate-800/80 flex items-center gap-2 flex-wrap text-xs">
                   <div className="flex items-center gap-1.5">
@@ -1497,48 +2013,69 @@ export default function App() {
               </div>
             </div>
 
+            {/* TRANSACTIONS LIST WITH SMART TRANSFER BADGES */}
             <div className="divide-y divide-slate-800/80 text-xs max-h-[58vh] overflow-y-auto">
-              {filtered.map(t => (
-                <div
-                  key={t.id}
-                  onClick={() => setEditingTxn({ ...t })}
-                  className="py-3 px-2 hover:bg-slate-800/50 rounded-xl flex items-center justify-between cursor-pointer transition"
-                >
-                  <div className="space-y-1 pr-2">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-semibold text-slate-100">{t.narration}</span>
-                      <span className="text-[10px] px-2 py-0.5 rounded-md bg-slate-800 text-emerald-400 border border-slate-700">
-                        {t.bank}
-                      </span>
-                      <span className="text-[10px] px-2 py-0.5 rounded-md bg-slate-950 text-slate-400 border border-slate-800">
-                        {t.channel}
-                      </span>
+              {filtered.map(t => {
+                const transferInfo = transferMap.get(t.id);
+                return (
+                  <div
+                    key={t.id}
+                    onClick={() => setEditingTxn({ ...t })}
+                    className="py-3 px-2 hover:bg-slate-800/50 rounded-xl flex items-center justify-between cursor-pointer transition"
+                  >
+                    <div className="space-y-1 pr-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-semibold text-slate-100">{t.narration}</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-md bg-slate-800 text-emerald-400 border border-slate-700">
+                          {t.bank}
+                        </span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-md bg-slate-950 text-slate-400 border border-slate-800">
+                          {t.channel}
+                        </span>
+                        {/* SMART BANK TRANSFER BADGE */}
+                        {transferInfo && (
+                          <span
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const partner = txns.find(p => p.id === transferInfo.partnerTxnId);
+                              if (partner) setSelectedTransferPair({ main: t, partner });
+                            }}
+                            className="text-[10px] px-2 py-0.5 rounded-md bg-sky-500/15 text-sky-300 border border-sky-500/30 flex items-center gap-1 font-medium hover:bg-sky-500/25"
+                            title="Click to view paired transfer"
+                          >
+                            <ArrowLeftRight size={10} />
+                            <span>
+                              Transfer {transferInfo.isDebit ? `${t.bank} ➔ ${transferInfo.partnerBank}` : `${transferInfo.partnerBank} ➔ ${t.bank}`}
+                            </span>
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 text-[11px] text-slate-400">
+                        <span>{t.date}</span>
+                        <span>•</span>
+                        <span className="text-sky-400 font-medium">{t.category}</span>
+                        {t.fileName && (
+                          <>
+                            <span>•</span>
+                            <span className="text-slate-500 truncate max-w-[140px]">{t.fileName}</span>
+                          </>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 text-[11px] text-slate-400">
-                      <span>{t.date}</span>
-                      <span>•</span>
-                      <span className="text-sky-400 font-medium">{t.category}</span>
-                      {t.fileName && (
-                        <>
-                          <span>•</span>
-                          <span className="text-slate-500 truncate max-w-[140px]">{t.fileName}</span>
-                        </>
-                      )}
+                    <div className="flex items-center gap-2">
+                      <span className={`font-bold text-sm whitespace-nowrap ${t.type === 'CREDIT' ? 'text-emerald-400' : 'text-rose-400'}`}>
+                        {t.type === 'CREDIT' ? '+' : '-'}₹{t.amount.toLocaleString('en-IN')}
+                      </span>
+                      <Edit3 size={13} className="text-slate-500" />
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className={`font-bold text-sm whitespace-nowrap ${t.type === 'CREDIT' ? 'text-emerald-400' : 'text-rose-400'}`}>
-                      {t.type === 'CREDIT' ? '+' : '-'}₹{t.amount.toLocaleString('en-IN')}
-                    </span>
-                    <Edit3 size={13} className="text-slate-500" />
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
 
-        {/* TAB 4: BANKS, FILES, CATEGORIES & RULES MANAGER */}
+        {/* TAB 4: BANKS, FILES, CATEGORIES, RULES & BACKUP MANAGER */}
         {activeTab === 'BANKS' && (
           <div className="space-y-4">
             {/* Section 1: Banks Manager */}
@@ -1847,36 +2384,75 @@ export default function App() {
                         </div>
                       </div>
 
-                    {/* Keyword Badges */}
-                    <div className="flex flex-wrap gap-1.5">
-                      {rule.keys.map(k => (
-                        <span
-                          key={k}
-                          className="inline-flex items-center gap-1 text-[11px] bg-slate-900 border border-slate-800 text-slate-300 px-2 py-0.5 rounded-md group hover:border-slate-700"
-                        >
-                          <span>{k}</span>
-                          <button
-                            onClick={() => handleRemoveKeyword(rule.cat, k)}
-                            className="text-slate-500 group-hover:text-rose-400 ml-0.5"
-                            title={`Remove keyword "${k}"`}
+                      <div className="flex flex-wrap gap-1.5">
+                        {rule.keys.map(k => (
+                          <span
+                            key={k}
+                            className="inline-flex items-center gap-1 text-[11px] bg-slate-900 border border-slate-800 text-slate-300 px-2 py-0.5 rounded-md group hover:border-slate-700"
                           >
-                            <X size={10} />
-                          </button>
-                        </span>
-                      ))}
+                            <span>{k}</span>
+                            <button
+                              onClick={() => handleRemoveKeyword(rule.cat, k)}
+                              className="text-slate-500 group-hover:text-rose-400 ml-0.5"
+                              title={`Remove keyword "${k}"`}
+                            >
+                              <X size={10} />
+                            </button>
+                          </span>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
               </div>
             </div>
 
-            {/* Section 5: Clear All Workspace Data */}
+            {/* Section 5: Backup & Restore Data Management */}
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">
+              <div>
+                <h3 className="text-xs font-bold text-slate-100 uppercase tracking-wider flex items-center gap-1.5">
+                  <Database size={15} className="text-sky-400" /> Backup & Restore Workspace Data
+                </h3>
+                <p className="text-[11px] text-slate-400">
+                  Export complete data to a single JSON file or restore with granular item-by-item selection (banks, statement files metadata, categories, rules, and transactions).
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                <button
+                  onClick={handleExportBackup}
+                  className="bg-slate-950 hover:bg-slate-800/80 border border-slate-800 p-3.5 rounded-xl flex items-center gap-3 transition text-left group"
+                >
+                  <div className="w-9 h-9 rounded-xl bg-sky-500/10 border border-sky-500/30 flex items-center justify-center text-sky-400 group-hover:scale-105 transition">
+                    <Download size={18} />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-white">Export JSON Backup</h4>
+                    <p className="text-[11px] text-slate-400">Save banks, files, categories, rules & {txns.length} txns</p>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => { if (restoreFileInputRef.current) restoreFileInputRef.current.click(); }}
+                  className="bg-slate-950 hover:bg-slate-800/80 border border-slate-800 p-3.5 rounded-xl flex items-center gap-3 transition text-left group"
+                >
+                  <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 group-hover:scale-105 transition">
+                    <FolderOpen size={18} />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-white">Restore from Backup</h4>
+                    <p className="text-[11px] text-slate-400">Select what to restore (Merge or Replace)</p>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            {/* Section 6: Clear All Workspace Data */}
             {(banks.length > 0 || txns.length > 0 || uploadedFiles.length > 0) && (
               <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-wrap gap-2 justify-between items-center">
                 <div>
                   <h3 className="text-xs font-bold text-slate-200">Reset Workspace</h3>
-                  <p className="text-[11px] text-slate-400">FinSight India v{APP_VERSION} • 100% On-Device Storage</p>
+                  <p className="text-[11px] text-slate-400">FinSight India v{APP_VERSION} • 100% On-Device Privacy Storage</p>
                 </div>
                 <button
                   onClick={() => {
@@ -1886,7 +2462,7 @@ export default function App() {
                     setBankFilter('ALL');
                     showToast('Removed all banks, files, and transactions');
                   }}
-                  className="bg-rose-950/80 hover:bg-rose-900 text-rose-200 text-xs px-3 py-2 rounded-xl border border-rose-800 flex items-center gap-1"
+                  className="bg-rose-950/80 hover:bg-rose-900 text-rose-200 text-xs px-3 py-2 rounded-xl border border-rose-800 flex items-center gap-1 font-semibold"
                 >
                   <Trash2 size={13} /> Clear Entire Workspace
                 </button>
@@ -1895,6 +2471,214 @@ export default function App() {
           </div>
         )}
       </main>
+
+      {/* RESTORE BACKUP MODAL (GRANULAR SELECTION & CONFLICT HANDLING) */}
+      {showRestoreModal && backupDataToRestore && (
+        <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-4 space-y-4 max-h-[88vh] flex flex-col">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-2.5 shrink-0">
+              <div className="flex items-center gap-2">
+                <Database size={16} className="text-sky-400" />
+                <h3 className="text-sm font-bold text-white">Restore Workspace Backup</h3>
+              </div>
+              <button onClick={() => setShowRestoreModal(false)} className="text-slate-400 hover:text-white">
+                <X size={18} />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-300 shrink-0">
+              Choose which datasets to restore into your workspace:
+            </p>
+
+            <div className="space-y-2 text-xs flex-1 overflow-y-auto pr-1">
+              {/* Banks Checkbox */}
+              <label className="flex items-center justify-between p-2.5 rounded-xl bg-slate-950 border border-slate-800 cursor-pointer hover:border-slate-700">
+                <div className="flex items-center gap-2.5">
+                  <input
+                    type="checkbox"
+                    checked={restoreSelection.banks}
+                    onChange={e => setRestoreSelection({ ...restoreSelection, banks: e.target.checked })}
+                    className="accent-emerald-500 rounded"
+                  />
+                  <div>
+                    <span className="font-semibold text-slate-200">Banks</span>
+                    <p className="text-[10px] text-slate-400">
+                      {Array.isArray(backupDataToRestore.banks) ? `${backupDataToRestore.banks.length} banks found in backup` : 'No banks'}
+                    </p>
+                  </div>
+                </div>
+                <Building2 size={15} className="text-emerald-400" />
+              </label>
+
+              {/* Statement Files Checkbox */}
+              <label className="flex items-center justify-between p-2.5 rounded-xl bg-slate-950 border border-slate-800 cursor-pointer hover:border-slate-700">
+                <div className="flex items-center gap-2.5">
+                  <input
+                    type="checkbox"
+                    checked={restoreSelection.files}
+                    onChange={e => setRestoreSelection({ ...restoreSelection, files: e.target.checked })}
+                    className="accent-emerald-500 rounded"
+                  />
+                  <div>
+                    <span className="font-semibold text-slate-200">Statement Files Metadata</span>
+                    <p className="text-[10px] text-slate-400">
+                      {Array.isArray(backupDataToRestore.uploadedFiles) ? `${backupDataToRestore.uploadedFiles.length} statement files` : 'No files'}
+                    </p>
+                  </div>
+                </div>
+                <FileSpreadsheet size={15} className="text-sky-400" />
+              </label>
+
+              {/* Categories Checkbox */}
+              <label className="flex items-center justify-between p-2.5 rounded-xl bg-slate-950 border border-slate-800 cursor-pointer hover:border-slate-700">
+                <div className="flex items-center gap-2.5">
+                  <input
+                    type="checkbox"
+                    checked={restoreSelection.categories}
+                    onChange={e => setRestoreSelection({ ...restoreSelection, categories: e.target.checked })}
+                    className="accent-emerald-500 rounded"
+                  />
+                  <div>
+                    <span className="font-semibold text-slate-200">Custom Categories</span>
+                    <p className="text-[10px] text-slate-400">
+                      {Array.isArray(backupDataToRestore.categories) ? `${backupDataToRestore.categories.length} categories` : 'No categories'}
+                    </p>
+                  </div>
+                </div>
+                <Tag size={15} className="text-emerald-400" />
+              </label>
+
+              {/* Rules Checkbox */}
+              <label className="flex items-center justify-between p-2.5 rounded-xl bg-slate-950 border border-slate-800 cursor-pointer hover:border-slate-700">
+                <div className="flex items-center gap-2.5">
+                  <input
+                    type="checkbox"
+                    checked={restoreSelection.rules}
+                    onChange={e => setRestoreSelection({ ...restoreSelection, rules: e.target.checked })}
+                    className="accent-emerald-500 rounded"
+                  />
+                  <div>
+                    <span className="font-semibold text-slate-200">Auto-Categorization Rules</span>
+                    <p className="text-[10px] text-slate-400">
+                      {Array.isArray(backupDataToRestore.rules) ? `${backupDataToRestore.rules.length} rules with keywords` : 'No rules'}
+                    </p>
+                  </div>
+                </div>
+                <Sparkles size={15} className="text-purple-400" />
+              </label>
+
+              {/* Transactions Checkbox */}
+              <label className="flex items-center justify-between p-2.5 rounded-xl bg-slate-950 border border-slate-800 cursor-pointer hover:border-slate-700">
+                <div className="flex items-center gap-2.5">
+                  <input
+                    type="checkbox"
+                    checked={restoreSelection.txns}
+                    onChange={e => setRestoreSelection({ ...restoreSelection, txns: e.target.checked })}
+                    className="accent-emerald-500 rounded"
+                  />
+                  <div>
+                    <span className="font-semibold text-slate-200">Transactions Ledger</span>
+                    <p className="text-[10px] text-slate-400">
+                      {Array.isArray(backupDataToRestore.txns) ? `${backupDataToRestore.txns.length} transactions` : 'No transactions'}
+                    </p>
+                  </div>
+                </div>
+                <FileText size={15} className="text-emerald-400" />
+              </label>
+
+              {/* Restoration Strategy Mode */}
+              <div className="pt-2">
+                <label className="text-slate-400 block mb-1.5 font-medium">Restoration Mode:</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setRestoreMode('MERGE')}
+                    className={`p-2 rounded-xl border text-left text-xs ${restoreMode === 'MERGE' ? 'bg-emerald-500/15 border-emerald-500 text-emerald-300 font-bold' : 'bg-slate-950 border-slate-800 text-slate-400'}`}
+                  >
+                    Merge with existing
+                    <span className="block text-[10px] font-normal opacity-75">Combines without duplicates</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRestoreMode('REPLACE')}
+                    className={`p-2 rounded-xl border text-left text-xs ${restoreMode === 'REPLACE' ? 'bg-rose-500/15 border-rose-500 text-rose-300 font-bold' : 'bg-slate-950 border-slate-800 text-slate-400'}`}
+                  >
+                    Replace entire data
+                    <span className="block text-[10px] font-normal opacity-75">Overwrites with backup</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800 shrink-0">
+              <button
+                onClick={() => setShowRestoreModal(false)}
+                className="bg-slate-800 text-slate-300 px-3 py-2 rounded-xl text-xs"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmRestore}
+                className="bg-emerald-500 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-md shadow-emerald-500/10"
+              >
+                <Check size={14} /> Restore Selected Items
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* SMART TRANSFER PAIR DETAILS MODAL */}
+      {selectedTransferPair && (
+        <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-sm w-full p-4 space-y-3">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
+              <div className="flex items-center gap-2">
+                <ArrowLeftRight size={16} className="text-sky-400" />
+                <h3 className="text-sm font-bold text-white">Smart Bank Transfer Pair</h3>
+              </div>
+              <button onClick={() => setSelectedTransferPair(null)} className="text-slate-400 hover:text-white">
+                <X size={18} />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-300">
+              These two transactions match as a self-account transfer between your banks for ₹{selectedTransferPair.main.amount.toLocaleString('en-IN')}:
+            </p>
+
+            <div className="space-y-2 text-xs">
+              <div className="p-2.5 rounded-xl bg-slate-950 border border-rose-900/60 space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-rose-400 uppercase">Debit (Outflow)</span>
+                  <span className="font-bold text-rose-400">-₹{selectedTransferPair.main.type === 'DEBIT' ? selectedTransferPair.main.amount.toLocaleString('en-IN') : selectedTransferPair.partner.amount.toLocaleString('en-IN')}</span>
+                </div>
+                <p className="font-semibold text-slate-100">{selectedTransferPair.main.type === 'DEBIT' ? selectedTransferPair.main.bank : selectedTransferPair.partner.bank}</p>
+                <p className="text-[11px] text-slate-400 truncate">{selectedTransferPair.main.type === 'DEBIT' ? selectedTransferPair.main.narration : selectedTransferPair.partner.narration}</p>
+                <p className="text-[10px] text-slate-500">{selectedTransferPair.main.type === 'DEBIT' ? selectedTransferPair.main.date : selectedTransferPair.partner.date}</p>
+              </div>
+
+              <div className="p-2.5 rounded-xl bg-slate-950 border border-emerald-900/60 space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-emerald-400 uppercase">Credit (Inflow)</span>
+                  <span className="font-bold text-emerald-400">+₹{selectedTransferPair.main.type === 'CREDIT' ? selectedTransferPair.main.amount.toLocaleString('en-IN') : selectedTransferPair.partner.amount.toLocaleString('en-IN')}</span>
+                </div>
+                <p className="font-semibold text-slate-100">{selectedTransferPair.main.type === 'CREDIT' ? selectedTransferPair.main.bank : selectedTransferPair.partner.bank}</p>
+                <p className="text-[11px] text-slate-400 truncate">{selectedTransferPair.main.type === 'CREDIT' ? selectedTransferPair.main.narration : selectedTransferPair.partner.narration}</p>
+                <p className="text-[10px] text-slate-500">{selectedTransferPair.main.type === 'CREDIT' ? selectedTransferPair.main.date : selectedTransferPair.partner.date}</p>
+              </div>
+            </div>
+
+            <div className="pt-2 border-t border-slate-800 flex justify-end">
+              <button
+                onClick={() => setSelectedTransferPair(null)}
+                className="bg-slate-800 text-slate-200 px-4 py-1.5 rounded-xl text-xs font-semibold"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* MODAL 1: ADD / EDIT BANK */}
       {showBankModal && (
@@ -2252,7 +3036,6 @@ export default function App() {
               Renaming a category automatically updates all associated transactions and categorization rules across your workspace.
             </p>
 
-            {/* Add Category Form */}
             <div className="flex gap-2 shrink-0">
               <input
                 type="text"
@@ -2270,7 +3053,6 @@ export default function App() {
               </button>
             </div>
 
-            {/* Categories Scrollable List */}
             <div className="divide-y divide-slate-800/80 text-xs overflow-y-auto flex-1 pr-1">
               {categories.map(c => {
                 const count = txns.filter(t => t.category === c).length;
@@ -2387,7 +3169,7 @@ export default function App() {
         <div className="max-w-md mx-auto grid grid-cols-4 gap-1">
           {[
             { id: 'DASHBOARD', label: 'Overview', icon: BarChart3 },
-            { id: 'SPEND', label: 'Spend Analysis', icon: PieIcon },
+            { id: 'SPEND', label: 'Analysis', icon: PieIcon },
             { id: 'LEDGER', label: 'Transactions', icon: FileText },
             { id: 'BANKS', label: 'Banks & Rules', icon: Building2 }
           ].map(item => {

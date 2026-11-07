@@ -7,6 +7,9 @@ if [ ! -d "android" ]; then
   npx cap add android
 fi
 npx cap sync android
+if [ -d "android-res" ]; then
+  cp -r android-res/* android/app/src/main/res/
+fi
 cd android
 chmod +x gradlew
 ./gradlew assembleDebug

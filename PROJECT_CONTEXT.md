@@ -36,16 +36,35 @@
 | **v1.0.0** | Completed | Initial React + Capacitor setup; basic CSV/XLSX/PDF ingestion; 4-tab Android bottom navigation (`Overview`, `Spend Analysis`, `Transactions`, `Files & Rules`); Daywise (`YYYY-MM-DD`), Monthwise (`YYYY-MM`), Quarterly (`YYYY-Q1..Q4`), and Yearly (`YYYY`) cash-flow segregation; inline transaction add/edit/delete; XLSX export. |
 | **v1.1.0** | Completed | Added build versioning (`v1.1.0` badge + versioned GitHub Actions APK artifact `FinSight-India-v1.1.0-b<run>-APK`); added custom **Rupee-Pulse Lens** vector icon; removed all preloaded banks and sample startup data for a clean onboarding experience; added full CRUD for **Banks** and **Statement Files**. |
 | **v1.2.0** | Completed | Added Union Bank of India (UBI) auto-detection & header mapping; expanded default categories with 5 new verticals (`Bank Transfer`, `Interest/Cashback`, `Friend`, `Family`, `Cash Out`); implemented full Categories Manager UI with cascading renames; upgraded Auto-Categorization Rules to an interactive list with keyword tags and real-time transaction re-evaluation; added Duration/Date-Range filter in Transactions Ledger (`All Time`, `7D`, `30D`, `This Month`, `3M`, `This Year`, `Custom`); automated Cloud Release APK Signing (Option A keytool) producing signed release APK `FinSight-India-v1.2.0-b<run>-release-signed.apk`. |
+| **v1.3.0** | Completed | Fixed app drawer logo visibility with full Material Design 3 (MD3) Adaptive Icon compliance (foreground, background, monochrome themed icon); eliminated update install conflict via persistent release signing keystore (`certs/finsight-release-key.keystore`) and monotonic versionCode stamping; implemented Smart Bank Transfer matching between accounts with internal transfer exclusion toggle; added complete Backup & Restore manager with granular item-by-item selection (banks, statement files metadata, categories, rules, transactions); added dual Category Analysis providing separate Spend (debit) and Earnings (credit) breakdown views with net flow comparisons. |
 
 ---
 
-### 4. Pending Specifications for Next Release (`v1.2.0`)
+### 4. Technical Architecture: v1.3.0 Capabilities
 
-The following requirements are queued and ready to be built whenever you want to generate the `v1.2.0` code and workflow files:
+1. **MD3 Adaptive Icons & Android Drawer Visibility**:
+   - Resides in `android-res/` and injected into `android/app/src/main/res/`.
+   - Adaptive icon (`ic_launcher.xml` and `ic_launcher_round.xml`) with safe zone vector foreground (`ic_launcher_foreground.xml`), dark slate background (`ic_launcher_background.xml`), and dynamic Material You themed icon (`ic_launcher_monochrome.xml`).
+   - Legacy PNG mipmaps generated via `librsvg2-bin` during CI.
 
-1. **Union Bank of India (UBI) Statement Format Support:**
-* Auto-detect UBI keywords/IFSC prefixes (`UBIN`, `Union Bank of India`, `Union Bank`) in `autoDetectBankName()`.
-* Support UBI statement column headers (`Tran Date`, `Value Date`, `TransactionDate`, `Particulars`, `Remarks`, `Tran Id`, `Chq/Ref No`, `Debit` / `Withdrawal`, `Credit` / `Deposit`, `Balance`) and UBI PDF date/amount line patterns.
+2. **Persistent Release Keystore & Conflict-Free Updates**:
+   - `certs/finsight-release-key.keystore` (and `certs/keystore.base64`) committed to repository.
+   - Fixed signing config in Gradle with alias `finsightkey` and password `androidrelease123`.
+   - Guaranteed identical signature on every GitHub Actions release.
+
+3. **Smart Bank Transfer Matching**:
+   - `detectTransferPairs()` engine matching opposite transaction types across banks with matching amounts within 2 days.
+   - Interactive `↔ Transfer` badge and inspection modal.
+   - Optional exclusion from inflow/outflow totals to prevent double counting.
+
+4. **Backup & Restore System**:
+   - Export structured JSON backups with checksum and version header.
+   - Granular import modal selecting any combination of Banks, Files, Categories, Rules, and Transactions.
+   - Choice between Merge mode and Clean Replace mode.
+
+5. **Dual Category Analysis (Spend AND Earnings)**:
+   - 3-way toggle in Analysis tab: Spend (Outflow), Earnings (Inflow), and Net Flow Comparison.
+   - Recharts Donut charts, channel breakdowns, and top payees/sources for both directions.
 
 
 2. **Expanded Default Categories & Full Category CRUD in Menu:**

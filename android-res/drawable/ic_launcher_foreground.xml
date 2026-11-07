@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group
+        android:scaleX="0.1289"
+        android:scaleY="0.1289"
+        android:translateX="21"
+        android:translateY="21">
+        <!-- Outer Ring -->
+        <path
+            android:pathData="M 256,256 m -176,0 a 176,176 0 1,0 352,0 a 176,176 0 1,0 -352,0"
+            android:strokeColor="#1e293b"
+            android:strokeWidth="14" />
+        <path
+            android:pathData="M 256,80 A 176,176 0 0,1 432,256"
+            android:strokeColor="#10b981"
+            android:strokeWidth="16"
+            android:strokeLineCap="round" />
+        <path
+            android:pathData="M 80,256 A 176,176 0 0,0 256,432"
+            android:strokeColor="#0ea5e9"
+            android:strokeWidth="16"
+            android:strokeLineCap="round" />
+        <!-- Stylized Ascending Bars -->
+        <path
+            android:pathData="M 160,284 h 14 a 12,12 0 0,1 12,12 v 60 a 12,12 0 0,1 -12,12 h -14 a 12,12 0 0,1 -12,-12 v -60 a 12,12 0 0,1 12,-12 z"
+            android:fillColor="#0ea5e9" />
+        <path
+            android:pathData="M 218,232 h 14 a 12,12 0 0,1 12,12 v 112 a 12,12 0 0,1 -12,12 h -14 a 12,12 0 0,1 -12,-12 v -112 a 12,12 0 0,1 12,-12 z"
+            android:fillColor="#10b981" />
+        <path
+            android:pathData="M 276,176 h 14 a 12,12 0 0,1 12,12 v 168 a 12,12 0 0,1 -12,12 h -14 a 12,12 0 0,1 -12,-12 v -168 a 12,12 0 0,1 12,-12 z"
+            android:fillColor="#34d399" />
+        <!-- Bold Geometric Rupee Symbol Overlay -->
+        <path
+            android:pathData="M 172,146 H 344 M 172,192 H 324 M 254,146 C 288,146 308,164 308,192 C 308,222 284,242 242,242 H 196 L 316,368"
+            android:strokeColor="#f8fafc"
+            android:strokeWidth="28"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+        <!-- Accent Node -->
+        <path
+            android:pathData="M 348,146 m -16,0 a 16,16 0 1,0 32,0 a 16,16 0 1,0 -32,0"
+            android:fillColor="#34d399" />
+    </group>
+</vector>

@@ -61,29 +61,29 @@ jobs:
 
       - name: Configure Gradle Release Signing
         run: |
-          python3 -c '
-          with open("android/app/build.gradle", "r") as f:
+          python3 -c "
+          with open('android/app/build.gradle', 'r') as f:
               content = f.read()
 
-          signing = """
-              signingConfigs {
+          if 'signingConfigs {' not in content:
+              content = content.replace('buildTypes {', '''signingConfigs {
                   release {
-                      storeFile file("../finsight-release-key.jks")
-                      storePassword "androidrelease123"
-                      keyAlias "finsightkey"
-                      keyPassword "androidrelease123"
+                      storeFile file('../finsight-release-key.jks')
+                      storePassword 'androidrelease123'
+                      keyAlias 'finsightkey'
+                      keyPassword 'androidrelease123'
                   }
               }
-          """
-          if "signingConfigs {" not in content:
-              content = content.replace("android {", "android {" + signing)
+              buildTypes {''')
 
-          if "signingConfig signingConfigs.release" not in content:
-              content = content.replace("buildTypes {", "buildTypes {\\n        release {\\n            signingConfig signingConfigs.release\\n        }")
+          if 'signingConfig signingConfigs.release' not in content:
+              content = content.replace('minifyEnabled false', '''signingConfig signingConfigs.release
+                      minifyEnabled false''')
 
-          with open("android/app/build.gradle", "w") as f:
+          with open('android/app/build.gradle', 'w') as f:
               f.write(content)
-          '
+          print('Successfully injected release signing config into build.gradle')
+          "
 
       - name: Build Signed Release APK with Gradle
         run: |

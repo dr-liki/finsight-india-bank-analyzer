@@ -1,4 +1,4 @@
-name: Build Android APK
+name: Build & Sign Android APK
 
 on:
   push:
@@ -42,21 +42,70 @@ jobs:
           fi
           npx cap sync android
 
-      - name: Stamp Version & Custom Vector Icon into Android Project
+      - name: Stamp Version into Android Project
         run: |
-          # Update versionName and versionCode inside android/app/build.gradle
           sed -i 's/versionCode 1/versionCode ${{ github.run_number }}/g' android/app/build.gradle || true
           sed -i 's/versionName "1.0"/versionName "${{ steps.pkg.outputs.version }}"/g' android/app/build.gradle || true
 
-      - name: Build Debug APK with Gradle
+      - name: Generate Release Keystore (Option A Automated Signing)
+        run: |
+          keytool -genkeypair -v \
+            -keystore android/finsight-release-key.jks \
+            -alias finsightkey \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -storepass androidrelease123 \
+            -keypass androidrelease123 \
+            -dname "CN=FinSight India, OU=Mobile Analytics, O=FinSight, L=Bengaluru, ST=Karnataka, C=IN"
+
+      - name: Configure Gradle Release Signing
+        run: |
+          node -e '
+          const fs = require("fs");
+          const gradlePath = "android/app/build.gradle";
+          let content = fs.readFileSync(gradlePath, "utf8");
+          const signingBlock = `
+    signingConfigs {
+        release {
+            storeFile file("../finsight-release-key.jks")
+            storePassword "androidrelease123"
+            keyAlias "finsightkey"
+            keyPassword "androidrelease123"
+        }
+    }
+`;
+          if (!content.includes("signingConfigs {")) {
+            content = content.replace("android {", "android {" + signingBlock);
+          }
+          content = content.replace(/buildTypes\s*\{\s*release\s*\{[^}]*\}/s, `buildTypes {
+        release {
+            signingConfig signingConfigs.release
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
+        }`);
+          fs.writeFileSync(gradlePath, content);
+          console.log("Gradle build.gradle configured for automated release signing.");
+          '
+
+      - name: Build Signed Release APK with Gradle
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug
-          cp app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/FinSight-India-v${{ steps.pkg.outputs.version }}-b${{ github.run_number }}-debug.apk
+          ./gradlew assembleRelease
+          
+          RELEASE_APK=$(find app/build/outputs/apk/release -name "*.apk" | head -n 1)
+          if [ -n "$RELEASE_APK" ]; then
+            TARGET_NAME="FinSight-India-v${{ steps.pkg.outputs.version }}-b${{ github.run_number }}-release-signed.apk"
+            cp "$RELEASE_APK" "app/build/outputs/apk/release/$TARGET_NAME"
+            echo "Successfully generated signed release APK: $TARGET_NAME"
+          else
+            echo "Error: No release APK found."
+            exit 1
+          fi
 
-      - name: Upload Versioned APK Artifact
+      - name: Upload Signed Release APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: FinSight-India-v${{ steps.pkg.outputs.version }}-b${{ github.run_number }}-APK
-          path: android/app/build/outputs/apk/debug/FinSight-India-v${{ steps.pkg.outputs.version }}-b${{ github.run_number }}-debug.apk
+          name: FinSight-India-v${{ steps.pkg.outputs.version }}-b${{ github.run_number }}-release-signed
+          path: android/app/build/outputs/apk/release/FinSight-India-v${{ steps.pkg.outputs.version }}-b${{ github.run_number }}-release-signed.apk

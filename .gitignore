@@ -20,6 +20,8 @@ android/build
 android/local.properties
 *.apk
 *.aab
+*.jks
+*.keystore
 
 # Editor directories and files
 .vscode/*

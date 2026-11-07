@@ -9,6 +9,7 @@ FinSight India automatically detects and maps columns across major Indian retail
 | **ICICI Bank** | `ICIC` | `Transaction Date`, `Value Date` | `Transaction Remarks` | `Withdrawal Amount (INR )`, `Deposit Amount (INR )` |
 | **Axis Bank** | `UTIB`, `Axis` | `Tran Date` | `Particulars` | `Debit`, `Credit`, `Init. Br` |
 | **Kotak Mahindra Bank** | `KKBK`, `Kotak` | `Date` | `Description`, `Chq / Ref No.` | `Amount`, `Dr / Cr` or `Withdrawal (Dr)` / `Deposit (Cr)` |
+| **Union Bank of India (UBI)** | `UBIN`, `Union Bank` | `Tran Date`, `Value Date`, `TransactionDate` | `Particulars`, `Remarks` | `Debit` / `Withdrawal`, `Credit` / `Deposit`, `Tran Id`, `Chq/Ref No` |
 
 ## Adding Custom Bank Rules
 To add custom bank detection or category rules, update `detectBank()` and `CATEGORY_RULES` inside `src/App.jsx`.

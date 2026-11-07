@@ -3,7 +3,7 @@ import {
   Upload, FileSpreadsheet, FileText, PieChart as PieIcon, BarChart3,
   Trash2, Building2, Download, Search, ArrowUpRight,
   ArrowDownRight, Plus, Edit3, X, Lock, AlertCircle, FolderOpen, Save,
-  Check, Tag, Layers, Sparkles
+  Check, Tag, Layers, Sparkles, Calendar, Filter, RefreshCw
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import * as pdfjsLib from 'pdfjs-dist';
@@ -12,12 +12,12 @@ import {
   PieChart, Pie, Cell, CartesianGrid, Legend
 } from 'recharts';
 
-const APP_VERSION = '1.1.0';
+const APP_VERSION = '1.2.0';
 
 // Configure PDF.js worker via CDN for Android WebView compatibility
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`;
 
-const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#64748b', '#a855f7'];
+const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#64748b', '#a855f7', '#06b6d4', '#eab308', '#f97316', '#84cc16'];
 
 const BANK_COLOR_PALETTE = [
   '#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'
@@ -34,6 +34,11 @@ const DEFAULT_CATEGORIES = [
   'Rent & Housing',
   'Salary & Income',
   'Transfers & UPI',
+  'Bank Transfer',
+  'Interest/Cashback',
+  'Friend',
+  'Family',
+  'Cash Out',
   'Uncategorized'
 ];
 
@@ -46,7 +51,12 @@ const DEFAULT_RULES = [
   { cat: 'Healthcare & Medical', keys: ['hospital', 'manipal', 'apollo', 'pharmeasy', '1mg', 'pharmacy', 'clinic', 'medplus', 'st johns', 'diagnostic'] },
   { cat: 'Shopping & Books', keys: ['amazon', 'flipkart', 'myntra', 'blossom book', 'decathlon', 'nykaa', 'ajio', 'meesho', 'croma', 'reliance digital'] },
   { cat: 'Rent & Housing', keys: ['rent', 'nobroker', 'maintenance', 'mygate', 'society', 'landlord'] },
-  { cat: 'Salary & Income', keys: ['salary', 'neft cr', 'stipend', 'fellowship', 'interest', 'dividend', 'refund', 'cashback'] }
+  { cat: 'Salary & Income', keys: ['salary', 'stipend', 'fellowship'] },
+  { cat: 'Bank Transfer', keys: ['fund transfer', 'neft', 'rtgs', 'imps', 'transfer to', 'trf from', 'trf to', 'internal transfer'] },
+  { cat: 'Interest/Cashback', keys: ['int.pd', 'interest credit', 'sb int', 'cashback', 'reward points', 'dividend', 'refund'] },
+  { cat: 'Friend', keys: ['splitwise', 'friend', 'settleup'] },
+  { cat: 'Family', keys: ['family', 'mother', 'father', 'sister', 'brother', 'parents', 'home expense'] },
+  { cat: 'Cash Out', keys: ['atm wdl', 'cash wdl', 'atm cash', 'self wdl', 'cash withdrawal'] }
 ];
 
 // Unique Vector Brand Icon Component (FinSight Rupee-Pulse Lens)
@@ -99,6 +109,16 @@ function normalizeDate(raw) {
     if (year.length === 2) year = (parseInt(year, 10) > 50 ? '19' : '20') + year;
     return `${year}-${month}-${day}`;
   }
+  // Try month names like 05-Nov-2026 or 05/Nov/2026 or 05 Nov 2026
+  const monMatch = str.match(/^(\d{1,2})[\/\-\s]+([A-Za-z]{3})[\/\-\s]+(\d{2,4})/);
+  if (monMatch) {
+    const day = monMatch[1].padStart(2, '0');
+    const months = { jan: '01', feb: '02', mar: '03', apr: '04', may: '05', jun: '06', jul: '07', aug: '08', sep: '09', oct: '10', nov: '11', dec: '12' };
+    const month = months[monMatch[2].toLowerCase()] || '01';
+    let year = monMatch[3];
+    if (year.length === 2) year = (parseInt(year, 10) > 50 ? '19' : '20') + year;
+    return `${year}-${month}-${day}`;
+  }
   const parsed = new Date(str);
   if (!isNaN(parsed.getTime())) return parsed.toISOString().slice(0, 10);
   return new Date().toISOString().slice(0, 10);
@@ -117,6 +137,7 @@ function autoDetectBankName(text, userBanks = []) {
   for (const b of userBanks) {
     if (s.includes(b.name.toLowerCase())) return b.name;
   }
+  if (s.includes('ubin') || s.includes('union bank') || s.includes('union bank of india')) return 'Union Bank of India';
   if (s.includes('hdfc')) return 'HDFC Bank';
   if (s.includes('sbin') || s.includes('state bank') || s.includes('sbi')) return 'SBI';
   if (s.includes('icic')) return 'ICICI Bank';
@@ -140,10 +161,9 @@ function detectChannel(narration) {
 }
 
 export default function App() {
-  // v1.1.0 starts completely clean with NO pre-populated banks or sample transactions
   const [banks, setBanks] = useState(() => {
     try {
-      const saved = localStorage.getItem('finsight_banks_v110');
+      const saved = localStorage.getItem('finsight_banks_v120') || localStorage.getItem('finsight_banks_v110');
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
@@ -152,7 +172,7 @@ export default function App() {
 
   const [txns, setTxns] = useState(() => {
     try {
-      const saved = localStorage.getItem('finsight_txns_v110');
+      const saved = localStorage.getItem('finsight_txns_v120') || localStorage.getItem('finsight_txns_v110');
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
@@ -161,16 +181,31 @@ export default function App() {
 
   const [uploadedFiles, setUploadedFiles] = useState(() => {
     try {
-      const saved = localStorage.getItem('finsight_files_v110');
+      const saved = localStorage.getItem('finsight_files_v120') || localStorage.getItem('finsight_files_v110');
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
     }
   });
 
+  const [categories, setCategories] = useState(() => {
+    try {
+      const saved = localStorage.getItem('finsight_categories_v120') || localStorage.getItem('finsight_categories_v110');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // Ensure all DEFAULT_CATEGORIES are present in case existing user stored an earlier subset
+        const combined = Array.from(new Set([...DEFAULT_CATEGORIES, ...parsed]));
+        return combined;
+      }
+      return DEFAULT_CATEGORIES;
+    } catch {
+      return DEFAULT_CATEGORIES;
+    }
+  });
+
   const [rules, setRules] = useState(() => {
     try {
-      const saved = localStorage.getItem('finsight_rules_v110');
+      const saved = localStorage.getItem('finsight_rules_v120') || localStorage.getItem('finsight_rules_v110');
       return saved ? JSON.parse(saved) : DEFAULT_RULES;
     } catch {
       return DEFAULT_RULES;
@@ -184,6 +219,11 @@ export default function App() {
   const [typeFilter, setTypeFilter] = useState('ALL');
   const [search, setSearch] = useState('');
   const [statusMsg, setStatusMsg] = useState(null);
+
+  // Date Range Filter State for Transactions Tab
+  const [datePreset, setDatePreset] = useState('ALL'); // ALL, 7D, 30D, THIS_MONTH, 3M, THIS_YEAR, CUSTOM
+  const [customFrom, setCustomFrom] = useState('');
+  const [customTo, setCustomTo] = useState('');
 
   // Target bank selection for file upload
   const [uploadTargetBank, setUploadTargetBank] = useState('AUTO');
@@ -214,24 +254,34 @@ export default function App() {
   const [pendingPdf, setPendingPdf] = useState(null);
   const [pdfPassword, setPdfPassword] = useState('');
 
-  // Rule Engine Form
+  // Categories Manager Modal & State
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [editingCategory, setEditingCategory] = useState(null); // { oldName, newName }
+
+  // Rules Engine State & Modals
   const [ruleKey, setRuleKey] = useState('');
   const [ruleCat, setRuleCat] = useState('Food & Dining');
+  const [editingRule, setEditingRule] = useState(null); // { cat, keysStr }
 
   useEffect(() => {
-    try { localStorage.setItem('finsight_banks_v110', JSON.stringify(banks)); } catch {}
+    try { localStorage.setItem('finsight_banks_v120', JSON.stringify(banks)); } catch {}
   }, [banks]);
 
   useEffect(() => {
-    try { localStorage.setItem('finsight_txns_v110', JSON.stringify(txns)); } catch {}
+    try { localStorage.setItem('finsight_txns_v120', JSON.stringify(txns)); } catch {}
   }, [txns]);
 
   useEffect(() => {
-    try { localStorage.setItem('finsight_files_v110', JSON.stringify(uploadedFiles)); } catch {}
+    try { localStorage.setItem('finsight_files_v120', JSON.stringify(uploadedFiles)); } catch {}
   }, [uploadedFiles]);
 
   useEffect(() => {
-    try { localStorage.setItem('finsight_rules_v110', JSON.stringify(rules)); } catch {}
+    try { localStorage.setItem('finsight_categories_v120', JSON.stringify(categories)); } catch {}
+  }, [categories]);
+
+  useEffect(() => {
+    try { localStorage.setItem('finsight_rules_v120', JSON.stringify(rules)); } catch {}
   }, [rules]);
 
   const showToast = (msg, isError = false) => {
@@ -295,7 +345,7 @@ export default function App() {
     setBankForm({ name: '', accountHint: '', color: BANK_COLOR_PALETTE[0] });
   };
 
-  // Delete a Bank and optionally its files & transactions
+  // Delete a Bank and its files & transactions
   const handleDeleteBank = (bankObj) => {
     setBanks(prev => prev.filter(b => b.id !== bankObj.id));
     setUploadedFiles(prev => prev.filter(f => f.bank !== bankObj.name));
@@ -316,7 +366,7 @@ export default function App() {
     showToast(`Updated file "${cleanName}"`);
   };
 
-  // Delete a specific Uploaded File and all transactions linked to it
+  // Delete an Uploaded File and all transactions linked to it
   const handleDeleteFile = (fileObj) => {
     setUploadedFiles(prev => prev.filter(f => f.id !== fileObj.id));
     setTxns(prev => prev.filter(t => t.fileId !== fileObj.id));
@@ -334,28 +384,188 @@ export default function App() {
     return 'Uncategorized';
   };
 
+  // Re-evaluates transactions against rules and updates state immediately
+  const reEvaluateTransactions = (currentRules = rules) => {
+    let reclassified = 0;
+    setTxns(prev => prev.map(t => {
+      const newCat = detectCategoryWithRules(t.narration, t.type, currentRules);
+      if (newCat !== t.category) {
+        reclassified++;
+        return { ...t, category: newCat };
+      }
+      return t;
+    }));
+    return reclassified;
+  };
+
+  // CATEGORIES MANAGER CRUD OPERATIONS
+  const handleAddCategory = () => {
+    const clean = (newCategoryName || '').trim();
+    if (!clean) {
+      showToast('Please enter a category name', true);
+      return;
+    }
+    if (categories.some(c => c.toLowerCase() === clean.toLowerCase())) {
+      showToast('This category already exists', true);
+      return;
+    }
+    const updated = [...categories.filter(c => c !== 'Uncategorized'), clean, 'Uncategorized'];
+    setCategories(updated);
+    setNewCategoryName('');
+    showToast(`Added category "${clean}"`);
+  };
+
+  const handleRenameCategory = (oldName, newName) => {
+    const clean = (newName || '').trim();
+    if (!clean || clean.toLowerCase() === oldName.toLowerCase()) {
+      setEditingCategory(null);
+      return;
+    }
+    if (categories.some(c => c.toLowerCase() === clean.toLowerCase())) {
+      showToast('A category with this name already exists', true);
+      return;
+    }
+    // 1. Update categories list
+    setCategories(prev => prev.map(c => c === oldName ? clean : c));
+    // 2. Cascade to transactions
+    let txnCount = 0;
+    setTxns(prev => prev.map(t => {
+      if (t.category === oldName) {
+        txnCount++;
+        return { ...t, category: clean };
+      }
+      return t;
+    }));
+    // 3. Cascade to rules
+    let ruleCount = 0;
+    setRules(prev => prev.map(r => {
+      if (r.cat === oldName) {
+        ruleCount++;
+        return { ...r, cat: clean };
+      }
+      return r;
+    }));
+    // 4. Cascade to active filters & forms
+    if (categoryFilter === oldName) setCategoryFilter(clean);
+    if (ruleCat === oldName) setRuleCat(clean);
+
+    setEditingCategory(null);
+    showToast(`Renamed "${oldName}" → "${clean}" (${txnCount} txns, ${ruleCount} rules updated)`);
+  };
+
+  const handleDeleteCategory = (catName) => {
+    if (catName === 'Uncategorized') {
+      showToast('Cannot delete default Uncategorized category', true);
+      return;
+    }
+    if (categories.length <= 1) {
+      showToast('At least one category must remain', true);
+      return;
+    }
+    // 1. Remove from categories
+    setCategories(prev => prev.filter(c => c !== catName));
+    // 2. Cascade to transactions -> move to 'Uncategorized'
+    let txnCount = 0;
+    setTxns(prev => prev.map(t => {
+      if (t.category === catName) {
+        txnCount++;
+        return { ...t, category: 'Uncategorized' };
+      }
+      return t;
+    }));
+    // 3. Cascade to rules -> remove rule
+    setRules(prev => prev.filter(r => r.cat !== catName));
+    // 4. Cascade to filter
+    if (categoryFilter === catName) setCategoryFilter('ALL');
+    if (ruleCat === catName) setRuleCat(categories[0] || 'Uncategorized');
+
+    showToast(`Removed category "${catName}" (${txnCount} txns moved to Uncategorized)`);
+  };
+
+  // RULES ENGINE INTERACTIVE OPERATIONS
+  const handleAddRule = () => {
+    if (!ruleKey.trim()) {
+      showToast('Please enter a keyword', true);
+      return;
+    }
+    const rawKeys = ruleKey.split(',').map(k => k.trim().toLowerCase()).filter(Boolean);
+    if (!rawKeys.length) return;
+
+    let updatedRules = [...rules];
+    const existingRule = updatedRules.find(r => r.cat.toLowerCase() === ruleCat.toLowerCase());
+
+    if (existingRule) {
+      const mergedKeys = Array.from(new Set([...existingRule.keys, ...rawKeys]));
+      updatedRules = updatedRules.map(r => r.cat.toLowerCase() === ruleCat.toLowerCase() ? { ...r, keys: mergedKeys } : r);
+    } else {
+      updatedRules.push({ cat: ruleCat, keys: rawKeys });
+    }
+
+    setRules(updatedRules);
+    setRuleKey('');
+    const updatedCount = reEvaluateTransactions(updatedRules);
+    showToast(`Rule updated for "${ruleCat}" • ${updatedCount} transactions re-evaluated`);
+  };
+
+  const handleRemoveKeyword = (catName, keyword) => {
+    const updatedRules = rules.map(r => {
+      if (r.cat === catName) {
+        return { ...r, keys: r.keys.filter(k => k.toLowerCase() !== keyword.toLowerCase()) };
+      }
+      return r;
+    }).filter(r => r.keys.length > 0);
+
+    setRules(updatedRules);
+    const updatedCount = reEvaluateTransactions(updatedRules);
+    showToast(`Removed keyword "${keyword}" • ${updatedCount} transactions re-evaluated`);
+  };
+
+  const handleDeleteRule = (catName) => {
+    const updatedRules = rules.filter(r => r.cat !== catName);
+    setRules(updatedRules);
+    const updatedCount = reEvaluateTransactions(updatedRules);
+    showToast(`Removed rule for "${catName}" • ${updatedCount} transactions re-evaluated`);
+  };
+
+  const handleSaveEditRule = () => {
+    if (!editingRule) return;
+    const cleanKeys = editingRule.keysStr.split(',').map(k => k.trim().toLowerCase()).filter(Boolean);
+    if (!cleanKeys.length) {
+      handleDeleteRule(editingRule.cat);
+      setEditingRule(null);
+      return;
+    }
+    const updatedRules = rules.map(r => r.cat === editingRule.cat ? { ...r, keys: cleanKeys } : r);
+    setRules(updatedRules);
+    const updatedCount = reEvaluateTransactions(updatedRules);
+    setEditingRule(null);
+    showToast(`Updated rule for "${editingRule.cat}" • ${updatedCount} transactions re-evaluated`);
+  };
+
+  // Tabular matrix parser with UBI and multi-bank support
   const parseSheetMatrix = (matrix, fileName, fileId, preferredBank) => {
-    const detected = autoDetectBankName(fileName + ' ' + JSON.stringify(matrix.slice(0, 15)), banks);
+    const detected = autoDetectBankName(fileName + ' ' + JSON.stringify(matrix.slice(0, 25)), banks);
     const resolvedBank = preferredBank && preferredBank !== 'AUTO'
       ? preferredBank
       : (detected || (banks[0] ? banks[0].name : fileName.split('.')[0].slice(0, 16) || 'Primary Bank'));
 
     let headerRowIdx = -1;
-    let colMap = { date: -1, narration: -1, debit: -1, credit: -1, amount: -1, type: -1 };
+    let colMap = { date: -1, narration: -1, debit: -1, credit: -1, amount: -1, type: -1, ref: -1 };
 
     for (let i = 0; i < Math.min(matrix.length, 35); i++) {
       const row = (matrix[i] || []).map(c => String(c || '').toLowerCase().trim());
-      const hasDate = row.some(c => c.includes('date') || c.includes('dt'));
+      const hasDate = row.some(c => c.includes('date') || c.includes('dt') || c.includes('tran date') || c.includes('txndate'));
       const hasNarr = row.some(c => c.includes('narration') || c.includes('description') || c.includes('particular') || c.includes('remarks') || c.includes('details'));
       if (hasDate && (hasNarr || row.length >= 3)) {
         headerRowIdx = i;
         row.forEach((cell, idx) => {
-          if (colMap.date === -1 && (cell.includes('date') || cell.includes('txn dt') || cell.includes('value dt'))) colMap.date = idx;
+          if (colMap.date === -1 && (cell.includes('date') || cell.includes('txn dt') || cell.includes('value dt') || cell.includes('tran date') || cell.includes('txndate') || cell.includes('transaction date'))) colMap.date = idx;
           if (colMap.narration === -1 && (cell.includes('narration') || cell.includes('description') || cell.includes('particular') || cell.includes('remarks') || cell.includes('details'))) colMap.narration = idx;
           if (colMap.debit === -1 && (cell.includes('debit') || cell.includes('withdrawal') || cell.includes('dr'))) colMap.debit = idx;
           if (colMap.credit === -1 && (cell.includes('credit') || cell.includes('deposit') || cell.includes('cr'))) colMap.credit = idx;
           if (colMap.amount === -1 && cell.includes('amount') && !cell.includes('withdrawal') && !cell.includes('deposit')) colMap.amount = idx;
           if (colMap.type === -1 && (cell === 'type' || cell.includes('dr/cr') || cell.includes('cr/dr'))) colMap.type = idx;
+          if (colMap.ref === -1 && (cell.includes('tran id') || cell.includes('chq') || cell.includes('ref no') || cell.includes('cheque'))) colMap.ref = idx;
         });
         break;
       }
@@ -415,6 +625,7 @@ export default function App() {
     return { parsedTxns, resolvedBank };
   };
 
+  // PDF Parser with UBI, password unlocking, and flexible date patterns
   const parsePdfBuffer = async (arrayBuffer, fileName, fileId, preferredBank, password = '') => {
     try {
       const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer, password: password || undefined });
@@ -437,13 +648,13 @@ export default function App() {
         });
       }
 
-      const detected = autoDetectBankName(fileName + ' ' + fullLines.slice(0, 20).join(' '), banks);
+      const detected = autoDetectBankName(fileName + ' ' + fullLines.slice(0, 30).join(' '), banks);
       const resolvedBank = preferredBank && preferredBank !== 'AUTO'
         ? preferredBank
         : (detected || (banks[0] ? banks[0].name : fileName.split('.')[0].slice(0, 16) || 'Primary Bank'));
 
       const parsedTxns = [];
-      const dateRegex = /^(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}|\d{1,2}\s+[A-Za-z]{3}\s+\d{2,4})\s+(.+)/;
+      const dateRegex = /^(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}|\d{1,2}[\/\-][A-Za-z]{3}[\/\-]\d{2,4}|\d{1,2}\s+[A-Za-z]{3}\s+\d{2,4})\s+(.+)/;
 
       fullLines.forEach((line, idx) => {
         const match = line.match(dateRegex);
@@ -455,7 +666,7 @@ export default function App() {
             const amountVal = parseAmount(numMatches[0]);
             const narrClean = rest.replace(/[\d,]+\.\d{2}/g, '').replace(/\s+/g, ' ').trim();
             if (amountVal > 0 && narrClean.length > 2) {
-              const isCredit = /\b(CR|CREDIT|NEFT CR|SALARY|DEP|REFUND)\b/i.test(line);
+              const isCredit = /\b(CR|CREDIT|NEFT CR|SALARY|DEP|DEPOSIT|REFUND)\b/i.test(line);
               const type = isCredit ? 'CREDIT' : 'DEBIT';
               parsedTxns.push({
                 id: `pdf-${fileId}-${idx}`,
@@ -625,22 +836,9 @@ export default function App() {
       type: 'DEBIT',
       bank: bankName,
       channel: 'UPI',
-      category: 'Food & Dining'
+      category: categories[0] || 'Food & Dining'
     });
     showToast('Transaction added');
-  };
-
-  const handleAddRule = () => {
-    if (!ruleKey.trim()) return;
-    const keyClean = ruleKey.trim().toLowerCase();
-    const updatedRules = rules.map(r => r.cat === ruleCat ? { ...r, keys: [...new Set([...r.keys, keyClean])] } : r);
-    if (!updatedRules.some(r => r.cat === ruleCat)) {
-      updatedRules.push({ cat: ruleCat, keys: [keyClean] });
-    }
-    setRules(updatedRules);
-    setTxns(prev => prev.map(t => t.narration.toLowerCase().includes(keyClean) ? { ...t, category: ruleCat } : t));
-    setRuleKey('');
-    showToast(`Rule added: "${keyClean}" → ${ruleCat}`);
   };
 
   const exportCsv = () => {
@@ -655,15 +853,51 @@ export default function App() {
     showToast('Exported filtered statement to XLSX');
   };
 
+  // Date Range Bounds calculation
+  const dateRangeBounds = useMemo(() => {
+    const now = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    const toYMD = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
+    if (datePreset === '7D') {
+      const past = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      return { start: toYMD(past), end: toYMD(now) };
+    }
+    if (datePreset === '30D') {
+      const past = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      return { start: toYMD(past), end: toYMD(now) };
+    }
+    if (datePreset === 'THIS_MONTH') {
+      const start = new Date(now.getFullYear(), now.getMonth(), 1);
+      const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      return { start: toYMD(start), end: toYMD(end) };
+    }
+    if (datePreset === '3M') {
+      const past = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
+      return { start: toYMD(past), end: toYMD(now) };
+    }
+    if (datePreset === 'THIS_YEAR') {
+      const start = new Date(now.getFullYear(), 0, 1);
+      const end = new Date(now.getFullYear(), 11, 31);
+      return { start: toYMD(start), end: toYMD(end) };
+    }
+    if (datePreset === 'CUSTOM') {
+      return { start: customFrom || null, end: customTo || null };
+    }
+    return { start: null, end: null };
+  }, [datePreset, customFrom, customTo]);
+
   const filtered = useMemo(() => {
     return txns.filter(t => {
       if (bankFilter !== 'ALL' && t.bank !== bankFilter) return false;
       if (categoryFilter !== 'ALL' && t.category !== categoryFilter) return false;
       if (typeFilter !== 'ALL' && t.type !== typeFilter) return false;
+      if (dateRangeBounds.start && t.date < dateRangeBounds.start) return false;
+      if (dateRangeBounds.end && t.date > dateRangeBounds.end) return false;
       if (search && !t.narration.toLowerCase().includes(search.toLowerCase()) && !t.category.toLowerCase().includes(search.toLowerCase()) && !(t.bank || '').toLowerCase().includes(search.toLowerCase())) return false;
       return true;
     }).sort((a, b) => b.date.localeCompare(a.date));
-  }, [txns, bankFilter, categoryFilter, typeFilter, search]);
+  }, [txns, bankFilter, categoryFilter, typeFilter, search, dateRangeBounds]);
 
   const totals = useMemo(() => {
     const credit = filtered.filter(t => t.type === 'CREDIT').reduce((a, b) => a + b.amount, 0);
@@ -755,7 +989,15 @@ export default function App() {
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          {/* Categories Manager Quick Access */}
+          <button
+            onClick={() => setShowCategoryModal(true)}
+            className="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium px-2.5 py-2 rounded-xl border border-slate-700 flex items-center gap-1"
+            title="Manage Categories"
+          >
+            <Tag size={13} className="text-emerald-400" /> <span className="hidden sm:inline">Categories</span>
+          </button>
           <button
             onClick={() => {
               setEditingBank(null);
@@ -765,13 +1007,13 @@ export default function App() {
             className="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium px-2.5 py-2 rounded-xl border border-slate-700 flex items-center gap-1"
             title="Add Bank"
           >
-            <Building2 size={14} /> <span className="hidden sm:inline">+ Bank</span>
+            <Building2 size={13} /> <span className="hidden sm:inline">+ Bank</span>
           </button>
           <button
             onClick={() => triggerFilePicker(bankFilter !== 'ALL' ? bankFilter : 'AUTO')}
             className="bg-emerald-500 hover:bg-emerald-400 active:scale-95 transition text-slate-950 font-semibold text-xs px-3 py-2 rounded-xl flex items-center gap-1.5 shadow-lg shadow-emerald-500/10"
           >
-            <Upload size={14} /> Upload Files
+            <Upload size={14} /> <span className="hidden xs:inline">Upload</span>
           </button>
         </div>
       </header>
@@ -825,7 +1067,7 @@ export default function App() {
       {/* Main Content Container */}
       <main className="p-4 max-w-4xl mx-auto space-y-4">
 
-        {/* CLEAN STARTUP ONBOARDING STATE (when no banks & no transactions exist yet) */}
+        {/* CLEAN STARTUP ONBOARDING STATE */}
         {txns.length === 0 && activeTab !== 'BANKS' && (
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 text-center space-y-4 my-4">
             <div className="mx-auto w-16 h-16 flex items-center justify-center">
@@ -834,7 +1076,7 @@ export default function App() {
             <div className="space-y-1 max-w-md mx-auto">
               <h2 className="text-base font-bold text-white">Welcome to FinSight India v{APP_VERSION}</h2>
               <p className="text-xs text-slate-400">
-                Your workspace starts completely clean—no preloaded banks or sample data. Add your banks and upload your <strong className="text-slate-200">.XLSX, .CSV, or .PDF</strong> statements to begin daywise, monthwise, quarterly, and yearly analysis.
+                Offline-first multi-bank analyzer with full support for <strong className="text-emerald-400">Union Bank of India (UBI)</strong>, SBI, HDFC, ICICI, Axis, Kotak, and more. Upload your statements to begin.
               </p>
             </div>
             <div className="flex flex-wrap justify-center gap-2.5 pt-1">
@@ -985,7 +1227,7 @@ export default function App() {
             <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-3">
               <div>
                 <h2 className="text-xs font-bold text-slate-200 uppercase tracking-wider">Spend by Category</h2>
-                <p className="text-[11px] text-slate-400">Tap any category below to inspect transactions</p>
+                <p className="text-[11px] text-slate-400">Tap any category below to inspect transactions in Ledger</p>
               </div>
               <div className="h-56 w-full">
                 <ResponsiveContainer width="100%" height="100%">
@@ -1034,7 +1276,7 @@ export default function App() {
               </div>
             </div>
 
-            {/* Payment Channel & Top Merchants */}
+            {/* Payment Channel & Top Payees */}
             <div className="space-y-4">
               <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-3">
                 <h2 className="text-xs font-bold text-slate-200 uppercase tracking-wider">Outflow by Channel (UPI / NACH / NEFT / POS)</h2>
@@ -1071,9 +1313,10 @@ export default function App() {
           </div>
         )}
 
-        {/* TAB 3: TRANSACTIONS LEDGER */}
+        {/* TAB 3: TRANSACTIONS LEDGER (With Date Range / Duration Filter) */}
         {activeTab === 'LEDGER' && txns.length > 0 && (
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 space-y-3">
+            {/* Search and Filters Header */}
             <div className="flex flex-col sm:flex-row gap-2 justify-between">
               <div className="relative flex-1">
                 <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -1085,14 +1328,14 @@ export default function App() {
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-8 pr-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-emerald-500"
                 />
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 <select
                   value={categoryFilter}
                   onChange={e => setCategoryFilter(e.target.value)}
                   className="bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-2 text-xs text-slate-200"
                 >
-                  <option value="ALL">All Categories</option>
-                  {DEFAULT_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                  <option value="ALL">All Categories ({categories.length})</option>
+                  {categories.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
                 <select
                   value={typeFilter}
@@ -1112,16 +1355,91 @@ export default function App() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1">
-              <span>Showing {filtered.length} transactions (Tap any row to Edit or Delete)</span>
-              {categoryFilter !== 'ALL' && (
-                <button onClick={() => setCategoryFilter('ALL')} className="text-emerald-400 underline">
-                  Clear Category Filter
-                </button>
+            {/* DURATION / DATE-RANGE FILTER BAR */}
+            <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-2.5 space-y-2">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <div className="flex items-center gap-1.5 text-xs text-slate-300 font-semibold">
+                  <Calendar size={13} className="text-emerald-400" />
+                  <span>Duration Filter:</span>
+                </div>
+                <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
+                  {[
+                    { id: 'ALL', label: 'All Time' },
+                    { id: '7D', label: 'Last 7 Days' },
+                    { id: '30D', label: 'Last 30 Days' },
+                    { id: 'THIS_MONTH', label: 'This Month' },
+                    { id: '3M', label: 'Last 3 Months' },
+                    { id: 'THIS_YEAR', label: 'This Year' },
+                    { id: 'CUSTOM', label: 'Custom' }
+                  ].map(p => (
+                    <button
+                      key={p.id}
+                      onClick={() => setDatePreset(p.id)}
+                      className={`px-2.5 py-1 rounded-lg text-[11px] font-medium whitespace-nowrap transition ${
+                        datePreset === p.id
+                          ? 'bg-emerald-500 text-slate-950 font-bold shadow-sm'
+                          : 'bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800'
+                      }`}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Custom Date Pickers (Shown when CUSTOM is selected) */}
+              {datePreset === 'CUSTOM' && (
+                <div className="pt-2 border-t border-slate-800/80 flex items-center gap-2 flex-wrap text-xs">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-slate-400 text-[11px]">From:</span>
+                    <input
+                      type="date"
+                      value={customFrom}
+                      onChange={e => setCustomFrom(e.target.value)}
+                      className="bg-slate-900 border border-slate-800 rounded-lg px-2 py-1 text-slate-200 text-xs"
+                    />
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-slate-400 text-[11px]">To:</span>
+                    <input
+                      type="date"
+                      value={customTo}
+                      onChange={e => setCustomTo(e.target.value)}
+                      className="bg-slate-900 border border-slate-800 rounded-lg px-2 py-1 text-slate-200 text-xs"
+                    />
+                  </div>
+                  {(customFrom || customTo) && (
+                    <button
+                      onClick={() => { setCustomFrom(''); setCustomTo(''); }}
+                      className="text-xs text-rose-400 hover:underline px-1.5 py-1"
+                    >
+                      Clear Dates
+                    </button>
+                  )}
+                </div>
               )}
             </div>
 
-            <div className="divide-y divide-slate-800/80 text-xs max-h-[62vh] overflow-y-auto">
+            <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1 flex-wrap gap-1">
+              <span>
+                Showing {filtered.length} of {txns.length} transactions
+                {dateRangeBounds.start && dateRangeBounds.end && ` (${dateRangeBounds.start} to ${dateRangeBounds.end})`}
+              </span>
+              <div className="flex items-center gap-2">
+                {categoryFilter !== 'ALL' && (
+                  <button onClick={() => setCategoryFilter('ALL')} className="text-emerald-400 underline">
+                    Clear Category
+                  </button>
+                )}
+                {datePreset !== 'ALL' && (
+                  <button onClick={() => setDatePreset('ALL')} className="text-emerald-400 underline">
+                    Reset Date Filter
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="divide-y divide-slate-800/80 text-xs max-h-[58vh] overflow-y-auto">
               {filtered.map(t => (
                 <div
                   key={t.id}
@@ -1162,7 +1480,7 @@ export default function App() {
           </div>
         )}
 
-        {/* TAB 4: BANKS & FILES MANAGER (Add/Edit/Delete Banks + Manage/Edit/Delete Bank Statement Files) */}
+        {/* TAB 4: BANKS, FILES, CATEGORIES & RULES MANAGER */}
         {activeTab === 'BANKS' && (
           <div className="space-y-4">
             {/* Section 1: Banks Manager */}
@@ -1277,7 +1595,7 @@ export default function App() {
                 >
                   <Upload size={22} className="mx-auto text-emerald-400" />
                   <p className="text-xs font-semibold text-slate-200">Tap to Upload .XLSX, .CSV, or .PDF Statements</p>
-                  <p className="text-[11px] text-slate-400">Files can be assigned to any bank, edited, or deleted individually at any time.</p>
+                  <p className="text-[11px] text-slate-400">Auto-detects Union Bank of India (UBI), SBI, HDFC, ICICI, Axis, Kotak, etc.</p>
                 </div>
               ) : (
                 <div className="divide-y divide-slate-800/80 text-xs">
@@ -1319,37 +1637,176 @@ export default function App() {
               )}
             </div>
 
-            {/* Section 3: Auto-Categorization Rules Engine */}
+            {/* Section 3: Categories Manager UI */}
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">
-              <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider">Auto-Categorization Rules Engine</h3>
-              <p className="text-[11px] text-slate-400">
-                Add a merchant keyword (e.g. &quot;st johns&quot;, &quot;airtel&quot;, &quot;zerodha&quot;) to automatically assign categories to matching narrations.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-2">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-xs font-bold text-slate-100 uppercase tracking-wider flex items-center gap-1.5">
+                    <Tag size={15} className="text-emerald-400" /> Categories Manager ({categories.length})
+                  </h3>
+                  <p className="text-[11px] text-slate-400">Add, rename (cascades to all transactions and rules), or delete categories</p>
+                </div>
+                <button
+                  onClick={() => setShowCategoryModal(true)}
+                  className="bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-emerald-500/30 text-xs font-medium px-3 py-1.5 rounded-xl flex items-center gap-1"
+                >
+                  <Layers size={13} /> Manage All
+                </button>
+              </div>
+
+              {/* Add New Category Input */}
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={newCategoryName}
+                  onChange={e => setNewCategoryName(e.target.value)}
+                  placeholder="New category name (e.g. Subscriptions, Pet Care)"
+                  className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100"
+                  onKeyDown={e => { if (e.key === 'Enter') handleAddCategory(); }}
+                />
+                <button
+                  onClick={handleAddCategory}
+                  className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs px-3.5 py-2 rounded-xl flex items-center gap-1"
+                >
+                  <Plus size={14} /> Add
+                </button>
+              </div>
+
+              {/* Category Badges Grid */}
+              <div className="flex flex-wrap gap-2 pt-1">
+                {categories.map(c => {
+                  const count = txns.filter(t => t.category === c).length;
+                  return (
+                    <div
+                      key={c}
+                      className="bg-slate-950 border border-slate-800 hover:border-slate-700 rounded-xl px-3 py-1.5 flex items-center gap-2 text-xs text-slate-200"
+                    >
+                      <span className="font-medium">{c}</span>
+                      <span className="text-[10px] bg-slate-800 text-slate-400 px-1.5 py-0.2 rounded-full">{count}</span>
+                      <button
+                        onClick={() => setEditingCategory({ oldName: c, newName: c })}
+                        className="text-slate-400 hover:text-white p-0.5"
+                        title="Rename Category"
+                      >
+                        <Edit3 size={11} />
+                      </button>
+                      {c !== 'Uncategorized' && (
+                        <button
+                          onClick={() => handleDeleteCategory(c)}
+                          className="text-slate-500 hover:text-rose-400 p-0.5"
+                          title="Delete Category"
+                        >
+                          <X size={12} />
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Section 4: Interactive Auto-Categorization Rules List */}
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-xs font-bold text-slate-100 uppercase tracking-wider flex items-center gap-1.5">
+                    <Sparkles size={15} className="text-purple-400" /> Interactive Auto-Categorization Rules ({rules.length})
+                  </h3>
+                  <p className="text-[11px] text-slate-400">
+                    Match merchant keywords in narrations to assign categories. Modifying rules immediately re-evaluates all transactions.
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    const count = reEvaluateTransactions(rules);
+                    showToast(`Re-evaluated ${txns.length} transactions (${count} updated)`);
+                  }}
+                  className="bg-purple-950/80 hover:bg-purple-900 text-purple-300 border border-purple-800 text-xs px-2.5 py-1.5 rounded-xl flex items-center gap-1 font-semibold"
+                  title="Re-apply all rules across all transactions"
+                >
+                  <RefreshCw size={12} /> Re-apply Rules
+                </button>
+              </div>
+
+              {/* Add Keyword Rule Form */}
+              <div className="flex flex-col sm:flex-row gap-2 bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
                 <input
                   type="text"
                   value={ruleKey}
                   onChange={e => setRuleKey(e.target.value)}
-                  placeholder="Keyword in narration (e.g. blinkit)"
+                  placeholder="Keyword(s) in narration (comma-separated, e.g. ubi, zepto, netflix)"
                   className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100"
+                  onKeyDown={e => { if (e.key === 'Enter') handleAddRule(); }}
                 />
                 <select
                   value={ruleCat}
                   onChange={e => setRuleCat(e.target.value)}
                   className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100"
                 >
-                  {DEFAULT_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                  {categories.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
                 <button
                   onClick={handleAddRule}
-                  className="bg-emerald-500 text-slate-950 font-semibold text-xs px-4 py-2 rounded-xl"
+                  className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs px-4 py-2 rounded-xl flex items-center justify-center gap-1"
                 >
-                  Add Rule
+                  <Plus size={14} /> Add Rule
                 </button>
+              </div>
+
+              {/* Interactive Rules List */}
+              <div className="space-y-2.5 max-h-96 overflow-y-auto pr-1">
+                {rules.map((rule, idx) => (
+                  <div key={rule.cat + idx} className="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+                        <span className="text-xs font-bold text-white">{rule.cat}</span>
+                        <span className="text-[10px] text-slate-400 bg-slate-900 px-2 py-0.5 rounded-full border border-slate-800">
+                          {rule.keys.length} keywords
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => setEditingRule({ cat: rule.cat, keysStr: rule.keys.join(', ') })}
+                          className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800"
+                          title="Edit Keywords"
+                        >
+                          <Edit3 size={12} />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteRule(rule.cat)}
+                          className="p-1 text-slate-500 hover:text-rose-400 rounded-lg hover:bg-rose-950/40"
+                          title="Delete Rule"
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Keyword Badges */}
+                    <div className="flex flex-wrap gap-1.5">
+                      {rule.keys.map(k => (
+                        <span
+                          key={k}
+                          className="inline-flex items-center gap-1 text-[11px] bg-slate-900 border border-slate-800 text-slate-300 px-2 py-0.5 rounded-md group hover:border-slate-700"
+                        >
+                          <span>{k}</span>
+                          <button
+                            onClick={() => handleRemoveKeyword(rule.cat, k)}
+                            className="text-slate-500 group-hover:text-rose-400 ml-0.5"
+                            title={`Remove keyword "${k}"`}
+                          >
+                            <X size={10} />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 
-            {/* Section 4: Clear All Workspace Data */}
+            {/* Section 5: Clear All Workspace Data */}
             {(banks.length > 0 || txns.length > 0 || uploadedFiles.length > 0) && (
               <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-wrap gap-2 justify-between items-center">
                 <div>
@@ -1389,7 +1846,7 @@ export default function App() {
                 <label className="text-slate-400 block mb-1">Bank Name *</label>
                 <input
                   type="text"
-                  placeholder="e.g. SBI, HDFC Bank, ICICI, Canara Bank"
+                  placeholder="e.g. Union Bank of India, SBI, HDFC Bank, ICICI"
                   value={bankForm.name}
                   onChange={e => setBankForm({ ...bankForm, name: e.target.value })}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-100"
@@ -1552,7 +2009,7 @@ export default function App() {
                     onChange={e => setEditingTxn({ ...editingTxn, category: e.target.value })}
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-100"
                   >
-                    {DEFAULT_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                    {categories.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
                 <div>
@@ -1648,7 +2105,7 @@ export default function App() {
                     onChange={e => setNewTxnForm({ ...newTxnForm, category: e.target.value })}
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-100"
                   >
-                    {DEFAULT_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                    {categories.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
                 <div>
@@ -1656,7 +2113,7 @@ export default function App() {
                   <input
                     type="text"
                     list="finsight-bank-options"
-                    placeholder={banks[0] ? banks[0].name : 'e.g. SBI'}
+                    placeholder={banks[0] ? banks[0].name : 'e.g. Union Bank of India'}
                     value={newTxnForm.bank}
                     onChange={e => setNewTxnForm({ ...newTxnForm, bank: e.target.value })}
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-100"
@@ -1712,6 +2169,154 @@ export default function App() {
         </div>
       )}
 
+      {/* MODAL 6: DEDICATED CATEGORIES MANAGER MODAL */}
+      {showCategoryModal && (
+        <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-4 space-y-3 max-h-[85vh] flex flex-col">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-2.5 shrink-0">
+              <div className="flex items-center gap-2">
+                <Tag size={16} className="text-emerald-400" />
+                <h3 className="text-sm font-bold text-white">Categories Manager ({categories.length})</h3>
+              </div>
+              <button onClick={() => setShowCategoryModal(false)} className="text-slate-400 hover:text-white">
+                <X size={18} />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-400 shrink-0">
+              Renaming a category automatically updates all associated transactions and categorization rules across your workspace.
+            </p>
+
+            {/* Add Category Form */}
+            <div className="flex gap-2 shrink-0">
+              <input
+                type="text"
+                value={newCategoryName}
+                onChange={e => setNewCategoryName(e.target.value)}
+                placeholder="New Category Name (e.g. Subscriptions)"
+                className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100"
+                onKeyDown={e => { if (e.key === 'Enter') handleAddCategory(); }}
+              />
+              <button
+                onClick={handleAddCategory}
+                className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs px-3.5 py-2 rounded-xl flex items-center gap-1"
+              >
+                <Plus size={14} /> Add
+              </button>
+            </div>
+
+            {/* Categories Scrollable List */}
+            <div className="divide-y divide-slate-800/80 text-xs overflow-y-auto flex-1 pr-1">
+              {categories.map(c => {
+                const count = txns.filter(t => t.category === c).length;
+                const isEditingThis = editingCategory && editingCategory.oldName === c;
+                return (
+                  <div key={c} className="py-2.5 flex items-center justify-between gap-2">
+                    {isEditingThis ? (
+                      <div className="flex items-center gap-2 flex-1">
+                        <input
+                          type="text"
+                          value={editingCategory.newName}
+                          onChange={e => setEditingCategory({ ...editingCategory, newName: e.target.value })}
+                          className="bg-slate-950 border border-emerald-500 rounded-lg px-2.5 py-1 text-xs text-white flex-1"
+                          autoFocus
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') handleRenameCategory(editingCategory.oldName, editingCategory.newName);
+                            if (e.key === 'Escape') setEditingCategory(null);
+                          }}
+                        />
+                        <button
+                          onClick={() => handleRenameCategory(editingCategory.oldName, editingCategory.newName)}
+                          className="bg-emerald-500 text-slate-950 font-bold px-2 py-1 rounded-lg text-xs"
+                        >
+                          Save
+                        </button>
+                        <button
+                          onClick={() => setEditingCategory(null)}
+                          className="bg-slate-800 text-slate-300 px-2 py-1 rounded-lg text-xs"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-slate-200">{c}</span>
+                          <span className="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full">
+                            {count} {count === 1 ? 'txn' : 'txns'}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button
+                            onClick={() => setEditingCategory({ oldName: c, newName: c })}
+                            className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800"
+                            title="Rename"
+                          >
+                            <Edit3 size={13} />
+                          </button>
+                          {c !== 'Uncategorized' && (
+                            <button
+                              onClick={() => handleDeleteCategory(c)}
+                              className="p-1.5 text-slate-500 hover:text-rose-400 rounded-lg hover:bg-rose-950/60"
+                              title="Delete"
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="flex justify-end pt-2 border-t border-slate-800 shrink-0">
+              <button
+                onClick={() => setShowCategoryModal(false)}
+                className="bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-2 rounded-xl text-xs font-medium"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 7: EDIT RULE KEYWORDS MODAL */}
+      {editingRule && (
+        <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-sm w-full p-4 space-y-3">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
+              <h3 className="text-sm font-bold text-white">Edit Rule: {editingRule.cat}</h3>
+              <button onClick={() => setEditingRule(null)} className="text-slate-400 hover:text-white">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="space-y-2 text-xs">
+              <label className="text-slate-400 block">Keywords (comma-separated)</label>
+              <textarea
+                rows={3}
+                value={editingRule.keysStr}
+                onChange={e => setEditingRule({ ...editingRule, keysStr: e.target.value })}
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-slate-100 text-xs focus:outline-none focus:border-emerald-500"
+              />
+              <p className="text-[10px] text-slate-500">
+                Saving will immediately re-evaluate transactions matching these keywords.
+              </p>
+            </div>
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
+              <button onClick={() => setEditingRule(null)} className="bg-slate-800 text-slate-300 px-3 py-2 rounded-xl text-xs">
+                Cancel
+              </button>
+              <button onClick={handleSaveEditRule} className="bg-emerald-500 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1">
+                <Save size={13} /> Save Rule
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ANDROID BOTTOM NAVIGATION MENU */}
       <nav className="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur border-t border-slate-800 px-2 py-1.5 z-40">
         <div className="max-w-md mx-auto grid grid-cols-4 gap-1">
@@ -1719,7 +2324,7 @@ export default function App() {
             { id: 'DASHBOARD', label: 'Overview', icon: BarChart3 },
             { id: 'SPEND', label: 'Spend Analysis', icon: PieIcon },
             { id: 'LEDGER', label: 'Transactions', icon: FileText },
-            { id: 'BANKS', label: 'Banks & Files', icon: Building2 }
+            { id: 'BANKS', label: 'Banks & Rules', icon: Building2 }
           ].map(item => {
             const Icon = item.icon;
             const active = activeTab === item.id;

@@ -20,7 +20,7 @@ import {
   PieChart, Pie, Cell, CartesianGrid, Legend
 } from 'recharts';
 
-const APP_VERSION = '1.5.0';
+const APP_VERSION = '1.6.0';
 
 // Configure PDF.js worker via CDN for Android WebView compatibility
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`;
@@ -521,7 +521,7 @@ function detectTransferPairs(transactionsList, manualPairs = [], unlinkedPairs =
 export default function App() {
   const [banks, setBanks] = useState(() => {
     try {
-      const saved = localStorage.getItem('finsight_banks_v150') || localStorage.getItem('finsight_banks_v140') || localStorage.getItem('finsight_banks_v130') || localStorage.getItem('finsight_banks_v120') || localStorage.getItem('finsight_banks_v110');
+      const saved = localStorage.getItem('finsight_banks_v160') || localStorage.getItem('finsight_banks_v150') || localStorage.getItem('finsight_banks_v140') || localStorage.getItem('finsight_banks_v130') || localStorage.getItem('finsight_banks_v120') || localStorage.getItem('finsight_banks_v110');
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
@@ -530,7 +530,7 @@ export default function App() {
 
   const [txns, setTxns] = useState(() => {
     try {
-      const saved = localStorage.getItem('finsight_txns_v150') || localStorage.getItem('finsight_txns_v140') || localStorage.getItem('finsight_txns_v130') || localStorage.getItem('finsight_txns_v120') || localStorage.getItem('finsight_txns_v110');
+      const saved = localStorage.getItem('finsight_txns_v160') || localStorage.getItem('finsight_txns_v150') || localStorage.getItem('finsight_txns_v140') || localStorage.getItem('finsight_txns_v130') || localStorage.getItem('finsight_txns_v120') || localStorage.getItem('finsight_txns_v110');
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
@@ -539,7 +539,7 @@ export default function App() {
 
   const [uploadedFiles, setUploadedFiles] = useState(() => {
     try {
-      const saved = localStorage.getItem('finsight_files_v150') || localStorage.getItem('finsight_files_v140') || localStorage.getItem('finsight_files_v130') || localStorage.getItem('finsight_files_v120') || localStorage.getItem('finsight_files_v110');
+      const saved = localStorage.getItem('finsight_files_v160') || localStorage.getItem('finsight_files_v150') || localStorage.getItem('finsight_files_v140') || localStorage.getItem('finsight_files_v130') || localStorage.getItem('finsight_files_v120') || localStorage.getItem('finsight_files_v110');
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
@@ -548,7 +548,7 @@ export default function App() {
 
   const [categories, setCategories] = useState(() => {
     try {
-      const saved = localStorage.getItem('finsight_categories_v150') || localStorage.getItem('finsight_categories_v140') || localStorage.getItem('finsight_categories_v130') || localStorage.getItem('finsight_categories_v120') || localStorage.getItem('finsight_categories_v110');
+      const saved = localStorage.getItem('finsight_categories_v160') || localStorage.getItem('finsight_categories_v150') || localStorage.getItem('finsight_categories_v140') || localStorage.getItem('finsight_categories_v130') || localStorage.getItem('finsight_categories_v120') || localStorage.getItem('finsight_categories_v110');
       if (saved) {
         const parsed = JSON.parse(saved);
         const combined = Array.from(new Set([...DEFAULT_CATEGORIES, ...parsed]));
@@ -562,7 +562,7 @@ export default function App() {
 
   const [rules, setRules] = useState(() => {
     try {
-      const saved = localStorage.getItem('finsight_rules_v150') || localStorage.getItem('finsight_rules_v140') || localStorage.getItem('finsight_rules_v130') || localStorage.getItem('finsight_rules_v120') || localStorage.getItem('finsight_rules_v110');
+      const saved = localStorage.getItem('finsight_rules_v160') || localStorage.getItem('finsight_rules_v150') || localStorage.getItem('finsight_rules_v140') || localStorage.getItem('finsight_rules_v130') || localStorage.getItem('finsight_rules_v120') || localStorage.getItem('finsight_rules_v110');
       return saved ? JSON.parse(saved) : DEFAULT_RULES;
     } catch {
       return DEFAULT_RULES;
@@ -571,17 +571,17 @@ export default function App() {
 
   const [excludeTransfersFromTotals, setExcludeTransfersFromTotals] = useState(() => {
     try {
-      const saved = localStorage.getItem('finsight_exclude_transfers_v150') || localStorage.getItem('finsight_exclude_transfers_v140') || localStorage.getItem('finsight_exclude_transfers_v130');
+      const saved = localStorage.getItem('finsight_exclude_transfers_v160') || localStorage.getItem('finsight_exclude_transfers_v150') || localStorage.getItem('finsight_exclude_transfers_v140') || localStorage.getItem('finsight_exclude_transfers_v130');
       return saved !== null ? JSON.parse(saved) : true;
     } catch {
       return true;
     }
   });
 
-  // SMART BANK TRANSFERS EDITING & MANAGEMENT STATE (v1.5.0)
+  // SMART BANK TRANSFERS EDITING & MANAGEMENT STATE (v1.6.0)
   const [manualTransferPairs, setManualTransferPairs] = useState(() => {
     try {
-      const saved = localStorage.getItem('finsight_manual_pairs_v150');
+      const saved = localStorage.getItem('finsight_manual_pairs_v160') || localStorage.getItem('finsight_manual_pairs_v150');
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
@@ -590,7 +590,7 @@ export default function App() {
 
   const [unlinkedTransferPairs, setUnlinkedTransferPairs] = useState(() => {
     try {
-      const saved = localStorage.getItem('finsight_unlinked_pairs_v150');
+      const saved = localStorage.getItem('finsight_unlinked_pairs_v160') || localStorage.getItem('finsight_unlinked_pairs_v150');
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
@@ -599,7 +599,7 @@ export default function App() {
 
   const [transferClearingDays, setTransferClearingDays] = useState(() => {
     try {
-      const saved = localStorage.getItem('finsight_transfer_days_v150');
+      const saved = localStorage.getItem('finsight_transfer_days_v160') || localStorage.getItem('finsight_transfer_days_v150');
       return saved !== null ? Number(saved) : 2;
     } catch {
       return 2;
@@ -696,41 +696,41 @@ export default function App() {
   // Transfer Pair Inspector Modal
   const [selectedTransferPair, setSelectedTransferPair] = useState(null);
 
-  // PERSISTENCE EFFECTS (v1.5.0 Keys)
+  // PERSISTENCE EFFECTS (v1.6.0 Keys)
   useEffect(() => {
-    try { localStorage.setItem('finsight_banks_v150', JSON.stringify(banks)); } catch {}
+    try { localStorage.setItem('finsight_banks_v160', JSON.stringify(banks)); } catch {}
   }, [banks]);
 
   useEffect(() => {
-    try { localStorage.setItem('finsight_txns_v150', JSON.stringify(txns)); } catch {}
+    try { localStorage.setItem('finsight_txns_v160', JSON.stringify(txns)); } catch {}
   }, [txns]);
 
   useEffect(() => {
-    try { localStorage.setItem('finsight_files_v150', JSON.stringify(uploadedFiles)); } catch {}
+    try { localStorage.setItem('finsight_files_v160', JSON.stringify(uploadedFiles)); } catch {}
   }, [uploadedFiles]);
 
   useEffect(() => {
-    try { localStorage.setItem('finsight_categories_v150', JSON.stringify(categories)); } catch {}
+    try { localStorage.setItem('finsight_categories_v160', JSON.stringify(categories)); } catch {}
   }, [categories]);
 
   useEffect(() => {
-    try { localStorage.setItem('finsight_rules_v150', JSON.stringify(rules)); } catch {}
+    try { localStorage.setItem('finsight_rules_v160', JSON.stringify(rules)); } catch {}
   }, [rules]);
 
   useEffect(() => {
-    try { localStorage.setItem('finsight_exclude_transfers_v150', JSON.stringify(excludeTransfersFromTotals)); } catch {}
+    try { localStorage.setItem('finsight_exclude_transfers_v160', JSON.stringify(excludeTransfersFromTotals)); } catch {}
   }, [excludeTransfersFromTotals]);
 
   useEffect(() => {
-    try { localStorage.setItem('finsight_manual_pairs_v150', JSON.stringify(manualTransferPairs)); } catch {}
+    try { localStorage.setItem('finsight_manual_pairs_v160', JSON.stringify(manualTransferPairs)); } catch {}
   }, [manualTransferPairs]);
 
   useEffect(() => {
-    try { localStorage.setItem('finsight_unlinked_pairs_v150', JSON.stringify(unlinkedTransferPairs)); } catch {}
+    try { localStorage.setItem('finsight_unlinked_pairs_v160', JSON.stringify(unlinkedTransferPairs)); } catch {}
   }, [unlinkedTransferPairs]);
 
   useEffect(() => {
-    try { localStorage.setItem('finsight_transfer_days_v150', String(transferClearingDays)); } catch {}
+    try { localStorage.setItem('finsight_transfer_days_v160', String(transferClearingDays)); } catch {}
   }, [transferClearingDays]);
 
   // Real-time automatic rule re-evaluation:
@@ -742,6 +742,29 @@ export default function App() {
       setTxns(updatedTxns);
     }
   }, [rules]);
+
+  // AUTOMATICALLY ASSIGN 'Bank Transfer' CATEGORY FOR BOTH PAIRED TRANSACTIONS (v1.6.0)
+  useEffect(() => {
+    if (!txns.length || !transferPairs.length) return;
+    const pairedTxnIds = new Set();
+    transferPairs.forEach(p => {
+      pairedTxnIds.add(p.debitTxnId);
+      pairedTxnIds.add(p.creditTxnId);
+    });
+
+    let hasChange = false;
+    const updated = txns.map(t => {
+      if (pairedTxnIds.has(t.id) && t.category !== 'Bank Transfer') {
+        hasChange = true;
+        return { ...t, category: 'Bank Transfer' };
+      }
+      return t;
+    });
+
+    if (hasChange) {
+      setTxns(updated);
+    }
+  }, [transferPairs]);
 
   // SMART BANK TRANSFERS: Pair Detection and Quick Lookup Map (v1.5.0)
   const transferPairs = useMemo(() => {
@@ -771,7 +794,7 @@ export default function App() {
     return map;
   }, [transferPairs]);
 
-  // Smart Bank Transfer Action Handlers (v1.5.0)
+  // Smart Bank Transfer Action Handlers (v1.6.0)
   const handleUnlinkPair = (debitTxnId, creditTxnId) => {
     setManualTransferPairs(prev => prev.filter(p => !(
       (p.debitTxnId === debitTxnId && p.creditTxnId === creditTxnId) ||
@@ -785,8 +808,16 @@ export default function App() {
       if (exists) return prev;
       return [...prev, { debitTxnId, creditTxnId, unlinkedAt: new Date().toISOString() }];
     });
+    // Automatically revert unlinked transactions from 'Bank Transfer' back to their auto category
+    setTxns(prev => prev.map(t => {
+      if ((t.id === debitTxnId || t.id === creditTxnId) && t.category === 'Bank Transfer') {
+        const autoCat = detectCategoryWithRules(t.narration, t.type);
+        return { ...t, category: autoCat, isManualCategory: false };
+      }
+      return t;
+    }));
     if (selectedTransferPair) setSelectedTransferPair(null);
-    showToast('Transfer pair unlinked (transactions separated)');
+    showToast('Transfer pair unlinked (categories reset)');
   };
 
   const handleCreateManualPair = (txnA, txnB) => {
@@ -819,6 +850,13 @@ export default function App() {
       isManualPair: true
     };
     setManualTransferPairs(prev => [...prev.filter(p => p.debitTxnId !== debitTxn.id && p.creditTxnId !== creditTxn.id), newPair]);
+    // Automatically assign 'Bank Transfer' to both transactions
+    setTxns(prev => prev.map(t => {
+      if (t.id === debitTxn.id || t.id === creditTxn.id) {
+        return { ...t, category: 'Bank Transfer', isManualCategory: true };
+      }
+      return t;
+    }));
     setShowManualLinkModal(false);
     setManualLinkTargetTxn(null);
     showToast(`Linked Smart Transfer between ${debitTxn.bank} and ${creditTxn.bank}`);
@@ -2070,7 +2108,7 @@ export default function App() {
         onChange={handleRestoreFileSelect}
       />
 
-      {/* Top App Bar with Custom FinSight Icon & Version Badge */}
+      {/* Top App Bar with Custom FinSight Icon & Clean Header (5 buttons removed per user request in v1.6.0) */}
       <header className="bg-slate-900/95 backdrop-blur border-b border-slate-800 px-4 py-3 sticky top-0 z-30 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
           <FinSightLogo size={38} />
@@ -2088,55 +2126,6 @@ export default function App() {
               )}
             </p>
           </div>
-        </div>
-        <div className="flex items-center gap-1.5 sm:gap-2">
-          {/* Smart Transfers Manager Quick Access (v1.5.0) */}
-          <button
-            onClick={() => setShowTransferManagerModal(true)}
-            className="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium px-2.5 py-2 rounded-xl border border-slate-700 flex items-center gap-1.5"
-            title="Manage Smart Bank Transfers"
-          >
-            <ArrowLeftRight size={13} className="text-sky-400" />
-            <span className="hidden sm:inline">Transfers</span>
-            {transferPairs.length > 0 && (
-              <span className="bg-sky-500/20 text-sky-300 px-1.5 py-0.2 rounded-full text-[10px] font-bold">
-                {transferPairs.length}
-              </span>
-            )}
-          </button>
-          {/* Backup Quick Access */}
-          <button
-            onClick={handleExportBackup}
-            className="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium px-2.5 py-2 rounded-xl border border-slate-700 flex items-center gap-1"
-            title="Download JSON Backup"
-          >
-            <Download size={13} className="text-sky-400" /> <span className="hidden sm:inline">Backup</span>
-          </button>
-          {/* Categories Manager Quick Access */}
-          <button
-            onClick={() => setShowCategoryModal(true)}
-            className="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium px-2.5 py-2 rounded-xl border border-slate-700 flex items-center gap-1"
-            title="Manage Categories"
-          >
-            <Tag size={13} className="text-emerald-400" /> <span className="hidden sm:inline">Categories</span>
-          </button>
-          <button
-            onClick={() => {
-              setEditingBank(null);
-              setBankForm({ name: '', accountHint: '', color: BANK_COLOR_PALETTE[banks.length % BANK_COLOR_PALETTE.length] });
-              setShowBankModal(true);
-            }}
-            className="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium px-2.5 py-2 rounded-xl border border-slate-700 flex items-center gap-1"
-            title="Add Bank"
-          >
-            <Building2 size={13} /> <span className="hidden sm:inline">+ Bank</span>
-          </button>
-          <button
-            onClick={() => triggerFilePicker(bankFilter !== 'ALL' ? bankFilter : 'AUTO')}
-            className="bg-emerald-500 hover:bg-emerald-400 active:scale-95 transition text-slate-950 font-semibold text-xs px-3 py-2 rounded-xl flex items-center gap-1.5 shadow-lg shadow-emerald-500/10"
-          >
-            <Upload size={14} /> <span className="hidden xs:inline">Upload</span>
-          </button>
         </div>
       </header>
 
@@ -2176,41 +2165,6 @@ export default function App() {
           </button>
         ))}
       </div>
-
-      {/* SMART BANK TRANSFERS BANNER (v1.5.0) */}
-      {transferPairs.length > 0 && (
-        <div className="bg-sky-950/40 border-b border-sky-900/60 px-4 py-2 flex items-center justify-between gap-2 text-xs flex-wrap">
-          <div className="flex items-center gap-2">
-            <ArrowLeftRight size={14} className="text-sky-400 shrink-0" />
-            <span className="text-slate-200">
-              <strong className="text-sky-300">{transferPairs.length} Smart Bank Transfers</strong> detected (₹{totalTransfersAmount.toLocaleString('en-IN')})
-            </span>
-            <button
-              onClick={() => setShowTransferManagerModal(true)}
-              className="text-[11px] text-sky-400 hover:text-sky-300 font-semibold underline ml-1"
-            >
-              Edit / Manage
-            </button>
-          </div>
-          <div className="flex items-center gap-3">
-            <label className="flex items-center gap-1.5 cursor-pointer text-[11px] text-sky-200 font-medium">
-              <input
-                type="checkbox"
-                checked={excludeTransfersFromTotals}
-                onChange={e => setExcludeTransfersFromTotals(e.target.checked)}
-                className="accent-sky-500 rounded"
-              />
-              <span>Exclude from totals</span>
-            </label>
-            <button
-              onClick={() => setShowTransferManagerModal(true)}
-              className="px-2 py-0.5 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 text-[11px] font-semibold flex items-center gap-1 border border-sky-500/40"
-            >
-              <Sliders size={12} /> Manage
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* MAIN CONTENT AREA */}
       <main className="max-w-6xl mx-auto p-4 space-y-4">
@@ -2314,61 +2268,54 @@ export default function App() {
           </div>
         )}
 
-        {/* TAB 2: CATEGORY ANALYSIS (SPEND & EARNING SEPARATELY + NET FLOW) */}
+        {/* TAB 2: CATEGORY ANALYSIS (SPEND & EARNING SEPARATELY + NET FLOW) - TEXT OVERFLOW FIXED & MANAGE CATEGORIES REMOVED (v1.6.0) */}
         {activeTab === 'SPEND' && (
           <div className="space-y-4">
-            <div className="bg-slate-900 border border-slate-800 p-2 rounded-2xl flex items-center justify-between gap-2 flex-wrap">
-              <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800/80">
+            <div className="bg-slate-900 border border-slate-800 p-2 rounded-2xl flex items-center justify-between gap-2 overflow-hidden">
+              <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800/80 overflow-x-auto max-w-full no-scrollbar">
                 <button
                   onClick={() => setCategoryAnalysisMode('SPEND')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
                     categoryAnalysisMode === 'SPEND'
                       ? 'bg-rose-500 text-white shadow-sm'
                       : 'text-slate-400 hover:text-slate-200'
                   }`}
                 >
-                  <TrendingDown size={13} />
-                  <span>Spend Breakdown (₹{categorySpendBreakdown.total.toLocaleString('en-IN')})</span>
+                  <TrendingDown size={13} className="shrink-0" />
+                  <span>Spend (₹{categorySpendBreakdown.total.toLocaleString('en-IN')})</span>
                 </button>
                 <button
                   onClick={() => setCategoryAnalysisMode('EARN')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
                     categoryAnalysisMode === 'EARN'
                       ? 'bg-emerald-500 text-slate-950 shadow-sm'
                       : 'text-slate-400 hover:text-slate-200'
                   }`}
                 >
-                  <TrendingUp size={13} />
-                  <span>Earnings Breakdown (₹{categoryEarnBreakdown.total.toLocaleString('en-IN')})</span>
+                  <TrendingUp size={13} className="shrink-0" />
+                  <span>Earnings (₹{categoryEarnBreakdown.total.toLocaleString('en-IN')})</span>
                 </button>
                 <button
                   onClick={() => setCategoryAnalysisMode('NET')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
                     categoryAnalysisMode === 'NET'
                       ? 'bg-sky-500 text-slate-950 shadow-sm'
                       : 'text-slate-400 hover:text-slate-200'
                   }`}
                 >
-                  <Layers size={13} />
-                  <span>Net Flow / Comparison</span>
+                  <Layers size={13} className="shrink-0" />
+                  <span>Net Flow Comparison</span>
                 </button>
               </div>
-
-              <button
-                onClick={() => setShowCategoryModal(true)}
-                className="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs px-2.5 py-1.5 rounded-xl border border-slate-700 flex items-center gap-1 font-medium"
-              >
-                <Tag size={12} className="text-emerald-400" /> Manage Categories
-              </button>
             </div>
 
             {/* MODE 1: SPEND BREAKDOWN */}
             {categoryAnalysisMode === 'SPEND' && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-3">
+                <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-3 min-w-0 overflow-hidden">
                   <div className="flex items-center justify-between">
                     <h2 className="text-xs font-bold text-slate-200 uppercase tracking-wider">Outflow by Category</h2>
-                    <span className="text-xs font-bold text-rose-400">₹{categorySpendBreakdown.total.toLocaleString('en-IN')}</span>
+                    <span className="text-xs font-bold text-rose-400 shrink-0">₹{categorySpendBreakdown.total.toLocaleString('en-IN')}</span>
                   </div>
 
                   {categorySpendBreakdown.items.length === 0 ? (
@@ -2409,13 +2356,13 @@ export default function App() {
                               setTypeFilter('DEBIT');
                               setActiveTab('LEDGER');
                             }}
-                            className="flex items-center justify-between p-2 rounded-xl bg-slate-950/60 hover:bg-slate-800/80 cursor-pointer border border-slate-800/60"
+                            className="flex items-center justify-between p-2 rounded-xl bg-slate-950/60 hover:bg-slate-800/80 cursor-pointer border border-slate-800/60 gap-2 min-w-0"
                           >
-                            <div className="flex items-center gap-2">
-                              <span className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-                              <span className="text-xs font-medium text-slate-200">{c.name}</span>
+                            <div className="flex items-center gap-2 min-w-0 flex-1 overflow-hidden">
+                              <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+                              <span className="text-xs font-medium text-slate-200 truncate">{c.name}</span>
                             </div>
-                            <div className="text-right">
+                            <div className="text-right shrink-0 ml-2 whitespace-nowrap">
                               <span className="text-xs font-bold text-rose-400">₹{c.value.toLocaleString('en-IN')}</span>
                               <span className="text-[10px] text-slate-400 ml-1.5">({c.pct}%)</span>
                             </div>
@@ -2426,8 +2373,8 @@ export default function App() {
                   )}
                 </div>
 
-                <div className="space-y-4">
-                  <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-3">
+                <div className="space-y-4 min-w-0">
+                  <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-3 min-w-0 overflow-hidden">
                     <h2 className="text-xs font-bold text-slate-200 uppercase tracking-wider">Outflow by Channel (UPI / NACH / NEFT / POS)</h2>
                     <div className="h-44 w-full">
                       <ResponsiveContainer width="100%" height="100%">
@@ -2444,16 +2391,16 @@ export default function App() {
                     </div>
                   </div>
 
-                  <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-2.5">
+                  <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-2.5 min-w-0 overflow-hidden">
                     <h2 className="text-xs font-bold text-slate-200 uppercase tracking-wider">Top Spend Merchants & Payees</h2>
                     <div className="divide-y divide-slate-800 text-xs">
                       {topMerchants.map((m, idx) => (
-                        <div key={idx} className="py-2 flex items-center justify-between">
-                          <div>
-                            <p className="font-semibold text-slate-200 truncate max-w-[200px]">{m.name}</p>
-                            <p className="text-[10px] text-slate-400">{m.category} • {m.count} txns</p>
+                        <div key={idx} className="py-2 flex items-center justify-between gap-2 min-w-0">
+                          <div className="min-w-0 flex-1 overflow-hidden">
+                            <p className="font-semibold text-slate-200 truncate">{m.name}</p>
+                            <p className="text-[10px] text-slate-400 truncate">{m.category} • {m.count} txns</p>
                           </div>
-                          <span className="font-bold text-rose-400">₹{m.amount.toLocaleString('en-IN')}</span>
+                          <span className="font-bold text-rose-400 shrink-0 whitespace-nowrap">₹{m.amount.toLocaleString('en-IN')}</span>
                         </div>
                       ))}
                     </div>
@@ -2465,10 +2412,10 @@ export default function App() {
             {/* MODE 2: EARNINGS BREAKDOWN */}
             {categoryAnalysisMode === 'EARN' && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-3">
+                <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-3 min-w-0 overflow-hidden">
                   <div className="flex items-center justify-between">
                     <h2 className="text-xs font-bold text-slate-200 uppercase tracking-wider">Earnings / Inflow by Category</h2>
-                    <span className="text-xs font-bold text-emerald-400">₹{categoryEarnBreakdown.total.toLocaleString('en-IN')}</span>
+                    <span className="text-xs font-bold text-emerald-400 shrink-0">₹{categoryEarnBreakdown.total.toLocaleString('en-IN')}</span>
                   </div>
 
                   {categoryEarnBreakdown.items.length === 0 ? (
@@ -2509,13 +2456,13 @@ export default function App() {
                               setTypeFilter('CREDIT');
                               setActiveTab('LEDGER');
                             }}
-                            className="flex items-center justify-between p-2 rounded-xl bg-slate-950/60 hover:bg-slate-800/80 cursor-pointer border border-slate-800/60"
+                            className="flex items-center justify-between p-2 rounded-xl bg-slate-950/60 hover:bg-slate-800/80 cursor-pointer border border-slate-800/60 gap-2 min-w-0"
                           >
-                            <div className="flex items-center gap-2">
-                              <span className="w-3 h-3 rounded-full" style={{ backgroundColor: EARN_COLORS[i % EARN_COLORS.length] }} />
-                              <span className="text-xs font-medium text-slate-200">{c.name}</span>
+                            <div className="flex items-center gap-2 min-w-0 flex-1 overflow-hidden">
+                              <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: EARN_COLORS[i % EARN_COLORS.length] }} />
+                              <span className="text-xs font-medium text-slate-200 truncate">{c.name}</span>
                             </div>
-                            <div className="text-right">
+                            <div className="text-right shrink-0 ml-2 whitespace-nowrap">
                               <span className="text-xs font-bold text-emerald-400">₹{c.value.toLocaleString('en-IN')}</span>
                               <span className="text-[10px] text-slate-400 ml-1.5">({c.pct}%)</span>
                             </div>
@@ -2526,8 +2473,8 @@ export default function App() {
                   )}
                 </div>
 
-                <div className="space-y-4">
-                  <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-3">
+                <div className="space-y-4 min-w-0">
+                  <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-3 min-w-0 overflow-hidden">
                     <h2 className="text-xs font-bold text-slate-200 uppercase tracking-wider">Inflow by Channel (NEFT / IMPS / UPI / ACH)</h2>
                     <div className="h-44 w-full">
                       <ResponsiveContainer width="100%" height="100%">
@@ -2544,16 +2491,16 @@ export default function App() {
                     </div>
                   </div>
 
-                  <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-2.5">
+                  <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-2.5 min-w-0 overflow-hidden">
                     <h2 className="text-xs font-bold text-slate-200 uppercase tracking-wider">Top Income Sources & Payers</h2>
                     <div className="divide-y divide-slate-800 text-xs">
                       {topEarningSources.map((m, idx) => (
-                        <div key={idx} className="py-2 flex items-center justify-between">
-                          <div>
-                            <p className="font-semibold text-slate-200 truncate max-w-[200px]">{m.name}</p>
-                            <p className="text-[10px] text-slate-400">{m.category} • {m.count} txns</p>
+                        <div key={idx} className="py-2 flex items-center justify-between gap-2 min-w-0">
+                          <div className="min-w-0 flex-1 overflow-hidden">
+                            <p className="font-semibold text-slate-200 truncate">{m.name}</p>
+                            <p className="text-[10px] text-slate-400 truncate">{m.category} • {m.count} txns</p>
                           </div>
-                          <span className="font-bold text-emerald-400">₹{m.amount.toLocaleString('en-IN')}</span>
+                          <span className="font-bold text-emerald-400 shrink-0 whitespace-nowrap">₹{m.amount.toLocaleString('en-IN')}</span>
                         </div>
                       ))}
                     </div>
@@ -2564,20 +2511,21 @@ export default function App() {
 
             {/* MODE 3: COMBINED DUAL VIEW / NET FLOW */}
             {categoryAnalysisMode === 'NET' && (
-              <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-3">
+              <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-3 min-w-0 overflow-hidden">
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <div>
                     <h2 className="text-xs font-bold text-slate-200 uppercase tracking-wider">Spend vs Earning Net Flow Comparison</h2>
                     <p className="text-[11px] text-slate-400">Compare incoming earnings against outgoing expenses across every category</p>
                   </div>
-                  <div className="flex items-center gap-3 text-xs">
-                    <span className="text-rose-400 font-semibold">Total Outflow: ₹{categorySpendBreakdown.total.toLocaleString('en-IN')}</span>
-                    <span className="text-emerald-400 font-semibold">Total Inflow: ₹{categoryEarnBreakdown.total.toLocaleString('en-IN')}</span>
+                  <div className="flex items-center gap-2 text-xs flex-wrap">
+                    <span className="text-rose-400 font-semibold whitespace-nowrap">Outflow: ₹{categorySpendBreakdown.total.toLocaleString('en-IN')}</span>
+                    <span>•</span>
+                    <span className="text-emerald-400 font-semibold whitespace-nowrap">Inflow: ₹{categoryEarnBreakdown.total.toLocaleString('en-IN')}</span>
                   </div>
                 </div>
 
-                <div className="divide-y divide-slate-800/80 text-xs overflow-x-auto">
-                  <div className="py-2 grid grid-cols-12 font-bold text-slate-400 border-b border-slate-800 text-[11px]">
+                <div className="divide-y divide-slate-800/80 text-xs overflow-x-auto -mx-1 px-1">
+                  <div className="py-2 grid grid-cols-12 font-bold text-slate-400 border-b border-slate-800 text-[11px] min-w-[420px]">
                     <span className="col-span-4">Category</span>
                     <span className="col-span-3 text-right">Spend (Outflow)</span>
                     <span className="col-span-3 text-right">Earning (Inflow)</span>
@@ -2585,8 +2533,8 @@ export default function App() {
                   </div>
 
                   {categoryCombinedBreakdown.map(item => (
-                    <div key={item.name} className="py-2.5 grid grid-cols-12 items-center hover:bg-slate-800/40 px-1 rounded-lg">
-                      <span className="col-span-4 font-semibold text-slate-200 truncate">{item.name}</span>
+                    <div key={item.name} className="py-2.5 grid grid-cols-12 items-center hover:bg-slate-800/40 px-1 rounded-lg min-w-[420px]">
+                      <span className="col-span-4 font-semibold text-slate-200 truncate pr-1">{item.name}</span>
                       <span className="col-span-3 text-right text-rose-400 font-medium">
                         {item.spend > 0 ? `₹${item.spend.toLocaleString('en-IN')}` : '—'}
                       </span>
@@ -2604,9 +2552,44 @@ export default function App() {
           </div>
         )}
 
-        {/* TAB 3: TRANSACTIONS LEDGER (With Multi-Category Selection & Complete Export Options) */}
+        {/* TAB 3: TRANSACTIONS LEDGER (Smart Transfers Exclusively in Transactions Tab & Fixed Export Modal v1.6.0) */}
         {activeTab === 'LEDGER' && txns.length > 0 && (
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 space-y-3">
+            {/* SMART BANK TRANSFERS BANNER (Exclusively kept in Transactions tab per v1.6.0 request) */}
+            {transferPairs.length > 0 && (
+              <div className="bg-sky-950/40 border border-sky-800/60 rounded-xl p-2.5 flex items-center justify-between gap-2 text-xs flex-wrap">
+                <div className="flex items-center gap-2">
+                  <ArrowLeftRight size={14} className="text-sky-400 shrink-0" />
+                  <span className="text-slate-200">
+                    <strong className="text-sky-300">{transferPairs.length} Smart Bank Transfers</strong> linked (₹{totalTransfersAmount.toLocaleString('en-IN')})
+                  </span>
+                  <button
+                    onClick={() => setShowTransferManagerModal(true)}
+                    className="text-[11px] text-sky-400 hover:text-sky-300 font-semibold underline ml-1"
+                  >
+                    Edit / Manage
+                  </button>
+                </div>
+                <div className="flex items-center gap-3">
+                  <label className="flex items-center gap-1.5 cursor-pointer text-[11px] text-sky-200 font-medium">
+                    <input
+                      type="checkbox"
+                      checked={excludeTransfersFromTotals}
+                      onChange={e => setExcludeTransfersFromTotals(e.target.checked)}
+                      className="accent-sky-500 rounded"
+                    />
+                    <span>Exclude from totals</span>
+                  </label>
+                  <button
+                    onClick={() => setShowTransferManagerModal(true)}
+                    className="px-2.5 py-1 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 text-[11px] font-semibold flex items-center gap-1 border border-sky-500/40"
+                  >
+                    <Sliders size={12} /> Manage Transfers
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Search, Multi-Category Filter, Type, Add & Export Controls */}
             <div className="flex flex-col sm:flex-row gap-2 justify-between">
               <div className="relative flex-1">
@@ -2650,53 +2633,16 @@ export default function App() {
                   <option value="CREDIT">Credit Only</option>
                 </select>
 
-                {/* EXPORT DROPDOWN MENU (PDF, CSV, XLSX) */}
-                <div className="relative">
-                  <button
-                    onClick={() => setShowExportMenu(!showExportMenu)}
-                    className="bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-200 font-semibold px-3 py-2 rounded-xl text-xs flex items-center gap-1.5 shrink-0"
-                    title="Export filtered transactions"
-                  >
-                    <FileDown size={14} className="text-sky-400" />
-                    <span>Export</span>
-                    <ChevronDown size={12} className="opacity-70" />
-                  </button>
-
-                  {showExportMenu && (
-                    <div className="absolute right-0 mt-1.5 w-48 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl p-1.5 z-40 space-y-1">
-                      <button
-                        onClick={exportToPdf}
-                        className="w-full text-left px-2.5 py-2 hover:bg-slate-800 text-slate-200 rounded-lg text-xs flex items-center gap-2"
-                      >
-                        <FileText size={14} className="text-rose-400" />
-                        <div>
-                          <p className="font-semibold">Export to PDF</p>
-                          <p className="text-[10px] text-slate-400">Printable statement report</p>
-                        </div>
-                      </button>
-                      <button
-                        onClick={exportToXlsx}
-                        className="w-full text-left px-2.5 py-2 hover:bg-slate-800 text-slate-200 rounded-lg text-xs flex items-center gap-2"
-                      >
-                        <FileSpreadsheet size={14} className="text-emerald-400" />
-                        <div>
-                          <p className="font-semibold">Export to XLSX</p>
-                          <p className="text-[10px] text-slate-400">Formatted Excel workbook</p>
-                        </div>
-                      </button>
-                      <button
-                        onClick={exportToCsv}
-                        className="w-full text-left px-2.5 py-2 hover:bg-slate-800 text-slate-200 rounded-lg text-xs flex items-center gap-2"
-                      >
-                        <Download size={14} className="text-sky-400" />
-                        <div>
-                          <p className="font-semibold">Export to CSV</p>
-                          <p className="text-[10px] text-slate-400">Universal UTF-8 format</p>
-                        </div>
-                      </button>
-                    </div>
-                  )}
-                </div>
+                {/* EXPORT BUTTON - TRIGGERS SCREEN-CENTERED MODAL (Fixes partially out-of-screen export bug in v1.6.0) */}
+                <button
+                  onClick={() => setShowExportMenu(true)}
+                  className="bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-200 font-semibold px-3 py-2 rounded-xl text-xs flex items-center gap-1.5 shrink-0"
+                  title="Export filtered transactions"
+                >
+                  <FileDown size={14} className="text-sky-400" />
+                  <span>Export</span>
+                  <ChevronDown size={12} className="opacity-70" />
+                </button>
 
                 <button
                   onClick={() => setShowAddModal(true)}
@@ -4672,6 +4618,88 @@ export default function App() {
           </div>
         );
       })()}
+
+      {/* EXPORT MODAL DIALOG - SCREEN-CENTERED & NEVER PARTIALLY OUT OF SCREEN (v1.6.0) */}
+      {showExportMenu && (
+        <div
+          className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-4"
+          onClick={() => setShowExportMenu(false)}
+        >
+          <div
+            className="bg-slate-900 border border-slate-800 rounded-2xl max-w-sm w-full p-4 space-y-3 shadow-2xl"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
+              <div className="flex items-center gap-2">
+                <FileDown size={18} className="text-sky-400" />
+                <div>
+                  <h3 className="text-sm font-bold text-white">Export Statement Report</h3>
+                  <p className="text-[10px] text-slate-400">
+                    {filtered.length} of {txns.length} transactions selected
+                  </p>
+                </div>
+              </div>
+              <button onClick={() => setShowExportMenu(false)} className="text-slate-400 hover:text-white">
+                <X size={18} />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-300">
+              Select your export format. On mobile, files save to downloads or share via your preferred app:
+            </p>
+
+            <div className="space-y-2">
+              <button
+                onClick={exportToPdf}
+                className="w-full text-left p-3 hover:bg-slate-800/80 bg-slate-950 border border-slate-800 rounded-xl text-xs flex items-center gap-3 transition"
+              >
+                <div className="w-9 h-9 rounded-xl bg-rose-500/15 flex items-center justify-center shrink-0 border border-rose-500/30">
+                  <FileText size={18} className="text-rose-400" />
+                </div>
+                <div>
+                  <p className="font-bold text-slate-100 text-xs">Export to PDF Statement</p>
+                  <p className="text-[10px] text-slate-400">Formatted printable statement report with executive KPIs</p>
+                </div>
+              </button>
+
+              <button
+                onClick={exportToXlsx}
+                className="w-full text-left p-3 hover:bg-slate-800/80 bg-slate-950 border border-slate-800 rounded-xl text-xs flex items-center gap-3 transition"
+              >
+                <div className="w-9 h-9 rounded-xl bg-emerald-500/15 flex items-center justify-center shrink-0 border border-emerald-500/30">
+                  <FileSpreadsheet size={18} className="text-emerald-400" />
+                </div>
+                <div>
+                  <p className="font-bold text-slate-100 text-xs">Export to Excel (XLSX)</p>
+                  <p className="text-[10px] text-slate-400">Formatted workbook with computed inflow & outflow totals</p>
+                </div>
+              </button>
+
+              <button
+                onClick={exportToCsv}
+                className="w-full text-left p-3 hover:bg-slate-800/80 bg-slate-950 border border-slate-800 rounded-xl text-xs flex items-center gap-3 transition"
+              >
+                <div className="w-9 h-9 rounded-xl bg-sky-500/15 flex items-center justify-center shrink-0 border border-sky-500/30">
+                  <Download size={18} className="text-sky-400" />
+                </div>
+                <div>
+                  <p className="font-bold text-slate-100 text-xs">Export to RFC 4180 CSV</p>
+                  <p className="text-[10px] text-slate-400">Universal comma-separated format with UTF-8 BOM</p>
+                </div>
+              </button>
+            </div>
+
+            <div className="flex justify-end pt-2 border-t border-slate-800">
+              <button
+                onClick={() => setShowExportMenu(false)}
+                className="bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-1.5 rounded-xl text-xs font-semibold"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ANDROID BOTTOM NAVIGATION MENU */}
       <nav className="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur border-t border-slate-800 px-2 py-1.5 z-40">

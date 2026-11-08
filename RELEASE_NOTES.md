@@ -1,6 +1,45 @@
 # FinSight India — Release Notes
 
-## Version 1.5.0 (November 2026)
+## Version 1.6.0 (November 2026)
+
+FinSight India v1.6.0 delivers core visual, architectural, and workflow refinements: **Automatic 'Bank Transfer' Category Assignment** for smart-detected and manually linked cross-bank transfers, a **Focused Ledger-Exclusive Smart Bank Transfer Banner** (removed from Overview and Analysis tabs), a **Clean Minimal Top App Bar** (removing the 5 cluttering top action buttons), **Removal of "Manage Categories" from the Analysis tab**, **Comprehensive Text Overflow Fixes** across all category analysis and merchant views, a **Centered Modal Export Dialog** (eliminating off-screen dropdown clipping on mobile viewports), and **Universal File Manager APK Icon Visibility** across Android file explorers.
+
+---
+
+### Highlights & Key Improvements
+
+#### 1. Automatic 'Bank Transfer' Category Assignment
+- **Synchronized Categorization**: When two transactions are paired as a Smart Bank Transfer (debit in Bank A matching credit in Bank B), both legs are automatically assigned the `'Bank Transfer'` category in real time.
+- **Manual Link Integration**: Manually linking two transactions via the Transfer Linker instantly sets both transactions to `'Bank Transfer'` with `isManualCategory: true`.
+- **Intelligent Unlink Reversion**: Unlinking a transfer pair resets both transactions back to their direction-aware automatic categories so they seamlessly rejoin their appropriate spending or earning buckets.
+
+#### 2. Focused Ledger-Exclusive Smart Bank Transfer Banner
+- **Removed from Overview & Analysis**: The Smart Bank Transfer notification and exclusion toggle has been removed from the global app shell and dashboard/analysis tabs, keeping high-level summaries uncluttered.
+- **Dedicated Transactions Ledger Home**: The Smart Bank Transfer banner and its quick "Edit / Manage" controls are now positioned exclusively at the top of the Transactions (`LEDGER`) tab where users inspect and reconcile ledger entries.
+
+#### 3. Clean Minimalist Top App Bar
+- **Header De-Cluttering**: Removed the 5 redundant quick-action buttons (*Transfers*, *Backup*, *Categories*, *+ Bank*, and *Upload*) from the sticky top navigation bar.
+- **Streamlined Visual Hierarchy**: The header now cleanly highlights the custom FinSight India branding, version badge, bank/file/transaction counters, and active transfer badge without crowding mobile screens.
+
+#### 4. Streamlined Analysis Tab
+- **Removed "Manage Categories" Action**: Removed the category management button from the Category Analysis tab to keep the interface purely focused on spending breakdowns, earning inflows, and net-flow comparisons.
+
+#### 5. Mobile Text Overflow & Truncation Fix in Analysis Page
+- **Horizontal Overflow Prevention**: Fixed category names, merchant strings, and amount labels overflowing screen boundaries on smaller mobile devices.
+- **Responsive Sub-Mode Bar**: Added `overflow-x-auto` to the Spend / Earnings / Net Flow mode selector so button labels remain fully accessible on narrow viewports.
+- **Fluid Breakdown Lists**: Applied `min-w-0 flex-1 truncate` to category rows and top payees/merchants, ensuring amounts and percentages always stay anchored within the screen.
+- **Net Flow Table Width Constraint**: Constrained the Net Flow comparison table with `min-w-[420px]` inside an `overflow-x-auto` container with horizontal scroll support.
+
+#### 6. Screen-Centered Export Modal Dialog
+- **Eliminated Dropdown Off-Screen Clipping**: Replaced the previous `absolute` positioned dropdown menu (which clipped off-screen when buttons wrapped on mobile displays) with a fixed, centered modal dialog (`fixed inset-0 bg-black/75 z-50 flex items-center justify-center`).
+- **Enhanced Export Experience**: Features large, touch-friendly selection cards for PDF Statement Report, Excel XLSX, and RFC 4180 CSV, an explicit summary of selected transactions, backdrop dismiss, and a dedicated close button.
+
+#### 7. File Manager APK Icon Visibility
+- **Universal Launcher & File Manager Icon Assets**: Added flat raster PNG icons (`ic_launcher.png`, `ic_launcher_round.png`) across all density buckets (`mdpi`, `hdpi`, `xhdpi`, `xxhdpi`, `xxxhdpi`) in both `mipmap` and `drawable` resource folders.
+- **Explicit Manifest Attributes**: Added explicit `android:icon`, `android:roundIcon`, and `android:logo` declarations to both `<application>` and the launcher `<activity>` in `AndroidManifest.xml`.
+- **Automated CI Manifest Deployment**: Added an automated CI workflow step ensuring custom manifest attributes are permanently stamped into every generated release build, ensuring full thumbnail visibility in Files by Google, Samsung My Files, and third-party file explorers.
+
+---
 
 FinSight India v1.5.0 introduces comprehensive enhancements to transaction control, data export reliability, mobile UI layout, categorization accuracy, and temporal filtering: an **Interactive Smart Bank Transfer Management & Manual Linking Suite**, a **Universal Native Android Save & Share Engine** (resolving WebView export saving failures), a **Mobile Text-Overflow Fix** in the Transactions Ledger, **Smarter & Accurate Debit/Credit Direction Categorization**, and a **Multi-Select Period Duration Filter** (`Weekwise`, `Monthwise`, `Quarterwise`, `Yearwise`, `Presets`, and `Custom`).
 

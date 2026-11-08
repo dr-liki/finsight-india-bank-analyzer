@@ -39,10 +39,28 @@
 | **v1.3.0** | Completed | Fixed app drawer logo visibility with full Material Design 3 (MD3) Adaptive Icon compliance (foreground, background, monochrome themed icon); eliminated update install conflict via persistent release signing keystore (`certs/finsight-release-key.keystore`) and monotonic versionCode stamping; implemented Smart Bank Transfer matching between accounts with internal transfer exclusion toggle; added complete Backup & Restore manager with granular item-by-item selection (banks, statement files metadata, categories, rules, transactions); added dual Category Analysis providing separate Spend (debit) and Earnings (credit) breakdown views with net flow comparisons. |
 | **v1.4.0** | Completed | Upgraded auto-categorization engine with discrete token-boundary regex compiler eliminating false positives (e.g., over-tagging Fuel & Transport); implemented persistent manual transaction category tags (`isManualCategory: true`) that survive app reloads and rule updates; added multi-option category filter modal with live transaction counts, search, and clear filter button in Ledger; added comprehensive formatted export suite (PDF statements with executive KPI cards via `jspdf`/`jspdf-autotable`, styled Excel `.xlsx` workbooks with summary rows, and RFC 4180 `.csv` with UTF-8 BOM). |
 | **v1.5.0** | Completed | Added interactive Smart Bank Transfer management with pair unlinking, candidate counterpart manual linking, configurable clearing windows, and transfer manager UI; implemented native Android file saving and sharing via `@capacitor/filesystem` and `@capacitor/share` (fixing silent export download failures); resolved Ledger mobile text overflow with `min-w-0` and `break-words break-all`; upgraded auto-categorization with transaction direction awareness (`scope: 'CREDIT' | 'DEBIT' | 'BOTH'`); added multi-select duration filters across weekwise, monthwise, quarterwise, and yearwise periods. |
+| **v1.6.0** | Completed | Automatically assign 'Bank Transfer' category for both paired transactions; transfer banner moved exclusively into Transactions (`LEDGER`) tab and removed from Overview and Analysis; removed 5 cluttering top app bar buttons for clean header; removed 'Manage Categories' from Analysis tab; resolved Analysis tab text overflow across sub-mode buttons, category breakdowns, and Net Flow table; replaced Ledger export dropdown with screen-centered modal dialog; added universal raster icons and explicit activity/application icon attributes in AndroidManifest and CI deployment for complete file manager thumbnail visibility. |
 
 ---
 
-### 4. Technical Architecture: v1.5.0 Capabilities
+### 4. Technical Architecture: v1.6.0 Capabilities
+
+1. **Automatic 'Bank Transfer' Category Synchronization**:
+   - Both legs of detected or manually linked transfer pairs automatically receive the `'Bank Transfer'` category in real time.
+   - Unlinking a pair automatically reverts both transactions back to their direction-aware automatic categories.
+
+2. **Scoped Bank Transfer Banner & Clean Top App Bar**:
+   - Global header reduced to clean branding, version, and entity counters (5 cluttering action buttons removed).
+   - Smart Bank Transfer banner relocated exclusively to the Transactions (`LEDGER`) tab.
+
+3. **Centered Export Modal Dialog**:
+   - Replaced off-screen prone absolute dropdown with fixed centered modal (`fixed inset-0 bg-black/75 z-50 flex items-center justify-center`).
+   - Clean card-based format selection for PDF Statement, Excel XLSX, and RFC 4180 CSV.
+
+4. **Universal File Manager APK Icon Deployment**:
+   - Raster flat icons across all density buckets (`mdpi`, `hdpi`, `xhdpi`, `xxhdpi`, `xxxhdpi`) in `mipmap` and `drawable`.
+   - Explicit `android:icon`, `android:roundIcon`, and `android:logo` on both `<application>` and `<activity>`.
+   - CI workflow step deploying `android-manifest/AndroidManifest.xml` during Gradle builds.
 
 1. **Smart Bank Transfer Management Suite (`detectTransferPairs`)**:
    - Automated cross-bank matching with configurable clearing window ($0$ to $5$ days).

@@ -65,6 +65,12 @@ jobs:
             echo "Successfully deployed MD3 adaptive icon and raster mipmap resources"
           fi
 
+          # Deploy custom AndroidManifest with explicit application and activity icon attributes
+          if [ -f "android-manifest/AndroidManifest.xml" ]; then
+            cp android-manifest/AndroidManifest.xml android/app/src/main/AndroidManifest.xml
+            echo "Successfully deployed custom AndroidManifest.xml"
+          fi
+
       - name: Configure Gradle Release Signing
         run: |
           python3 -c "

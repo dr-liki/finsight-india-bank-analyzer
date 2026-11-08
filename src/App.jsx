@@ -317,7 +317,7 @@ function formatBalanceDate(dateStr) {
   return dateStr;
 }
 
-// AUTOMATICALLY ANALYSE STATEMENT FILES FOR INITIAL & LATEST BANK BALANCES (v1.9.1 Robust Fix)
+// AUTOMATICALLY ANALYSE STATEMENT FILES FOR INITIAL & LATEST BANK BALANCES (v2.0.0 True Accounting Math)
 function getBankBalanceInfo(bank, allTxns) {
   if (!bank) return { initial: 0, initialDate: 'No statements', latest: 0, latestDate: 'No statements', isManual: false, hasData: false };
 
@@ -333,7 +333,7 @@ function getBankBalanceInfo(bank, allTxns) {
     };
   }
 
-  // 2. Filter all transactions for this bank
+  // 2. Filter all transactions assigned to this bank
   const bankTxns = (allTxns || []).filter(t => t.bank === bank.name);
   if (bankTxns.length === 0) {
     if (bank.initialBalance !== undefined && bank.initialBalance !== null) {
@@ -356,29 +356,21 @@ function getBankBalanceInfo(bank, allTxns) {
     };
   }
 
-  // 3. Sort chronologically (oldest first) with intra-day sequence tie-breaking:
+  // 3. Sort chronologically from oldest to newest:
   const sorted = [...bankTxns].sort((a, b) => {
     const timeA = new Date(a.date || '2026-01-01').getTime();
     const timeB = new Date(b.date || '2026-01-01').getTime();
     const diff = timeA - timeB;
     if (diff !== 0) return diff;
 
-    // Tie-breaker for Opening and Closing balance rows:
-    if (a.isOpeningBalanceRow && !b.isOpeningBalanceRow) return -1;
-    if (b.isOpeningBalanceRow && !a.isOpeningBalanceRow) return 1;
-    if (a.isClosingBalanceRow && !b.isClosingBalanceRow) return 1;
-    if (b.isClosingBalanceRow && !a.isClosingBalanceRow) return -1;
-
-    // Both transactions occurred on the same date: use true statement file sequence
+    // Same date tie-breaker: use true statement file sequence
     if (a.fileId && a.fileId === b.fileId) {
       const idxA = typeof a.fileOrderIndex === 'number' ? a.fileOrderIndex : 0;
       const idxB = typeof b.fileOrderIndex === 'number' ? b.fileOrderIndex : 0;
       if (a.fileDirection === 'DESC') {
-        // In reverse-chronological statements, higher row index occurred earlier in the day
-        return idxB - idxA;
+        return idxB - idxA; // Higher row in DESC statement happened earlier
       }
-      // In chronological statements, lower row index occurred earlier in the day
-      return idxA - idxB;
+      return idxA - idxB;   // Lower row in ASC statement happened earlier
     }
 
     return (a.id > b.id ? 1 : -1);
@@ -387,55 +379,38 @@ function getBankBalanceInfo(bank, allTxns) {
   const earliestTxn = sorted[0];
   const latestTxn = sorted[sorted.length - 1];
 
-  // 4. Check if any transactions have explicit balance
+  // 4. Find all transactions that recorded a balance from statement files:
   const txnsWithBal = sorted.filter(t => t.balance !== undefined && t.balance !== null && !isNaN(t.balance));
 
   if (txnsWithBal.length > 0) {
     const firstWithBal = txnsWithBal[0];
     const lastWithBal = txnsWithBal[txnsWithBal.length - 1];
 
-    // Compute Initial Balance:
-    let initialBal = 0;
-    if (earliestTxn.statementOpeningBalance !== undefined) {
-      initialBal = Number(earliestTxn.statementOpeningBalance);
-    } else if (firstWithBal.isOpeningBalanceRow) {
-      initialBal = Number(firstWithBal.balance);
-    } else if (firstWithBal.statementOpeningBalance !== undefined) {
-      initialBal = Number(firstWithBal.statementOpeningBalance);
+    // True Initial Balance (opening balance before first transaction occurred):
+    // if First Transaction was a CREDIT: Initial Balance = First Recorded Running Balance - Amount
+    // if First Transaction was a DEBIT:  Initial Balance = First Recorded Running Balance + Amount
+    let initialBal = Number(firstWithBal.balance);
+    if (firstWithBal.type === 'CREDIT') {
+      initialBal -= Number(firstWithBal.amount || 0);
     } else {
-      // Reverse deduction from the earliest transaction's closing balance:
-      initialBal = Number(firstWithBal.balance);
-      if (firstWithBal.type === 'CREDIT') {
-        initialBal -= Number(firstWithBal.amount || 0);
-      } else {
-        initialBal += Number(firstWithBal.amount || 0);
-      }
+      initialBal += Number(firstWithBal.amount || 0);
     }
 
-    // Compute Latest Balance:
-    let latestBal = 0;
-    if (latestTxn.statementClosingBalance !== undefined) {
-      latestBal = Number(latestTxn.statementClosingBalance);
-    } else if (lastWithBal.isClosingBalanceRow) {
-      latestBal = Number(lastWithBal.balance);
-    } else if (lastWithBal.statementClosingBalance !== undefined) {
-      latestBal = Number(lastWithBal.statementClosingBalance);
-    } else {
-      latestBal = Number(lastWithBal.balance);
-      const lastWithBalIdx = sorted.indexOf(lastWithBal);
-      if (lastWithBalIdx !== -1 && lastWithBalIdx < sorted.length - 1) {
-        for (let i = lastWithBalIdx + 1; i < sorted.length; i++) {
-          const t = sorted[i];
-          if (t.amount > 0) {
-            latestBal += (t.type === 'CREDIT' ? Number(t.amount || 0) : -Number(t.amount || 0));
-          }
+    // Latest Balance Calculation: It takes the running balance of the last transaction that recorded a balance
+    let latestBal = Number(lastWithBal.balance);
+    const lastWithBalIdx = sorted.indexOf(lastWithBal);
+    if (lastWithBalIdx !== -1 && lastWithBalIdx < sorted.length - 1) {
+      for (let i = lastWithBalIdx + 1; i < sorted.length; i++) {
+        const t = sorted[i];
+        if (t.amount > 0) {
+          latestBal += (t.type === 'CREDIT' ? Number(t.amount || 0) : -Number(t.amount || 0));
         }
       }
     }
 
     return {
       initial: Math.max(0, initialBal),
-      initialDate: earliestTxn.date || firstWithBal.date,
+      initialDate: firstWithBal.date || earliestTxn.date,
       latest: latestBal,
       latestDate: latestTxn.date || lastWithBal.date,
       isManual: false,
@@ -443,21 +418,12 @@ function getBankBalanceInfo(bank, allTxns) {
     };
   }
 
-  // 5. Fallback: Net cash flow for statements without balance column
-  const netFlow = bankTxns.reduce((sum, t) => {
-    if (t.isOpeningBalanceRow || t.isClosingBalanceRow) return sum;
-    return sum + (t.type === 'CREDIT' ? Number(t.amount || 0) : -Number(t.amount || 0));
-  }, 0);
-
-  const baseInitial = (earliestTxn.statementOpeningBalance !== undefined)
-    ? Number(earliestTxn.statementOpeningBalance)
-    : ((bank.initialBalance !== undefined && bank.initialBalance !== null) ? Number(bank.initialBalance) : 0);
-
+  // 5. Fallback for statements without balance column (e.g. UPI mini-statements):
+  const netFlow = bankTxns.reduce((sum, t) => sum + (t.type === 'CREDIT' ? Number(t.amount || 0) : -Number(t.amount || 0)), 0);
+  const baseInitial = (bank.initialBalance !== undefined && bank.initialBalance !== null) ? Number(bank.initialBalance) : 0;
   const initialDate = bank.initialBalanceDate || earliestTxn.date;
   const latestDate = bank.latestBalanceDate || latestTxn.date;
-  const latestBal = (latestTxn.statementClosingBalance !== undefined)
-    ? Number(latestTxn.statementClosingBalance)
-    : (baseInitial + netFlow);
+  const latestBal = baseInitial + netFlow;
 
   return {
     initial: baseInitial,
@@ -793,6 +759,13 @@ export default function App() {
   const [categoryPickerCallback, setCategoryPickerCallback] = useState(null);
   const [categoryPickerTitle, setCategoryPickerTitle] = useState('Change Category');
   const [categoryPickerSubtitle, setCategoryPickerSubtitle] = useState('');
+
+  // TRANSACTION TYPE & CATEGORY SELECTION WINDOWS (v2.0.0)
+  const [showTxnTypePickerModal, setShowTxnTypePickerModal] = useState(false);
+  const [showTxnCategoryPickerModal, setShowTxnCategoryPickerModal] = useState(false);
+  const [typePickerContext, setTypePickerContext] = useState(null); // 'EDIT' | 'NEW' | null
+  const [catPickerContext, setCatPickerContext] = useState(null); // 'EDIT' | 'NEW' | null
+  const [editCategorySearch, setEditCategorySearch] = useState('');
 
   const [showTransferManagerModal, setShowTransferManagerModal] = useState(false);
   const [showManualLinkModal, setShowManualLinkModal] = useState(false);
@@ -1504,7 +1477,7 @@ export default function App() {
       if (hasDate && (hasNarr || row.length >= 3)) {
         headerRowIdx = i;
         row.forEach((cell, idx) => {
-          const isBalCol = cell.includes('balance') || cell.includes('closing bal') || cell.includes('running bal') || cell === 'bal' || cell.includes('available bal') || cell === 'closing balance';
+          const isBalCol = (cell.includes('balance') || cell.includes('bal')) && !cell.includes('balance b/f') && !cell.includes('balance c/f') && !cell.includes('opening') && !cell.includes('dr/cr') && !cell.includes('cr/dr');
           const isDrCrCol = cell === 'type' || cell === 'dr/cr' || cell === 'cr/dr' || cell.includes('dr / cr') || cell.includes('cr / dr') || cell === 'txn type' || cell === 'transaction type';
 
           if (isBalCol && colMap.balance === -1) {
@@ -1923,6 +1896,7 @@ export default function App() {
           ...editingTxn,
           bank: bankName,
           amount: parseFloat(editingTxn.amount) || 0,
+          balance: editingTxn.balance !== undefined && !isNaN(editingTxn.balance) ? parseFloat(editingTxn.balance) : undefined,
           isManualCategory: isManuallyChanged
         };
       }
@@ -3575,9 +3549,16 @@ export default function App() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0 text-right">
-                      <span className={`font-bold text-sm whitespace-nowrap ${t.type === 'CREDIT' ? 'text-emerald-400' : 'text-rose-400'}`}>
-                        {t.type === 'CREDIT' ? '+' : '-'}₹{t.amount.toLocaleString('en-IN')}
-                      </span>
+                      <div>
+                        <span className={`font-bold text-sm whitespace-nowrap ${t.type === 'CREDIT' ? 'text-emerald-400' : 'text-rose-400'}`}>
+                          {t.type === 'CREDIT' ? '+' : '-'}₹{t.amount.toLocaleString('en-IN')}
+                        </span>
+                        {t.balance !== undefined && !isNaN(t.balance) && (
+                          <p className="text-[10px] text-slate-400 font-medium tabular-nums">
+                            Bal: ₹{Number(t.balance).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </p>
+                        )}
+                      </div>
                       <Edit3 size={13} className="text-slate-500 shrink-0" />
                     </div>
                   </div>
@@ -4947,26 +4928,49 @@ export default function App() {
                 </div>
                 <div>
                   <label className="text-slate-400 block mb-1">Type</label>
-                  <select
-                    value={editingTxn.type}
-                    onChange={e => setEditingTxn({ ...editingTxn, type: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-100"
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTypePickerContext('EDIT');
+                      setShowTxnTypePickerModal(true);
+                    }}
+                    className="w-full bg-slate-950 border border-slate-800 hover:border-slate-700 rounded-xl px-3 py-2 text-slate-100 flex items-center justify-between text-xs transition"
                   >
-                    <option value="DEBIT">DEBIT (-)</option>
-                    <option value="CREDIT">CREDIT (+)</option>
-                  </select>
+                    <div className="flex items-center gap-1.5">
+                      {editingTxn.type === 'CREDIT' ? (
+                        <TrendingUp size={14} className="text-emerald-400 shrink-0" />
+                      ) : (
+                        <TrendingDown size={14} className="text-rose-400 shrink-0" />
+                      )}
+                      <span className={`font-semibold ${editingTxn.type === 'CREDIT' ? 'text-emerald-400' : 'text-rose-400'}`}>
+                        {editingTxn.type === 'CREDIT' ? 'CREDIT (+)' : 'DEBIT (-)'}
+                      </span>
+                    </div>
+                    <ChevronDown size={14} className="text-slate-400 shrink-0" />
+                  </button>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="text-slate-400 block mb-1">Category (Selecting marks as manual)</label>
-                  <select
-                    value={editingTxn.category}
-                    onChange={e => setEditingTxn({ ...editingTxn, category: e.target.value, isManualCategory: true })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-100"
+                  <label className="text-slate-400 block mb-1">Category (Marks manual)</label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCatPickerContext('EDIT');
+                      setEditCategorySearch('');
+                      setShowTxnCategoryPickerModal(true);
+                    }}
+                    className="w-full bg-slate-950 border border-slate-800 hover:border-slate-700 rounded-xl px-3 py-2 text-slate-100 flex items-center justify-between text-xs transition"
                   >
-                    {categories.map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
+                    <div className="flex items-center gap-2 truncate">
+                      <span
+                        className="w-2.5 h-2.5 rounded-full shrink-0"
+                        style={{ backgroundColor: COLORS[categories.indexOf(editingTxn.category) % COLORS.length] || '#10b981' }}
+                      />
+                      <span className="font-semibold text-slate-200 truncate">{editingTxn.category}</span>
+                    </div>
+                    <ChevronDown size={14} className="text-slate-400 shrink-0" />
+                  </button>
                 </div>
                 <div>
                   <label className="text-slate-400 block mb-1">Bank</label>
@@ -4978,6 +4982,20 @@ export default function App() {
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-100"
                   />
                 </div>
+              </div>
+              <div>
+                <label className="text-slate-400 block mb-1">Statement Running Balance (₹)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={editingTxn.balance !== undefined && editingTxn.balance !== null ? editingTxn.balance : ''}
+                  placeholder="Recorded statement balance (optional)"
+                  onChange={e => {
+                    const val = e.target.value === '' ? undefined : parseFloat(e.target.value);
+                    setEditingTxn({ ...editingTxn, balance: val });
+                  }}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-100 tabular-nums"
+                />
               </div>
             </div>
             <div className="flex items-center justify-between pt-2 border-t border-slate-800">
@@ -5044,26 +5062,49 @@ export default function App() {
                 </div>
                 <div>
                   <label className="text-slate-400 block mb-1">Type</label>
-                  <select
-                    value={newTxnForm.type}
-                    onChange={e => setNewTxnForm({ ...newTxnForm, type: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-100"
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTypePickerContext('NEW');
+                      setShowTxnTypePickerModal(true);
+                    }}
+                    className="w-full bg-slate-950 border border-slate-800 hover:border-slate-700 rounded-xl px-3 py-2 text-slate-100 flex items-center justify-between text-xs transition"
                   >
-                    <option value="DEBIT">DEBIT (-)</option>
-                    <option value="CREDIT">CREDIT (+)</option>
-                  </select>
+                    <div className="flex items-center gap-1.5">
+                      {newTxnForm.type === 'CREDIT' ? (
+                        <TrendingUp size={14} className="text-emerald-400 shrink-0" />
+                      ) : (
+                        <TrendingDown size={14} className="text-rose-400 shrink-0" />
+                      )}
+                      <span className={`font-semibold ${newTxnForm.type === 'CREDIT' ? 'text-emerald-400' : 'text-rose-400'}`}>
+                        {newTxnForm.type === 'CREDIT' ? 'CREDIT (+)' : 'DEBIT (-)'}
+                      </span>
+                    </div>
+                    <ChevronDown size={14} className="text-slate-400 shrink-0" />
+                  </button>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-slate-400 block mb-1">Category</label>
-                  <select
-                    value={newTxnForm.category}
-                    onChange={e => setNewTxnForm({ ...newTxnForm, category: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-100"
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCatPickerContext('NEW');
+                      setEditCategorySearch('');
+                      setShowTxnCategoryPickerModal(true);
+                    }}
+                    className="w-full bg-slate-950 border border-slate-800 hover:border-slate-700 rounded-xl px-3 py-2 text-slate-100 flex items-center justify-between text-xs transition"
                   >
-                    {categories.map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
+                    <div className="flex items-center gap-2 truncate">
+                      <span
+                        className="w-2.5 h-2.5 rounded-full shrink-0"
+                        style={{ backgroundColor: COLORS[categories.indexOf(newTxnForm.category) % COLORS.length] || '#10b981' }}
+                      />
+                      <span className="font-semibold text-slate-200 truncate">{newTxnForm.category}</span>
+                    </div>
+                    <ChevronDown size={14} className="text-slate-400 shrink-0" />
+                  </button>
                 </div>
                 <div>
                   <label className="text-slate-400 block mb-1">Bank Name *</label>
@@ -5084,6 +5125,201 @@ export default function App() {
               </button>
               <button onClick={handleAddManualTxn} className="bg-emerald-500 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs">
                 Add Transaction
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: TRANSACTION TYPE SELECTION WINDOW (v2.0.0 - STYLED SIMILAR TO OTHER WINDOWS) */}
+      {showTxnTypePickerModal && (
+        <div
+          className="fixed inset-0 bg-black/80 z-[80] flex items-center justify-center p-4 animate-fadeIn"
+          onClick={() => setShowTxnTypePickerModal(false)}
+        >
+          <div
+            className="bg-slate-900 border border-slate-800 rounded-2xl max-w-sm w-full p-4 space-y-3.5 shadow-2xl"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-purple-500/15 flex items-center justify-center border border-purple-500/30">
+                  <ArrowUpDown size={16} className="text-purple-400" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white">Select Transaction Type</h3>
+                  <p className="text-[11px] text-slate-400">Choose DEBIT (-) or CREDIT (+)</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowTxnTypePickerModal(false)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="space-y-2 pt-1">
+              {(() => {
+                const currentType = typePickerContext === 'EDIT' ? editingTxn?.type : newTxnForm?.type;
+                return (
+                  <>
+                    <div
+                      onClick={() => {
+                        if (typePickerContext === 'EDIT') setEditingTxn(prev => ({ ...prev, type: 'DEBIT' }));
+                        else if (typePickerContext === 'NEW') setNewTxnForm(prev => ({ ...prev, type: 'DEBIT' }));
+                        setShowTxnTypePickerModal(false);
+                      }}
+                      className={`p-3 rounded-xl border flex items-center justify-between text-xs transition cursor-pointer ${
+                        currentType === 'DEBIT'
+                          ? 'bg-rose-500/15 border-rose-500/50 text-white shadow-sm'
+                          : 'bg-slate-950/70 border-slate-800/90 text-slate-300 hover:border-slate-700'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-7 h-7 rounded-lg bg-rose-500/20 flex items-center justify-center">
+                          <TrendingDown size={15} className="text-rose-400" />
+                        </div>
+                        <div>
+                          <p className="font-semibold text-rose-300 text-xs">DEBIT (-)</p>
+                          <p className="text-[10px] text-slate-400">Outflow, Payment, Withdrawal, Expense</p>
+                        </div>
+                      </div>
+                      <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                        currentType === 'DEBIT' ? 'border-rose-400 bg-rose-500' : 'border-slate-700'
+                      }`}>
+                        {currentType === 'DEBIT' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                      </div>
+                    </div>
+
+                    <div
+                      onClick={() => {
+                        if (typePickerContext === 'EDIT') setEditingTxn(prev => ({ ...prev, type: 'CREDIT' }));
+                        else if (typePickerContext === 'NEW') setNewTxnForm(prev => ({ ...prev, type: 'CREDIT' }));
+                        setShowTxnTypePickerModal(false);
+                      }}
+                      className={`p-3 rounded-xl border flex items-center justify-between text-xs transition cursor-pointer ${
+                        currentType === 'CREDIT'
+                          ? 'bg-emerald-500/15 border-emerald-500/50 text-white shadow-sm'
+                          : 'bg-slate-950/70 border-slate-800/90 text-slate-300 hover:border-slate-700'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-7 h-7 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+                          <TrendingUp size={15} className="text-emerald-400" />
+                        </div>
+                        <div>
+                          <p className="font-semibold text-emerald-300 text-xs">CREDIT (+)</p>
+                          <p className="text-[10px] text-slate-400">Income, Deposit, Salary, Refund, Cashback</p>
+                        </div>
+                      </div>
+                      <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                        currentType === 'CREDIT' ? 'border-emerald-400 bg-emerald-500' : 'border-slate-700'
+                      }`}>
+                        {currentType === 'CREDIT' && <div className="w-1.5 h-1.5 rounded-full bg-slate-950" />}
+                      </div>
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: TRANSACTION CATEGORY SELECTION WINDOW (v2.0.0 - STYLED SIMILAR TO OTHER WINDOWS) */}
+      {showTxnCategoryPickerModal && (
+        <div
+          className="fixed inset-0 bg-black/80 z-[80] flex items-center justify-center p-4 animate-fadeIn"
+          onClick={() => setShowTxnCategoryPickerModal(false)}
+        >
+          <div
+            className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-4 space-y-3 max-h-[85vh] flex flex-col shadow-2xl"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-slate-800 pb-2.5 shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-emerald-500/15 flex items-center justify-center border border-emerald-500/30">
+                  <Tag size={16} className="text-emerald-400" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white">Choose Category</h3>
+                  <p className="text-[11px] text-slate-400 truncate max-w-[220px]">
+                    {catPickerContext === 'EDIT' ? `Editing: ${editingTxn?.narration || 'Transaction'}` : 'Select category for new transaction'}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowTxnCategoryPickerModal(false)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="relative shrink-0">
+              <Search size={14} className="absolute left-3 top-2.5 text-slate-500" />
+              <input
+                type="text"
+                value={editCategorySearch}
+                onChange={e => setEditCategorySearch(e.target.value)}
+                placeholder="Search categories..."
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500/50"
+              />
+            </div>
+
+            <div className="overflow-y-auto space-y-1.5 flex-1 pr-1 max-h-[48vh]">
+              {(() => {
+                const activeCategory = catPickerContext === 'EDIT' ? editingTxn?.category : newTxnForm?.category;
+                return categories
+                  .filter(c => !editCategorySearch || c.toLowerCase().includes(editCategorySearch.toLowerCase()))
+                  .map(c => {
+                    const isChosen = activeCategory === c;
+                    const count = txns.filter(t => t.category === c).length;
+                    const col = COLORS[categories.indexOf(c) % COLORS.length] || '#10b981';
+                    return (
+                      <div
+                        key={c}
+                        onClick={() => {
+                          if (catPickerContext === 'EDIT') {
+                            setEditingTxn(prev => ({ ...prev, category: c, isManualCategory: true }));
+                          } else if (catPickerContext === 'NEW') {
+                            setNewTxnForm(prev => ({ ...prev, category: c }));
+                          }
+                          setShowTxnCategoryPickerModal(false);
+                        }}
+                        className={`w-full p-2.5 rounded-xl border flex items-center justify-between text-xs transition cursor-pointer ${
+                          isChosen
+                            ? 'bg-emerald-500/15 border-emerald-500/60 text-white shadow-sm'
+                            : 'bg-slate-950/60 border-slate-800/80 text-slate-300 hover:bg-slate-800/60 hover:border-slate-700'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: col }} />
+                          <span className="font-semibold truncate">{c}</span>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="text-[10px] bg-slate-900 text-slate-400 px-2 py-0.5 rounded-full border border-slate-800">
+                            {count} txns
+                          </span>
+                          <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                            isChosen ? 'border-emerald-400 bg-emerald-500 text-slate-950 font-bold' : 'border-slate-700'
+                          }`}>
+                            {isChosen && <Check size={10} strokeWidth={3} />}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  });
+              })()}
+            </div>
+
+            <div className="pt-2 border-t border-slate-800 flex items-center justify-end">
+              <button
+                onClick={() => setShowTxnCategoryPickerModal(false)}
+                className="bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-2 rounded-xl text-xs font-semibold"
+              >
+                Close
               </button>
             </div>
           </div>

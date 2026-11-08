@@ -1,5 +1,24 @@
 # FinSight India — Release Notes
 
+## Version 2.0.0 (November 2026)
+
+FinSight India v2.0.0 introduces true bank balance statement accounting and modern selection windows across transaction workflows:
+* **Modern Selection Windows for Type and Category in Edit Transaction**:
+  - Replaced the old native OS select dropdowns with dedicated, full-featured popup windows styled identically to the Filter and Category Manager dialogs.
+  - Features the signature dark-slate container, emerald/sky highlights, icons, active radio checks, and search filtering.
+  - Stacked at `z-[80]`, ensuring the selection window opens comfortably in front of the Edit Transaction dialog and never behind it.
+  - Also deployed to the Add Manual Transaction dialog for universal UX consistency.
+* **True Bank Statement Running Balance Accounting Engine**:
+  - **Explicit 'Balance' Column Recording**: Running balances from uploaded Excel, CSV, and PDF statements are comprehensively extracted, stored on every transaction (`t.balance`), and displayed directly under the transaction amount in the Ledger.
+  - **Oldest-to-Newest Chronological Sorting**: Transactions assigned to each bank are sorted chronologically from oldest to newest with intra-day sequence tie-breaking.
+  - **Exact Initial Balance Reverse-Deduction**:
+    - If first transaction was a `CREDIT`: `Initial Balance = First Recorded Running Balance - Amount`
+    - If first transaction was a `DEBIT`: `Initial Balance = First Recorded Running Balance + Amount`
+  - **Exact Latest Balance**: Takes the running balance of the last transaction that recorded a balance.
+  - Displayed alongside formatted dates in brackets on each bank card and auto-synced on statement changes.
+
+---
+
 ## Version 1.9.2 (November 2026)
 
 FinSight India v1.9.2 brings streamlined transaction category editing and uniform workspace layout refinements:

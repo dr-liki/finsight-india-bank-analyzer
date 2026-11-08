@@ -1,5 +1,15 @@
 # FinSight India — Release Notes
 
+## Version 1.9.2 (November 2026)
+
+FinSight India v1.9.2 brings streamlined transaction category editing and uniform workspace layout refinements:
+* **Single Transaction Category Editing (Old Style Restored)**: In the Edit Transaction window (and Add Transaction modal), category selection now uses the direct native dropdown select element instead of invoking the category picker modal. This eliminates the layered modal conflict where the picker popped up behind the edit dialog.
+* **Multi-Select Transactions (New Style Preserved)**: Bulk editing multiple selected transactions continues to leverage the modern Category Picker popup window with instant search, color tags, and category pills.
+* **Elevated Modal Stacking (z-[70])**: Boosted the Category Picker modal stacking index to z-[70] to guarantee it always renders on top of all other application overlays.
+* **Re-apply Rules Button Relocated**: In the Bank & Rules workspace, the "Re-apply Rules" button in Section 4 (Smart Auto-Categorization Rules) has been moved directly below the section description, achieving 100% visual and layout consistency with Sections 1, 2, 3, and Smart Bank Transfers.
+
+---
+
 ## Version 1.9.1 (November 2026)
 
 FinSight India v1.9.1 delivers a comprehensive fix to bank balance calculations across uploaded bank statements:

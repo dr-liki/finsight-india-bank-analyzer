@@ -3947,12 +3947,12 @@ export default function App() {
 
 {/* Section 4: Smarter Interactive Auto-Categorization Rules List */}
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">
-              <div className="flex items-center justify-between">
+              <div className="space-y-2.5">
                 <div>
                   <h3 className="text-xs font-bold text-slate-100 uppercase tracking-wider flex items-center gap-1.5">
                     <Sparkles size={15} className="text-purple-400" /> Smart Auto-Categorization Rules ({rules.length})
                   </h3>
-                  <p className="text-[11px] text-slate-400">
+                  <p className="text-[11px] text-slate-400 mt-0.5">
                     Token-boundary keyword matching ensures exact merchant classification without false positives. Manual tags are permanently preserved.
                   </p>
                 </div>
@@ -4119,7 +4119,7 @@ export default function App() {
       {/* REDESIGNED TYPE FILTER POPUP WINDOW (v1.7.0) */}
       {showTypeFilterModal && (
         <div
-          className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-4 animate-fadeIn"
+          className="fixed inset-0 bg-black/75 z-[70] flex items-center justify-center p-4 animate-fadeIn"
           onClick={() => setShowTypeFilterModal(false)}
         >
           <div
@@ -4960,29 +4960,13 @@ export default function App() {
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-slate-400 block mb-1">Category (Selecting marks as manual)</label>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setCategoryPickerTarget(editingTxn.category);
-                      setCategoryPickerSearch('');
-                      setCategoryPickerTitle('Choose Category');
-                      setCategoryPickerSubtitle(`Editing: ${editingTxn.narration.slice(0, 35)}...`);
-                      setCategoryPickerCallback(() => (chosenCat) => {
-                        setEditingTxn(prev => ({ ...prev, category: chosenCat, isManualCategory: true }));
-                      });
-                      setShowCategoryPickerModal(true);
-                    }}
-                    className="w-full bg-slate-950 border border-slate-800 hover:border-slate-700 rounded-xl px-3 py-2 text-slate-100 flex items-center justify-between text-xs transition"
+                  <select
+                    value={editingTxn.category}
+                    onChange={e => setEditingTxn({ ...editingTxn, category: e.target.value, isManualCategory: true })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-100"
                   >
-                    <div className="flex items-center gap-2 truncate">
-                      <span
-                        className="w-2.5 h-2.5 rounded-full shrink-0"
-                        style={{ backgroundColor: COLORS[categories.indexOf(editingTxn.category) % COLORS.length] || '#10b981' }}
-                      />
-                      <span className="font-semibold text-slate-200 truncate">{editingTxn.category}</span>
-                    </div>
-                    <ChevronDown size={14} className="text-slate-400 shrink-0" />
-                  </button>
+                    {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
                 </div>
                 <div>
                   <label className="text-slate-400 block mb-1">Bank</label>
@@ -5073,29 +5057,13 @@ export default function App() {
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-slate-400 block mb-1">Category</label>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setCategoryPickerTarget(newTxnForm.category);
-                      setCategoryPickerSearch('');
-                      setCategoryPickerTitle('Choose Category');
-                      setCategoryPickerSubtitle('Select category for new transaction');
-                      setCategoryPickerCallback(() => (chosenCat) => {
-                        setNewTxnForm(prev => ({ ...prev, category: chosenCat }));
-                      });
-                      setShowCategoryPickerModal(true);
-                    }}
-                    className="w-full bg-slate-950 border border-slate-800 hover:border-slate-700 rounded-xl px-3 py-2 text-slate-100 flex items-center justify-between text-xs transition"
+                  <select
+                    value={newTxnForm.category}
+                    onChange={e => setNewTxnForm({ ...newTxnForm, category: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-100"
                   >
-                    <div className="flex items-center gap-2 truncate">
-                      <span
-                        className="w-2.5 h-2.5 rounded-full shrink-0"
-                        style={{ backgroundColor: COLORS[categories.indexOf(newTxnForm.category) % COLORS.length] || '#10b981' }}
-                      />
-                      <span className="font-semibold text-slate-200 truncate">{newTxnForm.category}</span>
-                    </div>
-                    <ChevronDown size={14} className="text-slate-400 shrink-0" />
-                  </button>
+                    {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
                 </div>
                 <div>
                   <label className="text-slate-400 block mb-1">Bank Name *</label>

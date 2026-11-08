@@ -59,25 +59,11 @@ jobs:
             base64 -d certs/keystore.base64 > android/finsight-release-key.keystore
           fi
 
-          # Deploy MD3 adaptive icon XMLs and colors
+          # Deploy MD3 adaptive icon XMLs, legacy PNG icons, and colors
           if [ -d "android-res" ]; then
             cp -r android-res/* android/app/src/main/res/
-            echo "Successfully deployed MD3 adaptive icon resources"
+            echo "Successfully deployed MD3 adaptive icon and raster mipmap resources"
           fi
-
-          # Generate crisp legacy PNG icons from SVG for complete launcher compatibility
-          sudo apt-get update && sudo apt-get install -y librsvg2-bin
-          rsvg-convert -w 48 -h 48 public/icon.svg -o android/app/src/main/res/mipmap-mdpi/ic_launcher.png || true
-          rsvg-convert -w 72 -h 72 public/icon.svg -o android/app/src/main/res/mipmap-hdpi/ic_launcher.png || true
-          rsvg-convert -w 96 -h 96 public/icon.svg -o android/app/src/main/res/mipmap-xhdpi/ic_launcher.png || true
-          rsvg-convert -w 144 -h 144 public/icon.svg -o android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png || true
-          rsvg-convert -w 192 -h 192 public/icon.svg -o android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png || true
-
-          cp android/app/src/main/res/mipmap-mdpi/ic_launcher.png android/app/src/main/res/mipmap-mdpi/ic_launcher_round.png || true
-          cp android/app/src/main/res/mipmap-hdpi/ic_launcher.png android/app/src/main/res/mipmap-hdpi/ic_launcher_round.png || true
-          cp android/app/src/main/res/mipmap-xhdpi/ic_launcher.png android/app/src/main/res/mipmap-xhdpi/ic_launcher_round.png || true
-          cp android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png android/app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png || true
-          cp android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png || true
 
       - name: Configure Gradle Release Signing
         run: |

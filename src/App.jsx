@@ -5,18 +5,22 @@ import {
   ArrowDownRight, Plus, Edit3, X, Lock, AlertCircle, FolderOpen, Save,
   Check, Tag, Layers, Sparkles, Calendar, Filter, RefreshCw,
   ArrowLeftRight, Database, TrendingUp, TrendingDown, CheckSquare, Square,
-  CheckCheck, ChevronDown, RotateCcw, FileDown
+  CheckCheck, ChevronDown, RotateCcw, FileDown, Link, Unlink, Sliders,
+  ExternalLink, Share2
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import * as pdfjsLib from 'pdfjs-dist';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { Filesystem, Directory } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
+import { Capacitor } from '@capacitor/core';
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip,
   PieChart, Pie, Cell, CartesianGrid, Legend
 } from 'recharts';
 
-const APP_VERSION = '1.4.0';
+const APP_VERSION = '1.5.0';
 
 // Configure PDF.js worker via CDN for Android WebView compatibility
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`;
@@ -47,65 +51,194 @@ const DEFAULT_CATEGORIES = [
   'Uncategorized'
 ];
 
-// Smarter keyword definitions avoiding broad substrings
+// Smarter & Accurate keyword definitions with transaction direction awareness (v1.5.0)
 const DEFAULT_RULES = [
   {
-    cat: 'Food & Dining',
-    keys: ['swiggy', 'zomato', 'restaurant', 'cafe', 'starbucks', 'dominos', 'mcdonalds', 'kfc', 'burger', 'eatfit', 'bakery', 'pizza', 'subway', 'haldiram', 'barbeque', 'chaayos', 'chai point', 'dineout']
-  },
-  {
-    cat: 'Groceries & Quick Commerce',
-    keys: ['zepto', 'blinkit', 'instamart', 'bigbasket', 'dmart', 'reliance smart', 'more supermarket', 'nature basket', 'supermarket', 'grocery', 'milk', 'country delight', 'bbdaily', 'freshtohome', 'licious']
-  },
-  {
-    cat: 'Investments & SIP',
-    keys: ['zerodha', 'groww', 'ppfas', 'mutual fund', 'ach d-', 'sip', 'nps', 'epfo', 'kuvera', 'indmoney', 'uti mutual', 'hdfc mutual', 'sbi mutual', 'icici pru', 'coin', 'smallcase', 'upstox', 'angel one', 'lic premium', 'lic of india', 'lic']
-  },
-  {
-    cat: 'Fuel & Transport',
-    keys: ['petrol', 'diesel', 'cng', 'fuel', 'hpcl', 'bpcl', 'iocl', 'indian oil', 'shell', 'uber', 'ola cabs', 'ola', 'rapido', 'fastag', 'toll', 'irctc', 'indian railway', 'metro', 'indigo', 'air india', 'spicejet', 'akasa', 'namma yatri']
-  },
-  {
-    cat: 'Bills & Utilities',
-    keys: ['bescom', 'airtel', 'jio', 'vodafone', 'vi recharge', 'act fibernet', 'electricity', 'water bill', 'gas bill', 'indane', 'hp gas', 'bharat gas', 'adani gas', 'recharge', 'bbps', 'bwssb', 'tataplay', 'dish tv', 'broadband', 'dth']
-  },
-  {
-    cat: 'Healthcare & Medical',
-    keys: ['hospital', 'manipal', 'apollo', 'pharmeasy', '1mg', 'tata 1mg', 'pharmacy', 'clinic', 'medplus', 'st johns', 'diagnostic', 'pathology', 'dr lal', 'metropolis health', 'max hospital', 'fortis', 'practo', 'chemist', 'medical', 'medicine']
-  },
-  {
-    cat: 'Shopping & Books',
-    keys: ['amazon', 'flipkart', 'myntra', 'blossom book', 'decathlon', 'nykaa', 'ajio', 'meesho', 'croma', 'reliance digital', 'ikea', 'zara', 'h&m', 'uniqlo', 'tata cliq', 'lenskart']
-  },
-  {
-    cat: 'Rent & Housing',
-    keys: ['rent', 'nobroker', 'maintenance', 'mygate', 'society', 'landlord', 'apartment maintenance', 'flat rent', 'house rent']
-  },
-  {
     cat: 'Salary & Income',
-    keys: ['salary', 'stipend', 'fellowship', 'payroll', 'remuneration', 'wages', 'bonus']
-  },
-  {
-    cat: 'Bank Transfer',
-    keys: ['fund transfer', 'neft', 'rtgs', 'imps', 'transfer to', 'trf from', 'trf to', 'internal transfer', 'self transfer']
+    scope: 'CREDIT',
+    keys: ['salary', 'stipend', 'fellowship', 'payroll', 'remuneration', 'monthly salary', 'wages', 'bonus', 'director fee', 'professional fee', 'consulting fee', 'client payout', 'employer']
   },
   {
     cat: 'Interest/Cashback',
-    keys: ['int.pd', 'interest credit', 'sb int', 'cashback', 'reward points', 'dividend', 'refund', 'reversal']
+    scope: 'CREDIT',
+    keys: ['int.pd', 'interest credit', 'sb int', 'quarterly int', 'interest paid', 'cashback', 'reward points', 'reward credit', 'refund', 'reversal', 'tax refund', 'it refund', 'cred cashback', 'gpay reward', 'paytm cashback', 'credit adjustment']
+  },
+  {
+    cat: 'Food & Dining',
+    scope: 'DEBIT',
+    keys: ['swiggy', 'zomato', 'restaurant', 'cafe', 'starbucks', 'dominos', 'mcdonalds', 'kfc', 'burger king', 'burger', 'eatfit', 'bakery', 'pizza', 'subway', 'haldiram', 'barbeque nation', 'barbeque', 'chaayos', 'chai point', 'dineout', 'sweet', 'bhojanalaya', 'dhaba', 'biryani', 'darshini']
+  },
+  {
+    cat: 'Groceries & Quick Commerce',
+    scope: 'DEBIT',
+    keys: ['zepto', 'blinkit', 'instamart', 'bigbasket', 'dmart', 'reliance smart', 'more supermarket', 'nature basket', 'supermarket', 'grocery', 'milk', 'country delight', 'bbdaily', 'freshtohome', 'licious', 'dunzo', 'kirana', 'provision store', 'vegetable', 'fruits']
+  },
+  {
+    cat: 'Investments & SIP',
+    scope: 'BOTH',
+    keys: ['zerodha', 'groww', 'ppfas', 'mutual fund', 'ach d-', 'sip', 'nps', 'epfo', 'kuvera', 'indmoney', 'uti mutual', 'hdfc mutual', 'sbi mutual', 'icici pru', 'coin', 'smallcase', 'upstox', 'angel one', 'lic premium', 'lic of india', 'lic', 'navi mf', 'mirae', 'motilal', 'nippon', 'axis mf', 'tata mf', 'parag parikh', 'sovereign gold', 'sgb', 'dividend', 'mf redemption']
+  },
+  {
+    cat: 'Fuel & Transport',
+    scope: 'DEBIT',
+    keys: ['petrol', 'diesel', 'cng', 'fuel', 'hpcl', 'bpcl', 'iocl', 'indian oil', 'shell', 'uber', 'ola cabs', 'ola', 'rapido', 'fastag', 'toll', 'irctc', 'indian railway', 'metro', 'indigo', 'air india', 'spicejet', 'akasa', 'namma yatri', 'makemytrip', 'easemytrip', 'redbus', 'abhibus', 'yulu', 'bounce']
+  },
+  {
+    cat: 'Bills & Utilities',
+    scope: 'DEBIT',
+    keys: ['bescom', 'airtel', 'jio', 'vodafone', 'vi recharge', 'act fibernet', 'electricity', 'water bill', 'gas bill', 'indane', 'hp gas', 'bharat gas', 'adani gas', 'recharge', 'bbps', 'bwssb', 'tataplay', 'dish tv', 'broadband', 'dth', 'credit card', 'cc payment', 'cred', 'billdesk', 'sbicard', 'hdfc card', 'icici card', 'axis card', 'kotak card', 'onecard', 'slice', 'emi', 'bajaj finance', 'hdb financial', 'cholamandalam', 'home loan', 'car loan']
+  },
+  {
+    cat: 'Healthcare & Medical',
+    scope: 'DEBIT',
+    keys: ['hospital', 'manipal', 'apollo', 'pharmeasy', '1mg', 'tata 1mg', 'pharmacy', 'clinic', 'medplus', 'st johns', 'diagnostic', 'pathology', 'dr lal', 'metropolis health', 'max hospital', 'fortis', 'practo', 'chemist', 'medical', 'medicine', 'dentist', 'eye care']
+  },
+  {
+    cat: 'Shopping & Books',
+    scope: 'DEBIT',
+    keys: ['amazon', 'flipkart', 'myntra', 'blossom book', 'decathlon', 'nykaa', 'ajio', 'meesho', 'croma', 'reliance digital', 'ikea', 'zara', 'h&m', 'uniqlo', 'tata cliq', 'lenskart', 'titan', 'tanishq', 'westside', 'shoppers stop', 'lifestyle', 'crossword', 'book']
+  },
+  {
+    cat: 'Rent & Housing',
+    scope: 'DEBIT',
+    keys: ['rent', 'nobroker', 'maintenance', 'mygate', 'society', 'landlord', 'apartment maintenance', 'flat rent', 'house rent', 'nestaway', 'urban company', 'housing.com', 'magicbricks']
+  },
+  {
+    cat: 'Bank Transfer',
+    scope: 'BOTH',
+    keys: ['fund transfer', 'neft', 'rtgs', 'imps', 'transfer to', 'trf from', 'trf to', 'internal transfer', 'self transfer', 'own account', 'own a/c', 'sweep trf', 'auto sweep']
   },
   {
     cat: 'Friend',
-    keys: ['splitwise', 'settleup', 'friend']
+    scope: 'BOTH',
+    keys: ['splitwise', 'settleup', 'friend', 'roommate', 'trip expense', 'dinner share']
   },
   {
     cat: 'Family',
-    keys: ['family', 'mother', 'father', 'sister', 'brother', 'parents', 'home expense']
+    scope: 'BOTH',
+    keys: ['family', 'mother', 'father', 'sister', 'brother', 'parents', 'home expense', 'son', 'daughter', 'wife', 'husband']
   },
   {
     cat: 'Cash Out',
-    keys: ['atm wdl', 'cash wdl', 'atm cash', 'self wdl', 'cash withdrawal', 'atm-']
+    scope: 'DEBIT',
+    keys: ['atm wdl', 'cash wdl', 'atm cash', 'self wdl', 'cash withdrawal', 'nfs*', 'nfs ', 'atm-', 'cash dispense', 'micro atm', 'cash out', 'atm withdrawal']
   }
 ];
+
+// UNIVERSAL SAVE & SHARE ENGINE (ANDROID NATIVE + WEB DESKTOP)
+async function saveOrShareFile({ filename, mimeType, base64Data, textData, blob }) {
+  try {
+    if (Capacitor.isNativePlatform()) {
+      let dataToWrite = base64Data;
+      if (!dataToWrite && textData) {
+        const bytes = new TextEncoder().encode(textData);
+        let binary = '';
+        const len = bytes.byteLength;
+        for (let i = 0; i < len; i++) {
+          binary += String.fromCharCode(bytes[i]);
+        }
+        dataToWrite = btoa(binary);
+      } else if (!dataToWrite && blob) {
+        dataToWrite = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const res = reader.result;
+            const b64 = String(res).split(',')[1];
+            resolve(b64);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+      }
+
+      const fileResult = await Filesystem.writeFile({
+        path: filename,
+        data: dataToWrite,
+        directory: Directory.Cache
+      });
+
+      await Share.share({
+        title: filename,
+        text: `FinSight India: ${filename}`,
+        url: fileResult.uri,
+        dialogTitle: 'Save or Share File'
+      });
+
+      return { success: true, native: true, uri: fileResult.uri };
+    } else {
+      let downloadBlob = blob;
+      if (!downloadBlob && textData) {
+        downloadBlob = new Blob([textData], { type: mimeType });
+      } else if (!downloadBlob && base64Data) {
+        const byteCharacters = atob(base64Data);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        downloadBlob = new Blob([byteArray], { type: mimeType });
+      }
+
+      const url = URL.createObjectURL(downloadBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      return { success: true, native: false };
+    }
+  } catch (err) {
+    if (err && (String(err).toLowerCase().includes('canceled') || String(err).toLowerCase().includes('cancelled') || String(err).toLowerCase().includes('dismissed'))) {
+      return { success: true, native: true, dismissed: true };
+    }
+    throw err;
+  }
+}
+
+// DATE RANGE & PERIOD EXTRACTION HELPERS (WEEKWISE, MONTHWISE, QUARTERWISE, YEARWISE)
+function getIsoWeek(dateStr) {
+  const d = new Date(dateStr || '2026-01-01');
+  if (isNaN(d.getTime())) return { key: 'Unknown', label: 'Unknown' };
+  const target = new Date(d.valueOf());
+  const dayNr = (d.getDay() + 6) % 7;
+  target.setDate(target.getDate() - dayNr + 3);
+  const firstThursday = target.valueOf();
+  target.setMonth(0, 1);
+  if (target.getDay() !== 4) {
+    target.setMonth(0, 1 + ((4 - target.getDay()) + 7) % 7);
+  }
+  const weekNr = 1 + Math.ceil((firstThursday - target) / 604800000);
+  const yr = new Date(firstThursday).getFullYear();
+  const key = `${yr}-W${String(weekNr).padStart(2, '0')}`;
+  const weekStart = new Date(firstThursday);
+  weekStart.setDate(weekStart.getDate() - 3);
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekEnd.getDate() + 6);
+  const startStr = weekStart.toISOString().slice(5, 10);
+  const endStr = weekEnd.toISOString().slice(5, 10);
+  return { key, label: `W${weekNr} (${startStr} - ${endStr})` };
+}
+
+function getMonthInfo(dateStr) {
+  const [yr, mo] = (dateStr || '2026-01-01').split('-');
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const mIndex = parseInt(mo || '1', 10) - 1;
+  const mName = months[mIndex] || 'Jan';
+  return { key: `${yr}-${mo}`, label: `${mName} ${yr}` };
+}
+
+function getQuarterInfo(dateStr) {
+  const [yr, mo] = (dateStr || '2026-01-01').split('-');
+  const q = Math.ceil((parseInt(mo || '1', 10)) / 3);
+  return { key: `${yr}-Q${q}`, label: `${yr} Q${q}` };
+}
+
+function getYearInfo(dateStr) {
+  const yr = (dateStr || '2026-01-01').split('-')[0] || '2026';
+  return { key: yr, label: yr };
+}
 
 // Unique Vector Brand Icon Component (FinSight Rupee-Pulse Lens)
 function FinSightLogo({ size = 36 }) {
@@ -207,7 +340,7 @@ function detectChannel(narration) {
   return 'OTHER';
 }
 
-// Precompile categorization rules into token-boundary regexes
+// Precompile categorization rules into token-boundary regexes with scope awareness
 function compileRulesEngine(rulesList) {
   if (!rulesList || !rulesList.length) return [];
   return rulesList.map(r => {
@@ -217,41 +350,62 @@ function compileRulesEngine(rulesList) {
       .filter(Boolean)
       .map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
     if (!escaped.length) return null;
-    // Strictly match as discrete word/token bounded by non-alphanumeric chars or boundaries
     const pattern = `(^|[^a-z0-9])(${escaped.join('|')})([^a-z0-9]|$)`;
-    return { cat: r.cat, regex: new RegExp(pattern, 'i') };
+    return {
+      cat: r.cat,
+      scope: r.scope || 'BOTH', // 'CREDIT', 'DEBIT', or 'BOTH'
+      regex: new RegExp(pattern, 'i')
+    };
   }).filter(Boolean);
 }
 
-// SMARTER & EFFICIENT AUTO-CATEGORIZATION RULES ENGINE
-// 1. Preserves user manual category changes permanently across app relaunches
-// 2. Uses token-boundary matching so short words (e.g. 'ola') don't match substrings like 'kolkata' or 'cholamandalam'
+// SMARTER & ACCURATE DEBIT & CREDIT TRANSACTION CATEGORIZATION EVALUATOR (v1.5.0)
+function evaluateTransactionCategory(narration, type, compiledRules) {
+  const s = (narration || '').toLowerCase();
+  const isCredit = type === 'CREDIT';
+
+  // Pass 1: Exact rule match matching transaction type scope ('CREDIT', 'DEBIT', or 'BOTH')
+  for (const cr of compiledRules) {
+    if (cr.scope === 'CREDIT' && !isCredit) continue;
+    if (cr.scope === 'DEBIT' && isCredit) continue;
+    if (cr.regex.test(s)) return cr.cat;
+  }
+
+  // Pass 2: Secondary rule match across any category
+  for (const cr of compiledRules) {
+    if (cr.regex.test(s)) return cr.cat;
+  }
+
+  // Pass 3: Smart contextual classification for Indian Banking
+  if (isCredit) {
+    if (/int\.pd|interest|sb int|quarterly int|interest paid/.test(s)) return 'Interest/Cashback';
+    if (/cashback|reward points|reward credit|reward|refund|reversal|tax refund|it refund|cred cashback|gpay reward|paytm cashback/.test(s)) return 'Interest/Cashback';
+    if (/salary|stipend|payroll|remuneration|monthly salary|wages|fellowship|director fee|professional fee/.test(s)) return 'Salary & Income';
+    if (/dividend|redemption|mf redemption|mutual fund payout/.test(s)) return 'Investments & SIP';
+    if (/splitwise|settleup|dinner share/.test(s)) return 'Friend';
+    if (/family|mother|father|sister|brother|parents|son|daughter|wife|husband/.test(s)) return 'Family';
+    if (/fund transfer|neft|rtgs|imps|transfer to|trf from|trf to|internal transfer|self transfer/.test(s)) return 'Bank Transfer';
+    if (/upi\//.test(s)) return 'Transfers & UPI';
+    return 'Uncategorized';
+  } else {
+    if (/atm wdl|cash wdl|atm cash|self wdl|cash withdrawal|nfs\*|nfs |atm-|cash dispense|micro atm|cash out/.test(s)) return 'Cash Out';
+    if (/bescom|airtel|jio|vodafone|vi recharge|electricity|water bill|gas bill|recharge|bbps|credit card|cc payment|cred|billdesk|sbicard|emi|loan/.test(s)) return 'Bills & Utilities';
+    if (/upi\//.test(s)) return 'Transfers & UPI';
+    return 'Uncategorized';
+  }
+}
+
+// AUTO-CATEGORIZATION RULES RUNNER
 function applyCategorizationRules(transactionsList, rulesList) {
   if (!transactionsList || !transactionsList.length) return { updatedTxns: [], changedCount: 0 };
   const compiled = compileRulesEngine(rulesList);
   let changedCount = 0;
 
   const updatedTxns = transactionsList.map(t => {
-    // CRITICAL: If the user manually assigned this category, preserve it permanently!
-    if (t.isManualCategory) {
-      return t;
-    }
+    // CRITICAL: Preserve manual category changes permanently across restarts
+    if (t.isManualCategory) return t;
 
-    const s = (t.narration || '').toLowerCase();
-    let matchedCat = null;
-
-    for (const cr of compiled) {
-      if (cr.regex.test(s)) {
-        matchedCat = cr.cat;
-        break;
-      }
-    }
-
-    if (!matchedCat) {
-      if (t.type === 'CREDIT') matchedCat = 'Salary & Income';
-      else if (s.includes('upi/')) matchedCat = 'Transfers & UPI';
-      else matchedCat = 'Uncategorized';
-    }
+    const matchedCat = evaluateTransactionCategory(t.narration, t.type, compiled);
 
     if (matchedCat !== t.category) {
       changedCount++;
@@ -263,15 +417,48 @@ function applyCategorizationRules(transactionsList, rulesList) {
   return { updatedTxns, changedCount };
 }
 
-// SMART BANK TRANSFER PAIR DETECTION ENGINE
-function detectTransferPairs(transactionsList) {
+// SMART BANK TRANSFER PAIR DETECTION & MANAGEMENT ENGINE (v1.5.0)
+// Supports manual pairings, user-unlinked exclusions, and custom clearing windows
+function detectTransferPairs(transactionsList, manualPairs = [], unlinkedPairs = [], clearingDays = 2) {
   if (!transactionsList || transactionsList.length < 2) return [];
   const pairs = [];
   const matchedDebitIds = new Set();
   const matchedCreditIds = new Set();
 
-  const debits = transactionsList.filter(t => t.type === 'DEBIT');
-  const credits = transactionsList.filter(t => t.type === 'CREDIT');
+  const txnMap = new Map();
+  transactionsList.forEach(t => txnMap.set(t.id, t));
+
+  // Build unlinked set of pair signatures (bidirectional)
+  const unlinkedSet = new Set();
+  (unlinkedPairs || []).forEach(p => {
+    unlinkedSet.add(`${p.debitTxnId}:${p.creditTxnId}`);
+    unlinkedSet.add(`${p.creditTxnId}:${p.debitTxnId}`);
+  });
+
+  // 1. Process Manual Pairs first!
+  (manualPairs || []).forEach(mp => {
+    const d = txnMap.get(mp.debitTxnId);
+    const c = txnMap.get(mp.creditTxnId);
+    if (d && c && !matchedDebitIds.has(d.id) && !matchedCreditIds.has(c.id)) {
+      matchedDebitIds.add(d.id);
+      matchedCreditIds.add(c.id);
+      pairs.push({
+        pairId: mp.pairId || `manual-${d.id}-${c.id}`,
+        debitTxnId: d.id,
+        creditTxnId: c.id,
+        fromBank: d.bank,
+        toBank: c.bank,
+        amount: d.amount,
+        date: d.date,
+        diffDays: Math.abs(new Date(d.date || '2026-01-01').getTime() - new Date(c.date || '2026-01-01').getTime()) / 86400000,
+        isManualPair: true
+      });
+    }
+  });
+
+  // 2. Auto-detect pairs for remaining unpaired transactions
+  const debits = transactionsList.filter(t => t.type === 'DEBIT' && !matchedDebitIds.has(t.id));
+  const credits = transactionsList.filter(t => t.type === 'CREDIT' && !matchedCreditIds.has(t.id));
 
   for (const d of debits) {
     if (matchedDebitIds.has(d.id)) continue;
@@ -284,6 +471,9 @@ function detectTransferPairs(transactionsList) {
 
     for (const c of credits) {
       if (matchedCreditIds.has(c.id)) continue;
+      // Skip if explicitly unlinked by user
+      if (unlinkedSet.has(`${d.id}:${c.id}`)) continue;
+
       const cBank = (c.bank || '').toLowerCase();
       if (dBank && cBank && dBank === cBank) continue;
 
@@ -293,12 +483,12 @@ function detectTransferPairs(transactionsList) {
       const cDateStr = c.date || '2026-01-01';
       const cDate = new Date(cDateStr).getTime();
       const diffDays = Math.abs(dDate - cDate) / (1000 * 60 * 60 * 24);
-      if (diffDays > 2) continue;
+      if (diffDays > clearingDays) continue;
 
       const cNarr = (c.narration || '').toLowerCase();
       const transferKeywords = [
         'upi', 'neft', 'imps', 'rtgs', 'fund transfer', 'transfer', 'trf', 'self',
-        'internal', 'own a/c', 'own ac', 'to ', 'from '
+        'internal', 'own a/c', 'own ac', 'to ', 'from ', 'sweep', 'transfer to', 'trf from'
       ];
       const hasKeyword = transferKeywords.some(k => dNarr.includes(k) || cNarr.includes(k));
 
@@ -318,7 +508,8 @@ function detectTransferPairs(transactionsList) {
           toBank: c.bank,
           amount: dAmt,
           date: d.date,
-          diffDays
+          diffDays,
+          isManualPair: false
         });
         break;
       }
@@ -330,7 +521,7 @@ function detectTransferPairs(transactionsList) {
 export default function App() {
   const [banks, setBanks] = useState(() => {
     try {
-      const saved = localStorage.getItem('finsight_banks_v140') || localStorage.getItem('finsight_banks_v130') || localStorage.getItem('finsight_banks_v120') || localStorage.getItem('finsight_banks_v110');
+      const saved = localStorage.getItem('finsight_banks_v150') || localStorage.getItem('finsight_banks_v140') || localStorage.getItem('finsight_banks_v130') || localStorage.getItem('finsight_banks_v120') || localStorage.getItem('finsight_banks_v110');
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
@@ -339,7 +530,7 @@ export default function App() {
 
   const [txns, setTxns] = useState(() => {
     try {
-      const saved = localStorage.getItem('finsight_txns_v140') || localStorage.getItem('finsight_txns_v130') || localStorage.getItem('finsight_txns_v120') || localStorage.getItem('finsight_txns_v110');
+      const saved = localStorage.getItem('finsight_txns_v150') || localStorage.getItem('finsight_txns_v140') || localStorage.getItem('finsight_txns_v130') || localStorage.getItem('finsight_txns_v120') || localStorage.getItem('finsight_txns_v110');
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
@@ -348,7 +539,7 @@ export default function App() {
 
   const [uploadedFiles, setUploadedFiles] = useState(() => {
     try {
-      const saved = localStorage.getItem('finsight_files_v140') || localStorage.getItem('finsight_files_v130') || localStorage.getItem('finsight_files_v120') || localStorage.getItem('finsight_files_v110');
+      const saved = localStorage.getItem('finsight_files_v150') || localStorage.getItem('finsight_files_v140') || localStorage.getItem('finsight_files_v130') || localStorage.getItem('finsight_files_v120') || localStorage.getItem('finsight_files_v110');
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
@@ -357,7 +548,7 @@ export default function App() {
 
   const [categories, setCategories] = useState(() => {
     try {
-      const saved = localStorage.getItem('finsight_categories_v140') || localStorage.getItem('finsight_categories_v130') || localStorage.getItem('finsight_categories_v120') || localStorage.getItem('finsight_categories_v110');
+      const saved = localStorage.getItem('finsight_categories_v150') || localStorage.getItem('finsight_categories_v140') || localStorage.getItem('finsight_categories_v130') || localStorage.getItem('finsight_categories_v120') || localStorage.getItem('finsight_categories_v110');
       if (saved) {
         const parsed = JSON.parse(saved);
         const combined = Array.from(new Set([...DEFAULT_CATEGORIES, ...parsed]));
@@ -371,7 +562,7 @@ export default function App() {
 
   const [rules, setRules] = useState(() => {
     try {
-      const saved = localStorage.getItem('finsight_rules_v140') || localStorage.getItem('finsight_rules_v130') || localStorage.getItem('finsight_rules_v120') || localStorage.getItem('finsight_rules_v110');
+      const saved = localStorage.getItem('finsight_rules_v150') || localStorage.getItem('finsight_rules_v140') || localStorage.getItem('finsight_rules_v130') || localStorage.getItem('finsight_rules_v120') || localStorage.getItem('finsight_rules_v110');
       return saved ? JSON.parse(saved) : DEFAULT_RULES;
     } catch {
       return DEFAULT_RULES;
@@ -380,19 +571,51 @@ export default function App() {
 
   const [excludeTransfersFromTotals, setExcludeTransfersFromTotals] = useState(() => {
     try {
-      const saved = localStorage.getItem('finsight_exclude_transfers_v140') || localStorage.getItem('finsight_exclude_transfers_v130');
+      const saved = localStorage.getItem('finsight_exclude_transfers_v150') || localStorage.getItem('finsight_exclude_transfers_v140') || localStorage.getItem('finsight_exclude_transfers_v130');
       return saved !== null ? JSON.parse(saved) : true;
     } catch {
       return true;
     }
   });
 
+  // SMART BANK TRANSFERS EDITING & MANAGEMENT STATE (v1.5.0)
+  const [manualTransferPairs, setManualTransferPairs] = useState(() => {
+    try {
+      const saved = localStorage.getItem('finsight_manual_pairs_v150');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const [unlinkedTransferPairs, setUnlinkedTransferPairs] = useState(() => {
+    try {
+      const saved = localStorage.getItem('finsight_unlinked_pairs_v150');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const [transferClearingDays, setTransferClearingDays] = useState(() => {
+    try {
+      const saved = localStorage.getItem('finsight_transfer_days_v150');
+      return saved !== null ? Number(saved) : 2;
+    } catch {
+      return 2;
+    }
+  });
+
+  const [showTransferManagerModal, setShowTransferManagerModal] = useState(false);
+  const [showManualLinkModal, setShowManualLinkModal] = useState(false);
+  const [manualLinkTargetTxn, setManualLinkTargetTxn] = useState(null);
+  const [manualLinkCandidateSearch, setManualLinkCandidateSearch] = useState('');
+
   const [activeTab, setActiveTab] = useState('DASHBOARD'); // DASHBOARD, SPEND, LEDGER, BANKS
   const [granularity, setGranularity] = useState('MONTHLY'); // DAILY, MONTHLY, QUARTERLY, YEARLY
   const [bankFilter, setBankFilter] = useState('ALL');
   
   // MULTI-SELECT CATEGORIES FILTER STATE
-  // Empty array [] means all categories are selected
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [showCategoryFilterModal, setShowCategoryFilterModal] = useState(false);
   const [categoryFilterSearch, setCategoryFilterSearch] = useState('');
@@ -404,8 +627,14 @@ export default function App() {
   // Category Analysis Tab Sub-Mode: 'SPEND', 'EARN', 'NET'
   const [categoryAnalysisMode, setCategoryAnalysisMode] = useState('SPEND');
 
-  // Date Range Filter State for Transactions Tab
-  const [datePreset, setDatePreset] = useState('ALL'); // ALL, 7D, 30D, THIS_MONTH, 3M, THIS_YEAR, CUSTOM
+  // DURATION FILTER MULTI-SELECT & PERIODS (v1.5.0)
+  // durationMode: 'ALL' | 'PRESET' | 'WEEKWISE' | 'MONTHWISE' | 'QUARTERWISE' | 'YEARWISE' | 'CUSTOM'
+  const [durationMode, setDurationMode] = useState('ALL');
+  const [datePreset, setDatePreset] = useState('ALL'); // ALL, 7D, 30D, THIS_MONTH, 3M, THIS_YEAR
+  const [selectedWeeks, setSelectedWeeks] = useState([]);
+  const [selectedMonths, setSelectedMonths] = useState([]);
+  const [selectedQuarters, setSelectedQuarters] = useState([]);
+  const [selectedYears, setSelectedYears] = useState([]);
   const [customFrom, setCustomFrom] = useState('');
   const [customTo, setCustomTo] = useState('');
 
@@ -467,30 +696,42 @@ export default function App() {
   // Transfer Pair Inspector Modal
   const [selectedTransferPair, setSelectedTransferPair] = useState(null);
 
-  // PERSISTENCE EFFECT (v1.4.0 Keys)
+  // PERSISTENCE EFFECTS (v1.5.0 Keys)
   useEffect(() => {
-    try { localStorage.setItem('finsight_banks_v140', JSON.stringify(banks)); } catch {}
+    try { localStorage.setItem('finsight_banks_v150', JSON.stringify(banks)); } catch {}
   }, [banks]);
 
   useEffect(() => {
-    try { localStorage.setItem('finsight_txns_v140', JSON.stringify(txns)); } catch {}
+    try { localStorage.setItem('finsight_txns_v150', JSON.stringify(txns)); } catch {}
   }, [txns]);
 
   useEffect(() => {
-    try { localStorage.setItem('finsight_files_v140', JSON.stringify(uploadedFiles)); } catch {}
+    try { localStorage.setItem('finsight_files_v150', JSON.stringify(uploadedFiles)); } catch {}
   }, [uploadedFiles]);
 
   useEffect(() => {
-    try { localStorage.setItem('finsight_categories_v140', JSON.stringify(categories)); } catch {}
+    try { localStorage.setItem('finsight_categories_v150', JSON.stringify(categories)); } catch {}
   }, [categories]);
 
   useEffect(() => {
-    try { localStorage.setItem('finsight_rules_v140', JSON.stringify(rules)); } catch {}
+    try { localStorage.setItem('finsight_rules_v150', JSON.stringify(rules)); } catch {}
   }, [rules]);
 
   useEffect(() => {
-    try { localStorage.setItem('finsight_exclude_transfers_v140', JSON.stringify(excludeTransfersFromTotals)); } catch {}
+    try { localStorage.setItem('finsight_exclude_transfers_v150', JSON.stringify(excludeTransfersFromTotals)); } catch {}
   }, [excludeTransfersFromTotals]);
+
+  useEffect(() => {
+    try { localStorage.setItem('finsight_manual_pairs_v150', JSON.stringify(manualTransferPairs)); } catch {}
+  }, [manualTransferPairs]);
+
+  useEffect(() => {
+    try { localStorage.setItem('finsight_unlinked_pairs_v150', JSON.stringify(unlinkedTransferPairs)); } catch {}
+  }, [unlinkedTransferPairs]);
+
+  useEffect(() => {
+    try { localStorage.setItem('finsight_transfer_days_v150', String(transferClearingDays)); } catch {}
+  }, [transferClearingDays]);
 
   // Real-time automatic rule re-evaluation:
   // Preserves user manual categories through applyCategorizationRules()
@@ -502,10 +743,10 @@ export default function App() {
     }
   }, [rules]);
 
-  // SMART BANK TRANSFERS: Pair Detection and Quick Lookup Map
+  // SMART BANK TRANSFERS: Pair Detection and Quick Lookup Map (v1.5.0)
   const transferPairs = useMemo(() => {
-    return detectTransferPairs(txns);
-  }, [txns]);
+    return detectTransferPairs(txns, manualTransferPairs, unlinkedTransferPairs, transferClearingDays);
+  }, [txns, manualTransferPairs, unlinkedTransferPairs, transferClearingDays]);
 
   const transferMap = useMemo(() => {
     const map = new Map();
@@ -515,18 +756,83 @@ export default function App() {
         partnerBank: pair.toBank,
         pairId: pair.pairId,
         amount: pair.amount,
-        partnerTxnId: pair.creditTxnId
+        partnerTxnId: pair.creditTxnId,
+        isManualPair: pair.isManualPair
       });
       map.set(pair.creditTxnId, {
         isDebit: false,
         partnerBank: pair.fromBank,
         pairId: pair.pairId,
         amount: pair.amount,
-        partnerTxnId: pair.debitTxnId
+        partnerTxnId: pair.debitTxnId,
+        isManualPair: pair.isManualPair
       });
     });
     return map;
   }, [transferPairs]);
+
+  // Smart Bank Transfer Action Handlers (v1.5.0)
+  const handleUnlinkPair = (debitTxnId, creditTxnId) => {
+    setManualTransferPairs(prev => prev.filter(p => !(
+      (p.debitTxnId === debitTxnId && p.creditTxnId === creditTxnId) ||
+      (p.debitTxnId === creditTxnId && p.creditTxnId === debitTxnId)
+    )));
+    setUnlinkedTransferPairs(prev => {
+      const exists = prev.some(p => (
+        (p.debitTxnId === debitTxnId && p.creditTxnId === creditTxnId) ||
+        (p.debitTxnId === creditTxnId && p.creditTxnId === debitTxnId)
+      ));
+      if (exists) return prev;
+      return [...prev, { debitTxnId, creditTxnId, unlinkedAt: new Date().toISOString() }];
+    });
+    if (selectedTransferPair) setSelectedTransferPair(null);
+    showToast('Transfer pair unlinked (transactions separated)');
+  };
+
+  const handleCreateManualPair = (txnA, txnB) => {
+    if (!txnA || !txnB) return;
+    if (txnA.id === txnB.id) {
+      showToast('Cannot link a transaction to itself', true);
+      return;
+    }
+    if (txnA.type === txnB.type) {
+      showToast(`Cannot link two ${txnA.type} transactions. One must be DEBIT and one CREDIT.`, true);
+      return;
+    }
+    const debitTxn = txnA.type === 'DEBIT' ? txnA : txnB;
+    const creditTxn = txnA.type === 'CREDIT' ? txnA : txnB;
+
+    setUnlinkedTransferPairs(prev => prev.filter(p => !(
+      (p.debitTxnId === debitTxn.id && p.creditTxnId === creditTxn.id) ||
+      (p.debitTxnId === creditTxn.id && p.creditTxnId === debitTxn.id)
+    )));
+
+    const newPair = {
+      pairId: `manual-${debitTxn.id}-${creditTxn.id}`,
+      debitTxnId: debitTxn.id,
+      creditTxnId: creditTxn.id,
+      fromBank: debitTxn.bank,
+      toBank: creditTxn.bank,
+      amount: debitTxn.amount,
+      date: debitTxn.date,
+      diffDays: Math.abs(new Date(debitTxn.date || '2026-01-01').getTime() - new Date(creditTxn.date || '2026-01-01').getTime()) / 86400000,
+      isManualPair: true
+    };
+    setManualTransferPairs(prev => [...prev.filter(p => p.debitTxnId !== debitTxn.id && p.creditTxnId !== creditTxn.id), newPair]);
+    setShowManualLinkModal(false);
+    setManualLinkTargetTxn(null);
+    showToast(`Linked Smart Transfer between ${debitTxn.bank} and ${creditTxn.bank}`);
+  };
+
+  const handleCategorizePairAsTransfer = (debitTxnId, creditTxnId) => {
+    setTxns(prev => prev.map(t => {
+      if (t.id === debitTxnId || t.id === creditTxnId) {
+        return { ...t, category: 'Bank Transfer', isManualCategory: true };
+      }
+      return t;
+    }));
+    showToast('Categorized both transactions as "Bank Transfer"');
+  };
 
   const totalTransfersAmount = useMemo(() => {
     return transferPairs.reduce((sum, p) => sum + p.amount, 0);
@@ -617,14 +923,8 @@ export default function App() {
   };
 
   const detectCategoryWithRules = (narration, type, currentRules = rules) => {
-    const s = (narration || '').toLowerCase();
     const compiled = compileRulesEngine(currentRules);
-    for (const cr of compiled) {
-      if (cr.regex.test(s)) return cr.cat;
-    }
-    if (type === 'CREDIT') return 'Salary & Income';
-    if (s.includes('upi/')) return 'Transfers & UPI';
-    return 'Uncategorized';
+    return evaluateTransactionCategory(narration, type, compiled);
   };
 
   const executeRulesUpdate = (newRules, successMsgPrefix) => {
@@ -777,31 +1077,36 @@ export default function App() {
     executeRulesUpdate(updatedRules, `Updated keywords for "${editingRule.cat}"`);
   };
 
-  // BACKUP & RESTORE IMPLEMENTATION
-  const handleExportBackup = () => {
-    const backupPayload = {
-      app: 'FinSight India',
-      version: APP_VERSION,
-      exportedAt: new Date().toISOString(),
-      data: {
-        banks,
-        uploadedFiles,
-        categories,
-        rules,
-        txns
-      }
-    };
-    const jsonStr = JSON.stringify(backupPayload, null, 2);
-    const blob = new Blob([jsonStr], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `FinSight_India_Backup_v${APP_VERSION}_${new Date().toISOString().slice(0, 10)}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    showToast('Workspace backup exported successfully');
+  // BACKUP & RESTORE IMPLEMENTATION (v1.5.0 Universal Save & Share)
+  const handleExportBackup = async () => {
+    try {
+      const backupPayload = {
+        app: 'FinSight India',
+        version: APP_VERSION,
+        exportedAt: new Date().toISOString(),
+        data: {
+          banks,
+          uploadedFiles,
+          categories,
+          rules,
+          txns,
+          manualTransferPairs,
+          unlinkedTransferPairs,
+          transferClearingDays,
+          excludeTransfersFromTotals
+        }
+      };
+      const jsonStr = JSON.stringify(backupPayload, null, 2);
+      const filename = `FinSight_India_Backup_v${APP_VERSION}_${new Date().toISOString().slice(0, 10)}.json`;
+      await saveOrShareFile({
+        filename,
+        mimeType: 'application/json',
+        textData: jsonStr
+      });
+      showToast('Workspace backup exported successfully');
+    } catch (err) {
+      showToast(`Export failed: ${err.message}`, true);
+    }
   };
 
   const handleRestoreFileSelect = (e) => {
@@ -855,6 +1160,18 @@ export default function App() {
       if (restoreSelection.txns && Array.isArray(data.txns)) {
         setTxns(data.txns);
         summaryParts.push(`${data.txns.length} txns`);
+      }
+      if (Array.isArray(data.manualTransferPairs)) {
+        setManualTransferPairs(data.manualTransferPairs);
+      }
+      if (Array.isArray(data.unlinkedTransferPairs)) {
+        setUnlinkedTransferPairs(data.unlinkedTransferPairs);
+      }
+      if (data.transferClearingDays !== undefined) {
+        setTransferClearingDays(Number(data.transferClearingDays) || 2);
+      }
+      if (data.excludeTransfersFromTotals !== undefined) {
+        setExcludeTransfersFromTotals(Boolean(data.excludeTransfersFromTotals));
       }
     } else {
       if (restoreSelection.banks && Array.isArray(data.banks)) {
@@ -1223,198 +1540,227 @@ export default function App() {
     showToast('Transaction added (manual tag preserved)');
   };
 
-  // EXPORT 1: PROPERLY FORMATTED EXCEL WORKBOOK (XLSX)
-  const exportToXlsx = () => {
+  // EXPORT 1: PROPERLY FORMATTED EXCEL WORKBOOK (XLSX) WITH NATIVE ANDROID SAVE & SHARE (v1.5.0)
+  const exportToXlsx = async () => {
     if (!filtered.length) {
       showToast('No transactions to export', true);
       return;
     }
+    try {
+      const exportRows = filtered.map(t => ({
+        'Date': t.date || '',
+        'Bank': t.bank || '',
+        'Channel': t.channel || '',
+        'Narration': t.narration || '',
+        'Category': t.category || '',
+        'Type': t.type || '',
+        'Amount (INR)': t.amount || 0
+      }));
 
-    const exportRows = filtered.map(t => ({
-      'Date': t.date || '',
-      'Bank': t.bank || '',
-      'Channel': t.channel || '',
-      'Narration': t.narration || '',
-      'Category': t.category || '',
-      'Type': t.type || '',
-      'Amount (INR)': t.amount || 0
-    }));
+      const totalDebit = filtered.filter(t => t.type === 'DEBIT').reduce((s, t) => s + t.amount, 0);
+      const totalCredit = filtered.filter(t => t.type === 'CREDIT').reduce((s, t) => s + t.amount, 0);
+      const net = totalCredit - totalDebit;
 
-    const totalDebit = filtered.filter(t => t.type === 'DEBIT').reduce((s, t) => s + t.amount, 0);
-    const totalCredit = filtered.filter(t => t.type === 'CREDIT').reduce((s, t) => s + t.amount, 0);
-    const net = totalCredit - totalDebit;
+      exportRows.push({});
+      exportRows.push({ 'Narration': 'TOTAL OUTFLOW (DEBITS)', 'Amount (INR)': totalDebit });
+      exportRows.push({ 'Narration': 'TOTAL INFLOW (CREDITS)', 'Amount (INR)': totalCredit });
+      exportRows.push({ 'Narration': 'NET CASHFLOW BALANCE', 'Amount (INR)': net });
 
-    exportRows.push({});
-    exportRows.push({ 'Narration': 'TOTAL OUTFLOW (DEBITS)', 'Amount (INR)': totalDebit });
-    exportRows.push({ 'Narration': 'TOTAL INFLOW (CREDITS)', 'Amount (INR)': totalCredit });
-    exportRows.push({ 'Narration': 'NET CASHFLOW BALANCE', 'Amount (INR)': net });
+      const ws = XLSX.utils.json_to_sheet(exportRows);
 
-    const ws = XLSX.utils.json_to_sheet(exportRows);
+      ws['!cols'] = [
+        { wch: 13 },
+        { wch: 18 },
+        { wch: 12 },
+        { wch: 45 },
+        { wch: 26 },
+        { wch: 10 },
+        { wch: 16 }
+      ];
 
-    ws['!cols'] = [
-      { wch: 13 },
-      { wch: 18 },
-      { wch: 12 },
-      { wch: 45 },
-      { wch: 26 },
-      { wch: 10 },
-      { wch: 16 }
-    ];
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Transactions');
+      const b64 = XLSX.write(wb, { type: 'base64', bookType: 'xlsx' });
+      const filename = `FinSight_Statement_${new Date().toISOString().slice(0, 10)}.xlsx`;
 
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Transactions');
-    XLSX.writeFile(wb, `FinSight_Statement_${new Date().toISOString().slice(0, 10)}.xlsx`);
-    setShowExportMenu(false);
-    showToast(`Exported ${filtered.length} transactions to XLSX`);
+      await saveOrShareFile({
+        filename,
+        mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        base64Data: b64
+      });
+      setShowExportMenu(false);
+      showToast(`Exported ${filtered.length} transactions to XLSX`);
+    } catch (err) {
+      showToast(`Export to XLSX failed: ${err.message}`, true);
+    }
   };
 
-  // EXPORT 2: PROPERLY FORMATTED RFC 4180 CSV WITH UTF-8 BOM
-  const exportToCsv = () => {
+  // EXPORT 2: PROPERLY FORMATTED RFC 4180 CSV WITH UTF-8 BOM (v1.5.0)
+  const exportToCsv = async () => {
     if (!filtered.length) {
       showToast('No transactions to export', true);
       return;
     }
-    const headers = ['Date', 'Bank', 'Channel', 'Narration', 'Category', 'Type', 'Amount (INR)'];
-    const rows = filtered.map(t => [
-      t.date || '',
-      t.bank || '',
-      t.channel || '',
-      `"${(t.narration || '').replace(/"/g, '""')}"`,
-      `"${(t.category || '').replace(/"/g, '""')}"`,
-      t.type || '',
-      (t.amount || 0).toFixed(2)
-    ]);
+    try {
+      const headers = ['Date', 'Bank', 'Channel', 'Narration', 'Category', 'Type', 'Amount (INR)'];
+      const rows = filtered.map(t => [
+        t.date || '',
+        t.bank || '',
+        t.channel || '',
+        `"${(t.narration || '').replace(/"/g, '""')}"`,
+        `"${(t.category || '').replace(/"/g, '""')}"`,
+        t.type || '',
+        (t.amount || 0).toFixed(2)
+      ]);
 
-    const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\r\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `FinSight_Statement_${new Date().toISOString().slice(0, 10)}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    setShowExportMenu(false);
-    showToast(`Exported ${filtered.length} transactions to CSV`);
+      const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\r\n');
+      const filename = `FinSight_Statement_${new Date().toISOString().slice(0, 10)}.csv`;
+
+      await saveOrShareFile({
+        filename,
+        mimeType: 'text/csv;charset=utf-8;',
+        textData: csvContent
+      });
+      setShowExportMenu(false);
+      showToast(`Exported ${filtered.length} transactions to CSV`);
+    } catch (err) {
+      showToast(`Export to CSV failed: ${err.message}`, true);
+    }
   };
 
-  // EXPORT 3: PROPERLY FORMATTED PDF STATEMENT REPORT
-  const exportToPdf = () => {
+  // EXPORT 3: PROPERLY FORMATTED PDF STATEMENT REPORT WITH NATIVE SAVE & SHARE (v1.5.0)
+  const exportToPdf = async () => {
     if (!filtered.length) {
       showToast('No transactions to export', true);
       return;
     }
 
-    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    try {
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
-    // Top Dark Slate Header Bar
-    doc.setFillColor(15, 23, 42);
-    doc.rect(0, 0, 210, 32, 'F');
+      // Top Dark Slate Header Bar
+      doc.setFillColor(15, 23, 42);
+      doc.rect(0, 0, 210, 32, 'F');
 
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(15);
-    doc.setFont('helvetica', 'bold');
-    doc.text('FinSight India', 14, 13);
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(15);
+      doc.setFont('helvetica', 'bold');
+      doc.text('FinSight India', 14, 13);
 
-    doc.setFontSize(8.5);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(148, 163, 184);
-    doc.text('Multi-Bank Statement & Transactions Report', 14, 19);
+      doc.setFontSize(8.5);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(148, 163, 184);
+      doc.text('Multi-Bank Statement & Transactions Report', 14, 19);
 
-    const dateScope = datePreset !== 'ALL' && dateRangeBounds.start && dateRangeBounds.end
-      ? `Period: ${dateRangeBounds.start} to ${dateRangeBounds.end}`
-      : 'Period: All Time';
-    const filterScope = `Scope: ${filtered.length} of ${txns.length} txns | Bank: ${bankFilter} | Category: ${selectedCategories.length ? `${selectedCategories.length} selected` : 'All'}`;
-    doc.text(`${dateScope}  •  ${filterScope}`, 14, 25);
+      let durationLabel = 'All Time';
+      if (durationMode === 'WEEKWISE') durationLabel = `Weeks: ${selectedWeeks.join(', ') || 'All'}`;
+      else if (durationMode === 'MONTHWISE') durationLabel = `Months: ${selectedMonths.join(', ') || 'All'}`;
+      else if (durationMode === 'QUARTERWISE') durationLabel = `Quarters: ${selectedQuarters.join(', ') || 'All'}`;
+      else if (durationMode === 'YEARWISE') durationLabel = `Years: ${selectedYears.join(', ') || 'All'}`;
+      else if (durationMode === 'CUSTOM') durationLabel = `Custom: ${customFrom || 'Start'} to ${customTo || 'End'}`;
+      else if (durationMode === 'PRESET' && datePreset !== 'ALL') durationLabel = `Preset: ${datePreset}`;
 
-    // Summary KPI Cards
-    const totalDebit = filtered.filter(t => t.type === 'DEBIT').reduce((s, t) => s + t.amount, 0);
-    const totalCredit = filtered.filter(t => t.type === 'CREDIT').reduce((s, t) => s + t.amount, 0);
-    const net = totalCredit - totalDebit;
+      const filterScope = `Scope: ${filtered.length} of ${txns.length} txns | Bank: ${bankFilter} | Category: ${selectedCategories.length ? `${selectedCategories.length} selected` : 'All'}`;
+      doc.text(`Duration: ${durationLabel}  •  ${filterScope}`, 14, 25);
 
-    doc.setDrawColor(226, 232, 240);
-    doc.setFillColor(248, 250, 252);
-    doc.roundedRect(14, 37, 58, 16, 2, 2, 'FD');
-    doc.roundedRect(76, 37, 58, 16, 2, 2, 'FD');
-    doc.roundedRect(138, 37, 58, 16, 2, 2, 'FD');
+      // Summary KPI Cards
+      const totalDebit = filtered.filter(t => t.type === 'DEBIT').reduce((s, t) => s + t.amount, 0);
+      const totalCredit = filtered.filter(t => t.type === 'CREDIT').reduce((s, t) => s + t.amount, 0);
+      const net = totalCredit - totalDebit;
 
-    doc.setFontSize(7.5);
-    doc.setTextColor(100, 116, 139);
-    doc.text('TOTAL INFLOW', 18, 43);
-    doc.text('TOTAL OUTFLOW', 80, 43);
-    doc.text('NET BALANCE', 142, 43);
+      doc.setDrawColor(226, 232, 240);
+      doc.setFillColor(248, 250, 252);
+      doc.roundedRect(14, 37, 58, 16, 2, 2, 'FD');
+      doc.roundedRect(76, 37, 58, 16, 2, 2, 'FD');
+      doc.roundedRect(138, 37, 58, 16, 2, 2, 'FD');
 
-    doc.setFontSize(10.5);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(16, 185, 129);
-    doc.text(`Rs. ${totalCredit.toLocaleString('en-IN')}`, 18, 50);
+      doc.setFontSize(7.5);
+      doc.setTextColor(100, 116, 139);
+      doc.text('TOTAL INFLOW', 18, 43);
+      doc.text('TOTAL OUTFLOW', 80, 43);
+      doc.text('NET BALANCE', 142, 43);
 
-    doc.setTextColor(225, 29, 72);
-    doc.text(`Rs. ${totalDebit.toLocaleString('en-IN')}`, 80, 50);
+      doc.setFontSize(10.5);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(16, 185, 129);
+      doc.text(`Rs. ${totalCredit.toLocaleString('en-IN')}`, 18, 50);
 
-    doc.setTextColor(net >= 0 ? 16 : 225, net >= 0 ? 185 : 29, net >= 0 ? 129 : 72);
-    doc.text(`${net >= 0 ? '+' : ''}Rs. ${net.toLocaleString('en-IN')}`, 142, 50);
+      doc.setTextColor(225, 29, 72);
+      doc.text(`Rs. ${totalDebit.toLocaleString('en-IN')}`, 80, 50);
 
-    const tableData = filtered.map(t => [
-      t.date || '',
-      t.bank || '',
-      t.channel || '',
-      t.narration || '',
-      t.category || '',
-      t.type || '',
-      `${t.type === 'CREDIT' ? '+' : '-'}Rs. ${(t.amount || 0).toLocaleString('en-IN')}`
-    ]);
+      doc.setTextColor(net >= 0 ? 16 : 225, net >= 0 ? 185 : 29, net >= 0 ? 129 : 72);
+      doc.text(`${net >= 0 ? '+' : ''}Rs. ${net.toLocaleString('en-IN')}`, 142, 50);
 
-    autoTable(doc, {
-      startY: 58,
-      head: [['Date', 'Bank', 'Channel', 'Narration', 'Category', 'Type', 'Amount']],
-      body: tableData,
-      theme: 'grid',
-      headStyles: {
-        fillColor: [15, 23, 42],
-        textColor: [255, 255, 255],
-        fontSize: 8,
-        fontStyle: 'bold',
-        halign: 'left'
-      },
-      bodyStyles: {
-        fontSize: 7.5,
-        textColor: [30, 41, 59]
-      },
-      alternateRowStyles: {
-        fillColor: [248, 250, 252]
-      },
-      columnStyles: {
-        0: { cellWidth: 22 },
-        1: { cellWidth: 24 },
-        2: { cellWidth: 16 },
-        3: { cellWidth: 50 },
-        4: { cellWidth: 30 },
-        5: { cellWidth: 16 },
-        6: { cellWidth: 24, halign: 'right', fontStyle: 'bold' }
-      },
-      didParseCell: function(data) {
-        if (data.section === 'body' && data.column.index === 6) {
-          if (data.cell.raw && String(data.cell.raw).startsWith('+')) {
-            data.cell.styles.textColor = [16, 185, 129];
-          } else {
-            data.cell.styles.textColor = [225, 29, 72];
+      const tableData = filtered.map(t => [
+        t.date || '',
+        t.bank || '',
+        t.channel || '',
+        t.narration || '',
+        t.category || '',
+        t.type || '',
+        `${t.type === 'CREDIT' ? '+' : '-'}Rs. ${(t.amount || 0).toLocaleString('en-IN')}`
+      ]);
+
+      autoTable(doc, {
+        startY: 58,
+        head: [['Date', 'Bank', 'Channel', 'Narration', 'Category', 'Type', 'Amount']],
+        body: tableData,
+        theme: 'grid',
+        headStyles: {
+          fillColor: [15, 23, 42],
+          textColor: [255, 255, 255],
+          fontSize: 8,
+          fontStyle: 'bold',
+          halign: 'left'
+        },
+        bodyStyles: {
+          fontSize: 7.5,
+          textColor: [30, 41, 59]
+        },
+        alternateRowStyles: {
+          fillColor: [248, 250, 252]
+        },
+        columnStyles: {
+          0: { cellWidth: 22 },
+          1: { cellWidth: 24 },
+          2: { cellWidth: 16 },
+          3: { cellWidth: 50 },
+          4: { cellWidth: 30 },
+          5: { cellWidth: 16 },
+          6: { cellWidth: 24, halign: 'right', fontStyle: 'bold' }
+        },
+        didParseCell: function(data) {
+          if (data.section === 'body' && data.column.index === 6) {
+            if (data.cell.raw && String(data.cell.raw).startsWith('+')) {
+              data.cell.styles.textColor = [16, 185, 129];
+            } else {
+              data.cell.styles.textColor = [225, 29, 72];
+            }
           }
+        },
+        didDrawPage: function(data) {
+          const str = 'Page ' + doc.internal.getNumberOfPages();
+          doc.setFontSize(8);
+          doc.setTextColor(148, 163, 184);
+          doc.text(str, data.settings.margin.left, doc.internal.pageSize.height - 8);
+          doc.text('FinSight India • 100% On-Device Financial Analytics', 120, doc.internal.pageSize.height - 8);
         }
-      },
-      didDrawPage: function(data) {
-        const str = 'Page ' + doc.internal.getNumberOfPages();
-        doc.setFontSize(8);
-        doc.setTextColor(148, 163, 184);
-        doc.text(str, data.settings.margin.left, doc.internal.pageSize.height - 8);
-        doc.text('FinSight India • 100% On-Device Financial Analytics', 120, doc.internal.pageSize.height - 8);
-      }
-    });
+      });
 
-    doc.save(`FinSight_Statement_${new Date().toISOString().slice(0, 10)}.pdf`);
-    setShowExportMenu(false);
-    showToast(`Exported ${filtered.length} transactions to PDF`);
+      const pdfDataUri = doc.output('datauristring');
+      const b64 = pdfDataUri.split(',')[1];
+      const filename = `FinSight_Statement_${new Date().toISOString().slice(0, 10)}.pdf`;
+
+      await saveOrShareFile({
+        filename,
+        mimeType: 'application/pdf',
+        base64Data: b64
+      });
+      setShowExportMenu(false);
+      showToast(`Exported ${filtered.length} transactions to PDF`);
+    } catch (err) {
+      showToast(`Export to PDF failed: ${err.message}`, true);
+    }
   };
 
   // Date Range Bounds calculation
@@ -1451,7 +1797,56 @@ export default function App() {
     return { start: null, end: null };
   }, [datePreset, customFrom, customTo]);
 
-  // TRANSACTIONS FILTERING (With Multi-Category Selection Support)
+  // Available Period Options for Multi-Select Duration Filtering (v1.5.0)
+  const availableWeeks = useMemo(() => {
+    const map = new Map();
+    txns.forEach(t => {
+      const w = getIsoWeek(t.date);
+      if (!map.has(w.key)) {
+        map.set(w.key, { key: w.key, label: w.label, count: 0 });
+      }
+      map.get(w.key).count++;
+    });
+    return Array.from(map.values()).sort((a, b) => b.key.localeCompare(a.key));
+  }, [txns]);
+
+  const availableMonths = useMemo(() => {
+    const map = new Map();
+    txns.forEach(t => {
+      const m = getMonthInfo(t.date);
+      if (!map.has(m.key)) {
+        map.set(m.key, { key: m.key, label: m.label, count: 0 });
+      }
+      map.get(m.key).count++;
+    });
+    return Array.from(map.values()).sort((a, b) => b.key.localeCompare(a.key));
+  }, [txns]);
+
+  const availableQuarters = useMemo(() => {
+    const map = new Map();
+    txns.forEach(t => {
+      const q = getQuarterInfo(t.date);
+      if (!map.has(q.key)) {
+        map.set(q.key, { key: q.key, label: q.label, count: 0 });
+      }
+      map.get(q.key).count++;
+    });
+    return Array.from(map.values()).sort((a, b) => b.key.localeCompare(a.key));
+  }, [txns]);
+
+  const availableYears = useMemo(() => {
+    const map = new Map();
+    txns.forEach(t => {
+      const y = getYearInfo(t.date);
+      if (!map.has(y.key)) {
+        map.set(y.key, { key: y.key, label: y.label, count: 0 });
+      }
+      map.get(y.key).count++;
+    });
+    return Array.from(map.values()).sort((a, b) => b.key.localeCompare(a.key));
+  }, [txns]);
+
+  // TRANSACTIONS FILTERING (With Multi-Category Selection & Multi-Select Duration Modes)
   const filtered = useMemo(() => {
     return txns.filter(t => {
       if (bankFilter !== 'ALL' && t.bank !== bankFilter) return false;
@@ -1460,12 +1855,44 @@ export default function App() {
         if (!selectedCategories.includes(t.category)) return false;
       }
       if (typeFilter !== 'ALL' && t.type !== typeFilter) return false;
-      if (dateRangeBounds.start && t.date < dateRangeBounds.start) return false;
-      if (dateRangeBounds.end && t.date > dateRangeBounds.end) return false;
+
+      // Duration Mode Filtering (v1.5.0)
+      if (durationMode === 'WEEKWISE') {
+        if (selectedWeeks.length > 0) {
+          const w = getIsoWeek(t.date).key;
+          if (!selectedWeeks.includes(w)) return false;
+        }
+      } else if (durationMode === 'MONTHWISE') {
+        if (selectedMonths.length > 0) {
+          const m = getMonthInfo(t.date).key;
+          if (!selectedMonths.includes(m)) return false;
+        }
+      } else if (durationMode === 'QUARTERWISE') {
+        if (selectedQuarters.length > 0) {
+          const q = getQuarterInfo(t.date).key;
+          if (!selectedQuarters.includes(q)) return false;
+        }
+      } else if (durationMode === 'YEARWISE') {
+        if (selectedYears.length > 0) {
+          const y = getYearInfo(t.date).key;
+          if (!selectedYears.includes(y)) return false;
+        }
+      } else if (durationMode === 'CUSTOM') {
+        if (customFrom && t.date < customFrom) return false;
+        if (customTo && t.date > customTo) return false;
+      } else if (durationMode === 'PRESET') {
+        if (dateRangeBounds.start && t.date < dateRangeBounds.start) return false;
+        if (dateRangeBounds.end && t.date > dateRangeBounds.end) return false;
+      }
+
       if (search && !t.narration.toLowerCase().includes(search.toLowerCase()) && !t.category.toLowerCase().includes(search.toLowerCase()) && !(t.bank || '').toLowerCase().includes(search.toLowerCase())) return false;
       return true;
     }).sort((a, b) => b.date.localeCompare(a.date));
-  }, [txns, bankFilter, selectedCategories, categories, typeFilter, search, dateRangeBounds]);
+  }, [
+    txns, bankFilter, selectedCategories, categories, typeFilter, search,
+    durationMode, selectedWeeks, selectedMonths, selectedQuarters, selectedYears,
+    customFrom, customTo, dateRangeBounds
+  ]);
 
   // TOTALS COMPUTATION (Respects Internal Transfer Exclusion)
   const totals = useMemo(() => {
@@ -1663,6 +2090,20 @@ export default function App() {
           </div>
         </div>
         <div className="flex items-center gap-1.5 sm:gap-2">
+          {/* Smart Transfers Manager Quick Access (v1.5.0) */}
+          <button
+            onClick={() => setShowTransferManagerModal(true)}
+            className="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium px-2.5 py-2 rounded-xl border border-slate-700 flex items-center gap-1.5"
+            title="Manage Smart Bank Transfers"
+          >
+            <ArrowLeftRight size={13} className="text-sky-400" />
+            <span className="hidden sm:inline">Transfers</span>
+            {transferPairs.length > 0 && (
+              <span className="bg-sky-500/20 text-sky-300 px-1.5 py-0.2 rounded-full text-[10px] font-bold">
+                {transferPairs.length}
+              </span>
+            )}
+          </button>
           {/* Backup Quick Access */}
           <button
             onClick={handleExportBackup}
@@ -1736,24 +2177,38 @@ export default function App() {
         ))}
       </div>
 
-      {/* SMART BANK TRANSFERS BANNER */}
+      {/* SMART BANK TRANSFERS BANNER (v1.5.0) */}
       {transferPairs.length > 0 && (
         <div className="bg-sky-950/40 border-b border-sky-900/60 px-4 py-2 flex items-center justify-between gap-2 text-xs flex-wrap">
           <div className="flex items-center gap-2">
             <ArrowLeftRight size={14} className="text-sky-400 shrink-0" />
             <span className="text-slate-200">
-              <strong className="text-sky-300">{transferPairs.length} Smart Bank Transfers</strong> detected across your accounts (₹{totalTransfersAmount.toLocaleString('en-IN')})
+              <strong className="text-sky-300">{transferPairs.length} Smart Bank Transfers</strong> detected (₹{totalTransfersAmount.toLocaleString('en-IN')})
             </span>
+            <button
+              onClick={() => setShowTransferManagerModal(true)}
+              className="text-[11px] text-sky-400 hover:text-sky-300 font-semibold underline ml-1"
+            >
+              Edit / Manage
+            </button>
           </div>
-          <label className="flex items-center gap-2 cursor-pointer text-[11px] text-sky-200 font-medium">
-            <input
-              type="checkbox"
-              checked={excludeTransfersFromTotals}
-              onChange={e => setExcludeTransfersFromTotals(e.target.checked)}
-              className="accent-sky-500 rounded"
-            />
-            <span>Exclude transfers from spend/earning totals</span>
-          </label>
+          <div className="flex items-center gap-3">
+            <label className="flex items-center gap-1.5 cursor-pointer text-[11px] text-sky-200 font-medium">
+              <input
+                type="checkbox"
+                checked={excludeTransfersFromTotals}
+                onChange={e => setExcludeTransfersFromTotals(e.target.checked)}
+                className="accent-sky-500 rounded"
+              />
+              <span>Exclude from totals</span>
+            </label>
+            <button
+              onClick={() => setShowTransferManagerModal(true)}
+              className="px-2 py-0.5 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 text-[11px] font-semibold flex items-center gap-1 border border-sky-500/40"
+            >
+              <Sliders size={12} /> Manage
+            </button>
+          </div>
         </div>
       )}
 
@@ -2252,29 +2707,55 @@ export default function App() {
               </div>
             </div>
 
-            {/* DURATION / DATE-RANGE FILTER BAR */}
-            <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-2.5 space-y-2">
+            {/* DURATION / DATE-RANGE FILTER BAR (v1.5.0 Multi-Select & Periods) */}
+            <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-2.5 space-y-2.5">
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <div className="flex items-center gap-1.5 text-xs text-slate-300 font-semibold">
                   <Calendar size={13} className="text-emerald-400" />
                   <span>Duration Filter:</span>
                 </div>
+                {/* Duration Mode Switcher */}
                 <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
                   {[
                     { id: 'ALL', label: 'All Time' },
+                    { id: 'PRESET', label: 'Presets' },
+                    { id: 'WEEKWISE', label: `Weekwise${selectedWeeks.length ? ` (${selectedWeeks.length})` : ''}` },
+                    { id: 'MONTHWISE', label: `Monthwise${selectedMonths.length ? ` (${selectedMonths.length})` : ''}` },
+                    { id: 'QUARTERWISE', label: `Quarterwise${selectedQuarters.length ? ` (${selectedQuarters.length})` : ''}` },
+                    { id: 'YEARWISE', label: `Yearwise${selectedYears.length ? ` (${selectedYears.length})` : ''}` },
+                    { id: 'CUSTOM', label: 'Custom' }
+                  ].map(m => (
+                    <button
+                      key={m.id}
+                      onClick={() => setDurationMode(m.id)}
+                      className={`px-2.5 py-1 rounded-lg text-[11px] font-medium whitespace-nowrap transition ${
+                        durationMode === m.id
+                          ? 'bg-emerald-500 text-slate-950 font-bold shadow-sm'
+                          : 'bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800'
+                      }`}
+                    >
+                      {m.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* MODE: PRESET (Quick standard presets) */}
+              {durationMode === 'PRESET' && (
+                <div className="pt-2 border-t border-slate-800/80 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+                  {[
                     { id: '7D', label: 'Last 7 Days' },
                     { id: '30D', label: 'Last 30 Days' },
                     { id: 'THIS_MONTH', label: 'This Month' },
                     { id: '3M', label: 'Last 3 Months' },
-                    { id: 'THIS_YEAR', label: 'This Year' },
-                    { id: 'CUSTOM', label: 'Custom' }
+                    { id: 'THIS_YEAR', label: 'This Year' }
                   ].map(p => (
                     <button
                       key={p.id}
                       onClick={() => setDatePreset(p.id)}
                       className={`px-2.5 py-1 rounded-lg text-[11px] font-medium whitespace-nowrap transition ${
                         datePreset === p.id
-                          ? 'bg-emerald-500 text-slate-950 font-bold shadow-sm'
+                          ? 'bg-sky-500 text-slate-950 font-bold shadow-sm'
                           : 'bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800'
                       }`}
                     >
@@ -2282,9 +2763,198 @@ export default function App() {
                     </button>
                   ))}
                 </div>
-              </div>
+              )}
 
-              {datePreset === 'CUSTOM' && (
+              {/* MODE: WEEKWISE (Multi-Select Weeks) */}
+              {durationMode === 'WEEKWISE' && (
+                <div className="pt-2 border-t border-slate-800/80 space-y-1.5">
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="text-slate-400 font-medium">Select Weeks (Multi-select enabled):</span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setSelectedWeeks(availableWeeks.map(w => w.key))}
+                        className="text-emerald-400 hover:underline"
+                      >
+                        Select All
+                      </button>
+                      <span>•</span>
+                      <button
+                        onClick={() => setSelectedWeeks([])}
+                        className="text-rose-400 hover:underline"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex gap-1.5 flex-wrap max-h-24 overflow-y-auto pr-1">
+                    {availableWeeks.map(w => {
+                      const active = selectedWeeks.includes(w.key);
+                      return (
+                        <button
+                          key={w.key}
+                          onClick={() => {
+                            setSelectedWeeks(prev =>
+                              prev.includes(w.key) ? prev.filter(k => k !== w.key) : [...prev, w.key]
+                            );
+                          }}
+                          className={`px-2 py-0.5 rounded-lg text-[11px] font-medium border flex items-center gap-1 transition ${
+                            active
+                              ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300 font-semibold'
+                              : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700'
+                          }`}
+                        >
+                          <span>{w.label}</span>
+                          <span className="text-[9px] opacity-70">({w.count})</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* MODE: MONTHWISE (Multi-Select Months) */}
+              {durationMode === 'MONTHWISE' && (
+                <div className="pt-2 border-t border-slate-800/80 space-y-1.5">
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="text-slate-400 font-medium">Select Months (Multi-select enabled):</span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setSelectedMonths(availableMonths.map(m => m.key))}
+                        className="text-emerald-400 hover:underline"
+                      >
+                        Select All
+                      </button>
+                      <span>•</span>
+                      <button
+                        onClick={() => setSelectedMonths([])}
+                        className="text-rose-400 hover:underline"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex gap-1.5 flex-wrap max-h-24 overflow-y-auto pr-1">
+                    {availableMonths.map(m => {
+                      const active = selectedMonths.includes(m.key);
+                      return (
+                        <button
+                          key={m.key}
+                          onClick={() => {
+                            setSelectedMonths(prev =>
+                              prev.includes(m.key) ? prev.filter(k => k !== m.key) : [...prev, m.key]
+                            );
+                          }}
+                          className={`px-2 py-0.5 rounded-lg text-[11px] font-medium border flex items-center gap-1 transition ${
+                            active
+                              ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300 font-semibold'
+                              : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700'
+                          }`}
+                        >
+                          <span>{m.label}</span>
+                          <span className="text-[9px] opacity-70">({m.count})</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* MODE: QUARTERWISE (Multi-Select Quarters) */}
+              {durationMode === 'QUARTERWISE' && (
+                <div className="pt-2 border-t border-slate-800/80 space-y-1.5">
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="text-slate-400 font-medium">Select Quarters (Multi-select enabled):</span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setSelectedQuarters(availableQuarters.map(q => q.key))}
+                        className="text-emerald-400 hover:underline"
+                      >
+                        Select All
+                      </button>
+                      <span>•</span>
+                      <button
+                        onClick={() => setSelectedQuarters([])}
+                        className="text-rose-400 hover:underline"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex gap-1.5 flex-wrap max-h-24 overflow-y-auto pr-1">
+                    {availableQuarters.map(q => {
+                      const active = selectedQuarters.includes(q.key);
+                      return (
+                        <button
+                          key={q.key}
+                          onClick={() => {
+                            setSelectedQuarters(prev =>
+                              prev.includes(q.key) ? prev.filter(k => k !== q.key) : [...prev, q.key]
+                            );
+                          }}
+                          className={`px-2 py-0.5 rounded-lg text-[11px] font-medium border flex items-center gap-1 transition ${
+                            active
+                              ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300 font-semibold'
+                              : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700'
+                          }`}
+                        >
+                          <span>{q.label}</span>
+                          <span className="text-[9px] opacity-70">({q.count})</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* MODE: YEARWISE (Multi-Select Years) */}
+              {durationMode === 'YEARWISE' && (
+                <div className="pt-2 border-t border-slate-800/80 space-y-1.5">
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="text-slate-400 font-medium">Select Years (Multi-select enabled):</span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setSelectedYears(availableYears.map(y => y.key))}
+                        className="text-emerald-400 hover:underline"
+                      >
+                        Select All
+                      </button>
+                      <span>•</span>
+                      <button
+                        onClick={() => setSelectedYears([])}
+                        className="text-rose-400 hover:underline"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex gap-1.5 flex-wrap max-h-24 overflow-y-auto pr-1">
+                    {availableYears.map(y => {
+                      const active = selectedYears.includes(y.key);
+                      return (
+                        <button
+                          key={y.key}
+                          onClick={() => {
+                            setSelectedYears(prev =>
+                              prev.includes(y.key) ? prev.filter(k => k !== y.key) : [...prev, y.key]
+                            );
+                          }}
+                          className={`px-2 py-0.5 rounded-lg text-[11px] font-medium border flex items-center gap-1 transition ${
+                            active
+                              ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300 font-semibold'
+                              : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700'
+                          }`}
+                        >
+                          <span>{y.label}</span>
+                          <span className="text-[9px] opacity-70">({y.count})</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* MODE: CUSTOM */}
+              {durationMode === 'CUSTOM' && (
                 <div className="pt-2 border-t border-slate-800/80 flex items-center gap-2 flex-wrap text-xs">
                   <div className="flex items-center gap-1.5">
                     <span className="text-slate-400 text-[11px]">From:</span>
@@ -2320,7 +2990,6 @@ export default function App() {
             <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1 flex-wrap gap-1">
               <span>
                 Showing {filtered.length} of {txns.length} transactions
-                {dateRangeBounds.start && dateRangeBounds.end && ` (${dateRangeBounds.start} to ${dateRangeBounds.end})`}
               </span>
               <div className="flex items-center gap-2">
                 {selectedCategories.length > 0 && selectedCategories.length < categories.length && (
@@ -2331,15 +3000,27 @@ export default function App() {
                     <RotateCcw size={11} /> Clear Categories ({selectedCategories.length})
                   </button>
                 )}
-                {datePreset !== 'ALL' && (
-                  <button onClick={() => setDatePreset('ALL')} className="text-emerald-400 underline">
-                    Reset Date Filter
+                {durationMode !== 'ALL' && (
+                  <button
+                    onClick={() => {
+                      setDurationMode('ALL');
+                      setSelectedWeeks([]);
+                      setSelectedMonths([]);
+                      setSelectedQuarters([]);
+                      setSelectedYears([]);
+                      setCustomFrom('');
+                      setCustomTo('');
+                      setDatePreset('ALL');
+                    }}
+                    className="text-emerald-400 hover:underline flex items-center gap-0.5"
+                  >
+                    <RotateCcw size={11} /> Reset Duration Filter
                   </button>
                 )}
               </div>
             </div>
 
-            {/* TRANSACTIONS LIST WITH PERSISTENT MANUAL TAG INDICATOR */}
+            {/* TRANSACTIONS LIST WITH TEXT-OVERFLOW PREVENTION (v1.5.0) */}
             <div className="divide-y divide-slate-800/80 text-xs max-h-[58vh] overflow-y-auto">
               {filtered.map(t => {
                 const transferInfo = transferMap.get(t.id);
@@ -2347,20 +3028,22 @@ export default function App() {
                   <div
                     key={t.id}
                     onClick={() => setEditingTxn({ ...t })}
-                    className="py-3 px-2 hover:bg-slate-800/50 rounded-xl flex items-center justify-between cursor-pointer transition"
+                    className="py-3 px-2 hover:bg-slate-800/50 rounded-xl flex items-center justify-between gap-2 cursor-pointer transition min-w-0"
                   >
-                    <div className="space-y-1 pr-2">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-semibold text-slate-100">{t.narration}</span>
-                        <span className="text-[10px] px-2 py-0.5 rounded-md bg-slate-800 text-emerald-400 border border-slate-700">
+                    <div className="space-y-1 min-w-0 flex-1 overflow-hidden">
+                      <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+                        <span className="font-semibold text-slate-100 text-xs break-words break-all line-clamp-2 leading-tight">
+                          {t.narration}
+                        </span>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-slate-800 text-emerald-400 border border-slate-700 whitespace-nowrap shrink-0">
                           {t.bank}
                         </span>
-                        <span className="text-[10px] px-2 py-0.5 rounded-md bg-slate-950 text-slate-400 border border-slate-800">
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-slate-950 text-slate-400 border border-slate-800 whitespace-nowrap shrink-0">
                           {t.channel}
                         </span>
                         {/* Persistent Manual Tag Indicator */}
                         {t.isManualCategory && (
-                          <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30" title="Manually assigned category (persisted)">
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30 whitespace-nowrap shrink-0" title="Manually assigned category (persisted)">
                             Manual Tag
                           </span>
                         )}
@@ -2372,33 +3055,33 @@ export default function App() {
                               const partner = txns.find(p => p.id === transferInfo.partnerTxnId);
                               if (partner) setSelectedTransferPair({ main: t, partner });
                             }}
-                            className="text-[10px] px-2 py-0.5 rounded-md bg-sky-500/15 text-sky-300 border border-sky-500/30 flex items-center gap-1 font-medium hover:bg-sky-500/25"
-                            title="Click to view paired transfer"
+                            className="text-[10px] px-1.5 py-0.5 rounded-md bg-sky-500/15 text-sky-300 border border-sky-500/30 flex items-center gap-1 font-medium hover:bg-sky-500/25 shrink-0 max-w-full truncate"
+                            title="Click to inspect/edit paired transfer"
                           >
-                            <ArrowLeftRight size={10} />
-                            <span>
+                            <ArrowLeftRight size={10} className="shrink-0" />
+                            <span className="truncate">
                               Transfer {transferInfo.isDebit ? `${t.bank} ➔ ${transferInfo.partnerBank}` : `${transferInfo.partnerBank} ➔ ${t.bank}`}
                             </span>
                           </span>
                         )}
                       </div>
-                      <div className="flex items-center gap-2 text-[11px] text-slate-400">
-                        <span>{t.date}</span>
+                      <div className="flex items-center gap-2 text-[11px] text-slate-400 flex-wrap min-w-0">
+                        <span className="shrink-0">{t.date}</span>
                         <span>•</span>
-                        <span className="text-sky-400 font-medium">{t.category}</span>
+                        <span className="text-sky-400 font-medium truncate">{t.category}</span>
                         {t.fileName && (
                           <>
                             <span>•</span>
-                            <span className="text-slate-500 truncate max-w-[140px]">{t.fileName}</span>
+                            <span className="text-slate-500 truncate max-w-[120px]">{t.fileName}</span>
                           </>
                         )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 shrink-0 text-right">
                       <span className={`font-bold text-sm whitespace-nowrap ${t.type === 'CREDIT' ? 'text-emerald-400' : 'text-rose-400'}`}>
                         {t.type === 'CREDIT' ? '+' : '-'}₹{t.amount.toLocaleString('en-IN')}
                       </span>
-                      <Edit3 size={13} className="text-slate-500" />
+                      <Edit3 size={13} className="text-slate-500 shrink-0" />
                     </div>
                   </div>
                 );
@@ -3072,57 +3755,94 @@ export default function App() {
         </div>
       )}
 
-      {/* SMART TRANSFER PAIR DETAILS MODAL */}
-      {selectedTransferPair && (
-        <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-sm w-full p-4 space-y-3">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
-              <div className="flex items-center gap-2">
-                <ArrowLeftRight size={16} className="text-sky-400" />
-                <h3 className="text-sm font-bold text-white">Smart Bank Transfer Pair</h3>
-              </div>
-              <button onClick={() => setSelectedTransferPair(null)} className="text-slate-400 hover:text-white">
-                <X size={18} />
-              </button>
-            </div>
-
-            <p className="text-xs text-slate-300">
-              These two transactions match as a self-account transfer between your banks for ₹{selectedTransferPair.main.amount.toLocaleString('en-IN')}:
-            </p>
-
-            <div className="space-y-2 text-xs">
-              <div className="p-2.5 rounded-xl bg-slate-950 border border-rose-900/60 space-y-1">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold text-rose-400 uppercase">Debit (Outflow)</span>
-                  <span className="font-bold text-rose-400">-₹{selectedTransferPair.main.type === 'DEBIT' ? selectedTransferPair.main.amount.toLocaleString('en-IN') : selectedTransferPair.partner.amount.toLocaleString('en-IN')}</span>
+      {/* SMART TRANSFER PAIR DETAILS & EDITING MODAL (v1.5.0) */}
+      {selectedTransferPair && (() => {
+        const debitTxn = selectedTransferPair.main.type === 'DEBIT' ? selectedTransferPair.main : selectedTransferPair.partner;
+        const creditTxn = selectedTransferPair.main.type === 'CREDIT' ? selectedTransferPair.main : selectedTransferPair.partner;
+        const pairInfo = transferMap.get(debitTxn.id);
+        return (
+          <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-4">
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-sm w-full p-4 space-y-3">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
+                <div className="flex items-center gap-2">
+                  <ArrowLeftRight size={16} className="text-sky-400" />
+                  <h3 className="text-sm font-bold text-white">Smart Bank Transfer Pair</h3>
                 </div>
-                <p className="font-semibold text-slate-100">{selectedTransferPair.main.type === 'DEBIT' ? selectedTransferPair.main.bank : selectedTransferPair.partner.bank}</p>
-                <p className="text-[11px] text-slate-400 truncate">{selectedTransferPair.main.type === 'DEBIT' ? selectedTransferPair.main.narration : selectedTransferPair.partner.narration}</p>
-                <p className="text-[10px] text-slate-500">{selectedTransferPair.main.type === 'DEBIT' ? selectedTransferPair.main.date : selectedTransferPair.partner.date}</p>
+                <button onClick={() => setSelectedTransferPair(null)} className="text-slate-400 hover:text-white">
+                  <X size={18} />
+                </button>
               </div>
 
-              <div className="p-2.5 rounded-xl bg-slate-950 border border-emerald-900/60 space-y-1">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold text-emerald-400 uppercase">Credit (Inflow)</span>
-                  <span className="font-bold text-emerald-400">+₹{selectedTransferPair.main.type === 'CREDIT' ? selectedTransferPair.main.amount.toLocaleString('en-IN') : selectedTransferPair.partner.amount.toLocaleString('en-IN')}</span>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-slate-300">
+                  Transfer Amount: <strong className="text-white">₹{debitTxn.amount.toLocaleString('en-IN')}</strong>
+                </span>
+                <span className={`text-[10px] px-2 py-0.5 rounded-full border ${
+                  pairInfo?.isManualPair
+                    ? 'bg-purple-500/15 border-purple-500/40 text-purple-300'
+                    : 'bg-sky-500/15 border-sky-500/40 text-sky-300'
+                }`}>
+                  {pairInfo?.isManualPair ? 'Manually Linked' : 'Auto-Detected'}
+                </span>
+              </div>
+
+              <div className="space-y-2 text-xs">
+                <div className="p-2.5 rounded-xl bg-slate-950 border border-rose-900/60 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-rose-400 uppercase">Debit (Outflow Bank)</span>
+                    <span className="font-bold text-rose-400">-₹{debitTxn.amount.toLocaleString('en-IN')}</span>
+                  </div>
+                  <p className="font-semibold text-slate-100">{debitTxn.bank}</p>
+                  <p className="text-[11px] text-slate-400 break-words">{debitTxn.narration}</p>
+                  <div className="flex items-center justify-between text-[10px] text-slate-500">
+                    <span>{debitTxn.date}</span>
+                    <span className="text-slate-400">Category: {debitTxn.category}</span>
+                  </div>
                 </div>
-                <p className="font-semibold text-slate-100">{selectedTransferPair.main.type === 'CREDIT' ? selectedTransferPair.main.bank : selectedTransferPair.partner.bank}</p>
-                <p className="text-[11px] text-slate-400 truncate">{selectedTransferPair.main.type === 'CREDIT' ? selectedTransferPair.main.narration : selectedTransferPair.partner.narration}</p>
-                <p className="text-[10px] text-slate-500">{selectedTransferPair.main.type === 'CREDIT' ? selectedTransferPair.main.date : selectedTransferPair.partner.date}</p>
-              </div>
-            </div>
 
-            <div className="pt-2 border-t border-slate-800 flex justify-end">
-              <button
-                onClick={() => setSelectedTransferPair(null)}
-                className="bg-slate-800 text-slate-200 px-4 py-1.5 rounded-xl text-xs font-semibold"
-              >
-                Close
-              </button>
+                <div className="p-2.5 rounded-xl bg-slate-950 border border-emerald-900/60 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-emerald-400 uppercase">Credit (Inflow Bank)</span>
+                    <span className="font-bold text-emerald-400">+₹{creditTxn.amount.toLocaleString('en-IN')}</span>
+                  </div>
+                  <p className="font-semibold text-slate-100">{creditTxn.bank}</p>
+                  <p className="text-[11px] text-slate-400 break-words">{creditTxn.narration}</p>
+                  <div className="flex items-center justify-between text-[10px] text-slate-500">
+                    <span>{creditTxn.date}</span>
+                    <span className="text-slate-400">Category: {creditTxn.category}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Transfer Editing Actions */}
+              <div className="pt-2 border-t border-slate-800 space-y-2">
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleCategorizePairAsTransfer(debitTxn.id, creditTxn.id)}
+                    className="flex-1 bg-slate-800 hover:bg-slate-700 text-sky-300 py-1.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-1 border border-slate-700"
+                  >
+                    <Tag size={12} /> Set Both 'Bank Transfer'
+                  </button>
+                  <button
+                    onClick={() => handleUnlinkPair(debitTxn.id, creditTxn.id)}
+                    className="flex-1 bg-rose-950/60 hover:bg-rose-900/80 text-rose-300 py-1.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-1 border border-rose-800"
+                  >
+                    <Unlink size={12} /> Unlink Pair
+                  </button>
+                </div>
+                <div className="flex justify-end">
+                  <button
+                    onClick={() => setSelectedTransferPair(null)}
+                    className="bg-slate-800 text-slate-200 px-4 py-1.5 rounded-xl text-xs font-semibold"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* MODAL 1: ADD / EDIT BANK */}
       {showBankModal && (
@@ -3243,34 +3963,73 @@ export default function App() {
         </div>
       )}
 
-      {/* MODAL 3: EDIT TRANSACTION (WITH PERMANENT MANUAL TAG RETENTION) */}
-      {editingTxn && (
-        <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-4 space-y-3">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
-              <h3 className="text-sm font-bold text-white">Edit Transaction</h3>
-              <button onClick={() => setEditingTxn(null)} className="text-slate-400 hover:text-white">
-                <X size={18} />
-              </button>
-            </div>
-            <div className="space-y-2.5 text-xs">
-              {/* Persistent Manual Tag Status */}
-              {editingTxn.isManualCategory && (
-                <div className="flex items-center justify-between text-[11px] text-amber-300 bg-amber-500/10 border border-amber-500/25 px-2.5 py-1.5 rounded-xl">
-                  <span>📌 Category manually assigned (preserved permanently)</span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const autoCat = detectCategoryWithRules(editingTxn.narration, editingTxn.type);
-                      setEditingTxn({ ...editingTxn, category: autoCat, isManualCategory: false });
-                      showToast(`Reset to auto-detected "${autoCat}"`);
-                    }}
-                    className="underline text-amber-200 hover:text-white font-semibold ml-2 text-[10px]"
-                  >
-                    Reset to Auto
-                  </button>
-                </div>
-              )}
+      {/* MODAL 3: EDIT TRANSACTION (WITH TRANSFER LINKING & MANUAL TAG RETENTION) */}
+      {editingTxn && (() => {
+        const transferInfo = transferMap.get(editingTxn.id);
+        const partnerTxn = transferInfo ? txns.find(p => p.id === transferInfo.partnerTxnId) : null;
+        return (
+          <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-4">
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-4 space-y-3">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
+                <h3 className="text-sm font-bold text-white">Edit Transaction</h3>
+                <button onClick={() => setEditingTxn(null)} className="text-slate-400 hover:text-white">
+                  <X size={18} />
+                </button>
+              </div>
+              <div className="space-y-2.5 text-xs">
+                {/* Smart Bank Transfer Link Status & Actions */}
+                {transferInfo && partnerTxn ? (
+                  <div className="p-2.5 rounded-xl bg-sky-950/50 border border-sky-800/80 space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 text-sky-300 font-semibold text-xs">
+                        <ArrowLeftRight size={13} />
+                        <span>Paired Smart Transfer ({transferInfo.isDebit ? `${editingTxn.bank} ➔ ${partnerTxn.bank}` : `${partnerTxn.bank} ➔ ${editingTxn.bank}`})</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleUnlinkPair(editingTxn.id, partnerTxn.id)}
+                        className="text-rose-400 hover:text-rose-300 text-[11px] flex items-center gap-1 underline font-semibold"
+                      >
+                        <Unlink size={11} /> Unlink
+                      </button>
+                    </div>
+                    <p className="text-[11px] text-slate-300">
+                      Partner: {partnerTxn.bank} • {partnerTxn.type === 'CREDIT' ? '+' : '-'}₹{partnerTxn.amount.toLocaleString('en-IN')} on {partnerTxn.date}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between bg-slate-950 p-2 rounded-xl border border-slate-800">
+                    <span className="text-slate-400 text-[11px]">Unlinked Transfer?</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setManualLinkTargetTxn(editingTxn);
+                        setShowManualLinkModal(true);
+                      }}
+                      className="text-sky-400 hover:text-sky-300 text-[11px] flex items-center gap-1 font-semibold hover:underline"
+                    >
+                      <Link size={12} /> Link as Bank Transfer...
+                    </button>
+                  </div>
+                )}
+
+                {/* Persistent Manual Tag Status */}
+                {editingTxn.isManualCategory && (
+                  <div className="flex items-center justify-between text-[11px] text-amber-300 bg-amber-500/10 border border-amber-500/25 px-2.5 py-1.5 rounded-xl">
+                    <span>📌 Category manually assigned (preserved permanently)</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const autoCat = detectCategoryWithRules(editingTxn.narration, editingTxn.type);
+                        setEditingTxn({ ...editingTxn, category: autoCat, isManualCategory: false });
+                        showToast(`Reset to auto-detected "${autoCat}"`);
+                      }}
+                      className="underline text-amber-200 hover:text-white font-semibold ml-2 text-[10px]"
+                    >
+                      Reset to Auto
+                    </button>
+                  </div>
+                )}
 
               <div>
                 <label className="text-slate-400 block mb-1">Date</label>
@@ -3353,7 +4112,8 @@ export default function App() {
             </div>
           </div>
         </div>
-      )}
+      );
+      })()}
 
       {/* MODAL 4: ADD MANUAL TRANSACTION */}
       {showAddModal && (
@@ -3625,6 +4385,293 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {/* MODAL 8: SMART BANK TRANSFERS MANAGER MODAL (v1.5.0) */}
+      {showTransferManagerModal && (
+        <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-4 space-y-3 max-h-[88vh] flex flex-col">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-2.5 shrink-0">
+              <div className="flex items-center gap-2">
+                <ArrowLeftRight size={18} className="text-sky-400" />
+                <div>
+                  <h3 className="text-sm font-bold text-white">Smart Bank Transfers Manager</h3>
+                  <p className="text-[10px] text-slate-400">
+                    {transferPairs.length} paired transfers • ₹{totalTransfersAmount.toLocaleString('en-IN')} total volume
+                  </p>
+                </div>
+              </div>
+              <button onClick={() => setShowTransferManagerModal(false)} className="text-slate-400 hover:text-white">
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Config & Controls */}
+            <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-2.5 shrink-0 text-xs">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <label className="text-slate-300 font-medium">Auto-Detection Clearing Window:</label>
+                <select
+                  value={transferClearingDays}
+                  onChange={e => setTransferClearingDays(Number(e.target.value))}
+                  className="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-slate-100"
+                >
+                  <option value={0}>Same Day Only (0 Days)</option>
+                  <option value={1}>Within 1 Day</option>
+                  <option value={2}>Within 2 Days (Standard)</option>
+                  <option value={3}>Within 3 Days</option>
+                  <option value={5}>Within 5 Days</option>
+                </select>
+              </div>
+
+              <div className="flex items-center justify-between gap-2 border-t border-slate-800/80 pt-2 flex-wrap">
+                <label className="flex items-center gap-2 cursor-pointer text-slate-300">
+                  <input
+                    type="checkbox"
+                    checked={excludeTransfersFromTotals}
+                    onChange={e => setExcludeTransfersFromTotals(e.target.checked)}
+                    className="accent-sky-500 rounded"
+                  />
+                  <span>Exclude paired transfers from spend/earning totals</span>
+                </label>
+                {unlinkedTransferPairs.length > 0 && (
+                  <button
+                    onClick={() => {
+                      setUnlinkedTransferPairs([]);
+                      showToast(`Reset ${unlinkedTransferPairs.length} unlinked pairs history`);
+                    }}
+                    className="text-xs text-sky-400 hover:underline"
+                  >
+                    Reset Unlinked History ({unlinkedTransferPairs.length})
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* List of Paired Transfers */}
+            <div className="flex-1 overflow-y-auto space-y-2 pr-1 text-xs min-h-[140px]">
+              {transferPairs.length === 0 ? (
+                <div className="text-center py-8 text-slate-500 space-y-2">
+                  <ArrowLeftRight size={28} className="mx-auto opacity-40 text-slate-400" />
+                  <p>No bank transfer pairs detected.</p>
+                  <p className="text-[11px] text-slate-400">
+                    Transfers between your bank accounts for the same amount within {transferClearingDays} days are automatically detected.
+                  </p>
+                </div>
+              ) : (
+                transferPairs.map(p => {
+                  const debitTxn = txns.find(t => t.id === p.debitTxnId);
+                  const creditTxn = txns.find(t => t.id === p.creditTxnId);
+                  return (
+                    <div
+                      key={p.pairId}
+                      className="p-3 rounded-xl bg-slate-950 border border-slate-800 hover:border-slate-700 space-y-2"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5 font-bold text-white text-xs">
+                          <span className="text-rose-400">{p.fromBank}</span>
+                          <span className="text-slate-500">➔</span>
+                          <span className="text-emerald-400">{p.toBank}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-bold text-sky-300 text-sm">
+                            ₹{p.amount.toLocaleString('en-IN')}
+                          </span>
+                          <span className={`text-[10px] px-1.5 py-0.2 rounded-full border ${
+                            p.isManualPair
+                              ? 'bg-purple-500/15 border-purple-500/40 text-purple-300'
+                              : 'bg-sky-500/15 border-sky-500/40 text-sky-300'
+                          }`}>
+                            {p.isManualPair ? 'Manual' : `${p.diffDays === 0 ? 'Same day' : `${p.diffDays}d diff`}`}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-400 border-t border-slate-900 pt-1.5">
+                        <div className="truncate">
+                          <span className="text-rose-400 font-semibold block text-[10px]">DEBIT</span>
+                          <span className="text-slate-300">{debitTxn?.date}</span>
+                          <p className="truncate text-[10px] text-slate-500">{debitTxn?.narration}</p>
+                        </div>
+                        <div className="truncate">
+                          <span className="text-emerald-400 font-semibold block text-[10px]">CREDIT</span>
+                          <span className="text-slate-300">{creditTxn?.date}</span>
+                          <p className="truncate text-[10px] text-slate-500">{creditTxn?.narration}</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-end gap-2 pt-1 border-t border-slate-900">
+                        <button
+                          onClick={() => handleCategorizePairAsTransfer(p.debitTxnId, p.creditTxnId)}
+                          className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-sky-300 text-[10px] font-semibold flex items-center gap-1"
+                        >
+                          <Tag size={10} /> Set 'Bank Transfer'
+                        </button>
+                        <button
+                          onClick={() => handleUnlinkPair(p.debitTxnId, p.creditTxnId)}
+                          className="px-2 py-1 rounded-lg bg-rose-950/60 hover:bg-rose-900/80 text-rose-300 text-[10px] font-semibold flex items-center gap-1 border border-rose-800/80"
+                        >
+                          <Unlink size={10} /> Unlink
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            <div className="flex justify-between items-center pt-2 border-t border-slate-800 shrink-0">
+              <span className="text-[11px] text-slate-500">
+                To link transactions manually, edit any transaction and tap 'Link as Bank Transfer'.
+              </span>
+              <button
+                onClick={() => setShowTransferManagerModal(false)}
+                className="bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-2 rounded-xl text-xs font-semibold"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 9: MANUAL TRANSFER CANDIDATE PICKER (v1.5.0) */}
+      {showManualLinkModal && manualLinkTargetTxn && (() => {
+        const target = manualLinkTargetTxn;
+        const targetAmt = Number(target.amount);
+        const targetDate = new Date(target.date || '2026-01-01').getTime();
+        const oppositeType = target.type === 'DEBIT' ? 'CREDIT' : 'DEBIT';
+
+        const candidates = txns.filter(t => {
+          if (t.id === target.id) return false;
+          if (t.type !== oppositeType) return false;
+          if (manualLinkCandidateSearch) {
+            const q = manualLinkCandidateSearch.toLowerCase();
+            return (
+              (t.narration || '').toLowerCase().includes(q) ||
+              (t.bank || '').toLowerCase().includes(q) ||
+              String(t.amount).includes(q)
+            );
+          }
+          return true;
+        }).map(c => {
+          const cAmt = Number(c.amount);
+          const amtDiff = Math.abs(cAmt - targetAmt);
+          const cDate = new Date(c.date || '2026-01-01').getTime();
+          const dayDiff = Math.abs(cDate - targetDate) / 86400000;
+          return { txn: c, amtDiff, dayDiff };
+        }).sort((a, b) => {
+          if (a.amtDiff !== b.amtDiff) return a.amtDiff - b.amtDiff;
+          return a.dayDiff - b.dayDiff;
+        }).slice(0, 30);
+
+        return (
+          <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-4">
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-4 space-y-3 max-h-[85vh] flex flex-col">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-2.5 shrink-0">
+                <div className="flex items-center gap-2">
+                  <Link size={16} className="text-sky-400" />
+                  <div>
+                    <h3 className="text-sm font-bold text-white">Link Transfer Counterpart</h3>
+                    <p className="text-[10px] text-slate-400">Select the matching {oppositeType} transaction from another bank</p>
+                  </div>
+                </div>
+                <button onClick={() => { setShowManualLinkModal(false); setManualLinkTargetTxn(null); }} className="text-slate-400 hover:text-white">
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* Source Transaction Card */}
+              <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 space-y-1 shrink-0 text-xs">
+                <div className="flex items-center justify-between font-semibold">
+                  <span className={target.type === 'DEBIT' ? 'text-rose-400' : 'text-emerald-400'}>
+                    Source {target.type}: {target.bank}
+                  </span>
+                  <span className={target.type === 'DEBIT' ? 'text-rose-400 font-bold' : 'text-emerald-400 font-bold'}>
+                    {target.type === 'DEBIT' ? '-' : '+'}₹{targetAmt.toLocaleString('en-IN')}
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-300 truncate">{target.narration}</p>
+                <p className="text-[10px] text-slate-500">{target.date}</p>
+              </div>
+
+              <div className="relative shrink-0">
+                <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Filter candidate narration, bank, or amount..."
+                  value={manualLinkCandidateSearch}
+                  onChange={e => setManualLinkCandidateSearch(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-8 pr-3 py-2 text-xs text-slate-100"
+                />
+              </div>
+
+              {/* Candidate Selection List */}
+              <div className="flex-1 overflow-y-auto space-y-2 pr-1 text-xs">
+                {candidates.length === 0 ? (
+                  <div className="text-center py-6 text-slate-500">
+                    No matching {oppositeType} candidate transactions found.
+                  </div>
+                ) : (
+                  candidates.map(({ txn: c, amtDiff, dayDiff }) => {
+                    const isExactAmt = amtDiff < 0.01;
+                    return (
+                      <div
+                        key={c.id}
+                        className={`p-2.5 rounded-xl bg-slate-950 border transition flex items-center justify-between gap-2 ${
+                          isExactAmt ? 'border-sky-500/50 hover:border-sky-400' : 'border-slate-800 hover:border-slate-700'
+                        }`}
+                      >
+                        <div className="space-y-0.5 flex-1 min-w-0 pr-1">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="font-semibold text-slate-200">{c.bank}</span>
+                            <span className={`text-[10px] px-1.5 py-0.2 rounded font-bold ${
+                              c.type === 'CREDIT' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'
+                            }`}>
+                              {c.type === 'CREDIT' ? '+' : '-'}₹{c.amount.toLocaleString('en-IN')}
+                            </span>
+                            {isExactAmt && (
+                              <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-300 font-semibold">
+                                Exact Match
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-slate-400 truncate">{c.narration}</p>
+                          <div className="flex items-center gap-2 text-[10px] text-slate-500">
+                            <span>{c.date}</span>
+                            <span>•</span>
+                            <span>{dayDiff === 0 ? 'Same date' : `${Math.round(dayDiff)}d apart`}</span>
+                            {amtDiff >= 0.01 && (
+                              <>
+                                <span>•</span>
+                                <span className="text-amber-400">₹{amtDiff.toFixed(2)} diff</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+
+                        <button
+                          onClick={() => handleCreateManualPair(target, c)}
+                          className="bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold px-3 py-1.5 rounded-xl text-xs shrink-0 flex items-center gap-1 shadow-sm"
+                        >
+                          <Link size={12} /> Link
+                        </button>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              <div className="flex justify-end pt-2 border-t border-slate-800 shrink-0">
+                <button
+                  onClick={() => { setShowManualLinkModal(false); setManualLinkTargetTxn(null); }}
+                  className="bg-slate-800 text-slate-200 px-4 py-2 rounded-xl text-xs font-semibold"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ANDROID BOTTOM NAVIGATION MENU */}
       <nav className="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur border-t border-slate-800 px-2 py-1.5 z-40">

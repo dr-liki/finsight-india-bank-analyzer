@@ -38,10 +38,36 @@
 | **v1.2.0** | Completed | Added Union Bank of India (UBI) auto-detection & header mapping; expanded default categories with 5 new verticals (`Bank Transfer`, `Interest/Cashback`, `Friend`, `Family`, `Cash Out`); implemented full Categories Manager UI with cascading renames; upgraded Auto-Categorization Rules to an interactive list with keyword tags and real-time transaction re-evaluation; added Duration/Date-Range filter in Transactions Ledger (`All Time`, `7D`, `30D`, `This Month`, `3M`, `This Year`, `Custom`); automated Cloud Release APK Signing (Option A keytool) producing signed release APK `FinSight-India-v1.2.0-b<run>-release-signed.apk`. |
 | **v1.3.0** | Completed | Fixed app drawer logo visibility with full Material Design 3 (MD3) Adaptive Icon compliance (foreground, background, monochrome themed icon); eliminated update install conflict via persistent release signing keystore (`certs/finsight-release-key.keystore`) and monotonic versionCode stamping; implemented Smart Bank Transfer matching between accounts with internal transfer exclusion toggle; added complete Backup & Restore manager with granular item-by-item selection (banks, statement files metadata, categories, rules, transactions); added dual Category Analysis providing separate Spend (debit) and Earnings (credit) breakdown views with net flow comparisons. |
 | **v1.4.0** | Completed | Upgraded auto-categorization engine with discrete token-boundary regex compiler eliminating false positives (e.g., over-tagging Fuel & Transport); implemented persistent manual transaction category tags (`isManualCategory: true`) that survive app reloads and rule updates; added multi-option category filter modal with live transaction counts, search, and clear filter button in Ledger; added comprehensive formatted export suite (PDF statements with executive KPI cards via `jspdf`/`jspdf-autotable`, styled Excel `.xlsx` workbooks with summary rows, and RFC 4180 `.csv` with UTF-8 BOM). |
+| **v1.5.0** | Completed | Added interactive Smart Bank Transfer management with pair unlinking, candidate counterpart manual linking, configurable clearing windows, and transfer manager UI; implemented native Android file saving and sharing via `@capacitor/filesystem` and `@capacitor/share` (fixing silent export download failures); resolved Ledger mobile text overflow with `min-w-0` and `break-words break-all`; upgraded auto-categorization with transaction direction awareness (`scope: 'CREDIT' | 'DEBIT' | 'BOTH'`); added multi-select duration filters across weekwise, monthwise, quarterwise, and yearwise periods. |
 
 ---
 
-### 4. Technical Architecture: v1.4.0 Capabilities
+### 4. Technical Architecture: v1.5.0 Capabilities
+
+1. **Smart Bank Transfer Management Suite (`detectTransferPairs`)**:
+   - Automated cross-bank matching with configurable clearing window ($0$ to $5$ days).
+   - User unlinking with persistence (`unlinkedTransferPairs`) to prevent false-positive re-pairing.
+   - Manual transfer pairing (`manualTransferPairs`) with counter-party candidate picker.
+   - Dedicated Smart Bank Transfers Manager modal and direct unlinking in transaction edit dialog.
+
+2. **Native Save & Share Engine (`saveOrShareFile`)**:
+   - Uses `@capacitor/filesystem` (`writeFile` to `Directory.Cache`) and `@capacitor/share` (`Share.share`) on native Android.
+   - Resolves WebView download failures where `<a download>` and `blob:` URLs fail silently.
+   - Transparent desktop web fallback via `Blob` and anchor simulation.
+   - Configured with Android FileProvider and `file_paths.xml`.
+
+3. **Responsive Mobile Layout & Text Overflow Prevention**:
+   - Applied `min-w-0 flex-1 overflow-hidden`, `break-words break-all`, and `line-clamp-2` to narration blocks.
+   - Applied `shrink-0 text-right` to transaction amounts and action icons.
+
+4. **Direction-Aware Auto-Categorization Engine (`evaluateTransactionCategory`)**:
+   - Categorization rules support `scope: 'CREDIT' | 'DEBIT' | 'BOTH'`.
+   - Prevents credits from defaulting to `Salary & Income`.
+   - Discrete recognition of interest credits, cashbacks, refunds, dividends, and ATM cash withdrawals.
+
+5. **Multi-Select Period Duration Filtering**:
+   - `durationMode`: `'ALL'`, `'WEEKWISE'`, `'MONTHWISE'`, `'QUARTERWISE'`, `'YEARWISE'`, `'PRESET'`, `'CUSTOM'`.
+   - Multi-select ISO weeks, calendar months, quarters, and years with transaction count badges.
 
 1. **Smart Token-Boundary Rules Engine (`compileRulesEngine`)**:
    - Compiles user keywords into boundary-enforced regular expressions: `(^|[^a-z0-9])(keyword)([^a-z0-9]|$)`.

@@ -1,5 +1,43 @@
 # FinSight India — Release Notes
 
+## Version 1.5.0 (November 2026)
+
+FinSight India v1.5.0 introduces comprehensive enhancements to transaction control, data export reliability, mobile UI layout, categorization accuracy, and temporal filtering: an **Interactive Smart Bank Transfer Management & Manual Linking Suite**, a **Universal Native Android Save & Share Engine** (resolving WebView export saving failures), a **Mobile Text-Overflow Fix** in the Transactions Ledger, **Smarter & Accurate Debit/Credit Direction Categorization**, and a **Multi-Select Period Duration Filter** (`Weekwise`, `Monthwise`, `Quarterwise`, `Yearwise`, `Presets`, and `Custom`).
+
+---
+
+### Highlights & Key Improvements
+
+#### 1. Interactive Smart Bank Transfer Editing & Management
+- **Unlink False-Positive Transfer Pairs**: Users can inspect any auto-detected transfer pair in the dedicated Inspector or Manager and unlink it with a single tap. Unlinked pairs are remembered so automated detection will not re-link them.
+- **Manual Transfer Linking**: Allows linking transfers that auto-detection missed (e.g. slight date delays or non-standard narrations). Tapping "Link as Bank Transfer" in the transaction modal opens an interactive counterpart picker matching the opposite transaction direction.
+- **Smart Bank Transfers Manager**: Dedicated management modal showing total paired transfers and volume, with configurable clearing windows (Same Day, 1 Day, 2 Days, 3 Days, 5 Days), unlinked history reset, and one-tap categorization as "Bank Transfer".
+- **Direct Linkage in Transaction Edit Modal**: When inspecting an individual transaction, its paired transfer counterpart and bank are displayed with an immediate option to unlink.
+
+#### 2. Native Android File Export & Share Engine
+- **Resolved WebView Download Failures**: On Android/Capacitor WebView, standard HTML `<a download>` links and `blob:` navigation fail silently without saving files. v1.5.0 integrates `@capacitor/filesystem` and `@capacitor/share` to write exported files to cache and launch the native Android Share Sheet ("Save to Downloads", Google Drive, WhatsApp, etc.).
+- **Universal Multi-Platform Support**: Automatically routes through native FileProvider and Share Sheet on Android devices while falling back to instant browser downloads on desktop/web environments.
+- **Covers All Exports & Backups**: Applies to PDF Statement Reports, formatted Excel (`.xlsx`) workbooks, RFC 4180 CSV files, and full JSON workspace backups.
+
+#### 3. Mobile Text Overflow & Truncation Fix in Transactions Ledger
+- **Prevented Horizontal Blowout**: Continuous unbroken Indian banking narrations (such as `UPI/431289471928/MR-RAMESH-KUMAR...`) previously pushed amounts and edit icons off-screen on mobile devices.
+- **Fluid Responsive Layout**: Applied flex constraints (`min-w-0 flex-1 overflow-hidden`), word breaks (`break-words break-all`), multi-line line-clamping (`line-clamp-2`), and right-column shrinkage protection (`shrink-0 text-right`), ensuring clean display on any screen width.
+
+#### 4. Smarter & Accurate Debit and Credit Transaction Categorization
+- **Direction-Aware Rule Evaluation**: Introduced transaction direction scope (`scope: 'CREDIT' | 'DEBIT' | 'BOTH'`) to categorization rules. Credits are never accidentally tagged with debit categories (or vice-versa).
+- **Eliminated Salary Over-Tagging**: Prevented unmatched credit transactions from being blindly defaulted to `Salary & Income`.
+- **Targeted Indian Banking Context Rules**: Discrete token recognition for interest credits (`int.pd`, `sb int`, `quarterly int`), cashbacks/rewards (`cred cashback`, `gpay reward`), refunds, tax refunds (`it refund`), dividends, ATM cash withdrawals, and utility/credit card bills.
+
+#### 5. Multi-Select Period Duration Filter
+- **Multi-Select Period Modes**: Users can now filter transactions across multiple periods at once:
+  - **Weekwise**: Multi-select ISO weeks with live transaction counts.
+  - **Monthwise**: Multi-select calendar months (e.g. compare Jan and Mar).
+  - **Quarterwise**: Multi-select fiscal/calendar quarters (`Q1`, `Q2`, `Q3`, `Q4`).
+  - **Yearwise**: Multi-select calendar years.
+- **Convenient Presets & Custom Range**: Alongside multi-select periods, includes instant quick presets (`Last 7 Days`, `Last 30 Days`, `This Month`, `Last 3 Months`, `This Year`), `All Time`, and `Custom Date Range` with single-tap reset.
+
+---
+
 ## Version 1.4.0 (November 2026)
 
 FinSight India v1.4.0 brings major enhancements to classification precision, user control, and report generation: a **Smart Token-Boundary Auto-Categorization Engine** eliminating false positive tags (such as over-tagging Fuel & Transport), **Persistent Manual Transaction Categories** that never revert on app restart or rules refresh, an interactive **Multi-Option Category Filter with Reset Action** in the Ledger, and a comprehensive **Formatted Export Suite (PDF, Excel XLSX, and CSV)**.

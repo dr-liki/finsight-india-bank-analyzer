@@ -1,5 +1,43 @@
 # FinSight India — Release Notes
 
+## Version 1.4.0 (November 2026)
+
+FinSight India v1.4.0 brings major enhancements to classification precision, user control, and report generation: a **Smart Token-Boundary Auto-Categorization Engine** eliminating false positive tags (such as over-tagging Fuel & Transport), **Persistent Manual Transaction Categories** that never revert on app restart or rules refresh, an interactive **Multi-Option Category Filter with Reset Action** in the Ledger, and a comprehensive **Formatted Export Suite (PDF, Excel XLSX, and CSV)**.
+
+---
+
+### Highlights & Key Improvements
+
+#### 1. Smart Token-Boundary Auto-Categorization Engine
+- **Eliminated False Positives**: Resolved an issue where unrelated transactions (e.g. city names like *Kolkata* or *Solapur*, finance company names like *Cholamandalam*, or challan keywords like *Violation*) were falsely tagged under `Fuel & Transport` because of naive substring matches like `ola`.
+- **Discrete Token Boundary Matching**: All keywords are compiled into bounded regular expressions matching word boundaries `(^|[^a-z0-9])(keyword)([^a-z0-9]|$)`, ensuring keywords match as distinct tokens rather than substrings inside other words.
+- **Refined Keyword Rules**: Cleaned up ambiguous short keywords across categories, prioritizing exact UPI handles, merchant IDs, and distinct Indian financial identifiers.
+
+#### 2. Persistent Manual Transaction Categories
+- **Zero Category Overwrites on Restart**: Fixed the bug where category changes manually assigned in the "Edit Transaction" or "Add Transaction" dialogs disappeared when reloading or relaunching the application.
+- **Manual Override Stamp**: Introduced `isManualCategory: true` in the transaction data model. Manual classifications permanently bypass automated rule re-evaluations and background runs.
+- **Visual Feedback & Reversion**: Added a "Manual Tag" badge in the transaction edit modal with an instant option to revert back to auto-categorization if desired.
+
+#### 3. Multi-Option Category Filter with Instant Clear Action
+- **Multi-Category Selection**: Upgraded the category filter in the Transactions (`LEDGER`) tab from a single-item select to a multi-option modal allowing simultaneous inspection of multiple spending verticals (e.g. analyzing `Food & Dining` and `Groceries` together).
+- **Search & Bulk Controls**: Real-time category search filter, live transaction count badges per category, "Select All", and a single-tap "Clear / Reset Filter" button.
+- **Active Filter Dismiss Pill**: Prominently displays the count of active category filters with an instant `✕` button to restore all categories in a single tap.
+
+#### 4. Formatted Export Suite (PDF, CSV, and XLSX)
+- **High-Quality PDF Statement Export**:
+  - Generates crisp, print-ready PDF statements via `jspdf` and `jspdf-autotable`.
+  - Deep slate branding header (`#0f172a`), export scope metadata (Bank, Category Filter, Date Range, Generation Timestamp).
+  - Executive KPI summary card: Total Outflow (Debit), Total Inflow (Credit), and Net Cash Balance.
+  - Alternating shaded data rows with colored amounts (Green for Inflow, Red for Outflow), auto-wrapping narration text, and running page numbers.
+- **Formatted Excel Workbook (`.xlsx`)**:
+  - Generated via SheetJS (`xlsx`) with automated column width calculations.
+  - Formatted transaction data with automated summary totals rows (Total Debits, Total Credits, Net Balance).
+- **Standardized RFC 4180 CSV**:
+  - Encoded with UTF-8 BOM (`\uFEFF`) and proper quotation escaping for seamless compatibility with Microsoft Excel, Google Sheets, LibreOffice, and tax software.
+- **Context-Aware Scoping**: All export formats automatically respect the user's active Ledger filters (selected banks, date ranges, multi-category selections, search query, and smart transfer exclusions).
+
+---
+
 ## Version 1.3.0 (November 2026)
 
 FinSight India v1.3.0 brings full **Material Design 3 (MD3) Adaptive Icon Compliance**, **Conflict-Free Updates** with a persistent release signing keystore, **Smart Bank Transfer Matching** between accounts, a comprehensive **Backup & Restore Manager** with granular item selection, and **Dual Category Analysis** showing both Spend and Earning breakdowns independently.

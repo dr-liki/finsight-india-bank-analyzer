@@ -37,10 +37,34 @@
 | **v1.1.0** | Completed | Added build versioning (`v1.1.0` badge + versioned GitHub Actions APK artifact `FinSight-India-v1.1.0-b<run>-APK`); added custom **Rupee-Pulse Lens** vector icon; removed all preloaded banks and sample startup data for a clean onboarding experience; added full CRUD for **Banks** and **Statement Files**. |
 | **v1.2.0** | Completed | Added Union Bank of India (UBI) auto-detection & header mapping; expanded default categories with 5 new verticals (`Bank Transfer`, `Interest/Cashback`, `Friend`, `Family`, `Cash Out`); implemented full Categories Manager UI with cascading renames; upgraded Auto-Categorization Rules to an interactive list with keyword tags and real-time transaction re-evaluation; added Duration/Date-Range filter in Transactions Ledger (`All Time`, `7D`, `30D`, `This Month`, `3M`, `This Year`, `Custom`); automated Cloud Release APK Signing (Option A keytool) producing signed release APK `FinSight-India-v1.2.0-b<run>-release-signed.apk`. |
 | **v1.3.0** | Completed | Fixed app drawer logo visibility with full Material Design 3 (MD3) Adaptive Icon compliance (foreground, background, monochrome themed icon); eliminated update install conflict via persistent release signing keystore (`certs/finsight-release-key.keystore`) and monotonic versionCode stamping; implemented Smart Bank Transfer matching between accounts with internal transfer exclusion toggle; added complete Backup & Restore manager with granular item-by-item selection (banks, statement files metadata, categories, rules, transactions); added dual Category Analysis providing separate Spend (debit) and Earnings (credit) breakdown views with net flow comparisons. |
+| **v1.4.0** | Completed | Upgraded auto-categorization engine with discrete token-boundary regex compiler eliminating false positives (e.g., over-tagging Fuel & Transport); implemented persistent manual transaction category tags (`isManualCategory: true`) that survive app reloads and rule updates; added multi-option category filter modal with live transaction counts, search, and clear filter button in Ledger; added comprehensive formatted export suite (PDF statements with executive KPI cards via `jspdf`/`jspdf-autotable`, styled Excel `.xlsx` workbooks with summary rows, and RFC 4180 `.csv` with UTF-8 BOM). |
 
 ---
 
-### 4. Technical Architecture: v1.3.0 Capabilities
+### 4. Technical Architecture: v1.4.0 Capabilities
+
+1. **Smart Token-Boundary Rules Engine (`compileRulesEngine`)**:
+   - Compiles user keywords into boundary-enforced regular expressions: `(^|[^a-z0-9])(keyword)([^a-z0-9]|$)`.
+   - Prevents substring contamination (e.g. `ola` in `KOLKATA`, `CHOLAMANDALAM`, `SOLAPUR`, `VIOLATION`).
+   - Prioritizes longer phrases first and matches against normalized transaction narrations.
+
+2. **Persistent Manual Categorization (`isManualCategory`)**:
+   - `isManualCategory: true` metadata flag stamped whenever a user manually edits or adds a transaction category.
+   - Evaluator (`applyCategorizationRules`) skips manual categories, guaranteeing persistence across app restarts, re-imports, and rule modifications.
+   - Reversible UI toggle in Edit Transaction modal to restore auto-classification.
+
+3. **Multi-Category Filter in Ledger**:
+   - `selectedCategories` array state in Ledger component.
+   - Multi-select modal with category search, "Select All", and "Clear Filter" actions.
+   - Context-aware active filter pill displaying active selection count with one-tap dismiss.
+
+4. **Multi-Format Export Suite (PDF, XLSX, CSV)**:
+   - **PDF**: `jspdf` (`2.5.2`) + `jspdf-autotable` (`3.8.4`) generating branded A4 portrait document with header, KPI card, zebra striping, currency formatting, and page numbers.
+   - **XLSX**: `xlsx` (SheetJS) with automated column widths and computed summary totals rows.
+   - **CSV**: Standard UTF-8 BOM RFC 4180 comma-separated values.
+   - Automatically synchronizes with all active filters (date presets/custom range, banks, search, categories, and transfer exclusions).
+
+5. **Material Design 3 (MD3) Adaptive Icons & Zero-Conflict Release Keystore**:
 
 1. **MD3 Adaptive Icons & Android Drawer Visibility**:
    - Resides in `android-res/` and injected into `android/app/src/main/res/`.

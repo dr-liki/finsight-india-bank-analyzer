@@ -4,16 +4,19 @@ import {
   Trash2, Building2, Download, Search, ArrowUpRight,
   ArrowDownRight, Plus, Edit3, X, Lock, AlertCircle, FolderOpen, Save,
   Check, Tag, Layers, Sparkles, Calendar, Filter, RefreshCw,
-  ArrowLeftRight, Database, TrendingUp, TrendingDown, CheckSquare, Square
+  ArrowLeftRight, Database, TrendingUp, TrendingDown, CheckSquare, Square,
+  CheckCheck, ChevronDown, RotateCcw, FileDown
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import * as pdfjsLib from 'pdfjs-dist';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip,
   PieChart, Pie, Cell, CartesianGrid, Legend
 } from 'recharts';
 
-const APP_VERSION = '1.3.0';
+const APP_VERSION = '1.4.0';
 
 // Configure PDF.js worker via CDN for Android WebView compatibility
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`;
@@ -44,21 +47,64 @@ const DEFAULT_CATEGORIES = [
   'Uncategorized'
 ];
 
+// Smarter keyword definitions avoiding broad substrings
 const DEFAULT_RULES = [
-  { cat: 'Food & Dining', keys: ['swiggy', 'zomato', 'restaurant', 'cafe', 'starbucks', 'dominos', 'mcdonalds', 'kfc', 'burger', 'eatfit', 'bakery'] },
-  { cat: 'Groceries & Quick Commerce', keys: ['zepto', 'blinkit', 'instamart', 'bigbasket', 'dmart', 'reliance smart', 'more supermarket', 'nature basket', 'milk'] },
-  { cat: 'Investments & SIP', keys: ['zerodha', 'groww', 'ppfas', 'mutual fund', 'ach d-', 'sip', 'nps', 'epfo', 'kuvera', 'indmoney', 'lic', 'fd'] },
-  { cat: 'Fuel & Transport', keys: ['shell', 'hpcl', 'bpcl', 'iocl', 'petrol', 'uber', 'ola', 'rapido', 'fastag', 'irctc', 'namma yatri', 'metro', 'indigo'] },
-  { cat: 'Bills & Utilities', keys: ['bescom', 'airtel', 'jio', 'act fibernet', 'electricity', 'water', 'gas', 'recharge', 'bbps', 'bwssb', 'tataplay'] },
-  { cat: 'Healthcare & Medical', keys: ['hospital', 'manipal', 'apollo', 'pharmeasy', '1mg', 'pharmacy', 'clinic', 'medplus', 'st johns', 'diagnostic'] },
-  { cat: 'Shopping & Books', keys: ['amazon', 'flipkart', 'myntra', 'blossom book', 'decathlon', 'nykaa', 'ajio', 'meesho', 'croma', 'reliance digital'] },
-  { cat: 'Rent & Housing', keys: ['rent', 'nobroker', 'maintenance', 'mygate', 'society', 'landlord'] },
-  { cat: 'Salary & Income', keys: ['salary', 'stipend', 'fellowship'] },
-  { cat: 'Bank Transfer', keys: ['fund transfer', 'neft', 'rtgs', 'imps', 'transfer to', 'trf from', 'trf to', 'internal transfer'] },
-  { cat: 'Interest/Cashback', keys: ['int.pd', 'interest credit', 'sb int', 'cashback', 'reward points', 'dividend', 'refund'] },
-  { cat: 'Friend', keys: ['splitwise', 'friend', 'settleup'] },
-  { cat: 'Family', keys: ['family', 'mother', 'father', 'sister', 'brother', 'parents', 'home expense'] },
-  { cat: 'Cash Out', keys: ['atm wdl', 'cash wdl', 'atm cash', 'self wdl', 'cash withdrawal'] }
+  {
+    cat: 'Food & Dining',
+    keys: ['swiggy', 'zomato', 'restaurant', 'cafe', 'starbucks', 'dominos', 'mcdonalds', 'kfc', 'burger', 'eatfit', 'bakery', 'pizza', 'subway', 'haldiram', 'barbeque', 'chaayos', 'chai point', 'dineout']
+  },
+  {
+    cat: 'Groceries & Quick Commerce',
+    keys: ['zepto', 'blinkit', 'instamart', 'bigbasket', 'dmart', 'reliance smart', 'more supermarket', 'nature basket', 'supermarket', 'grocery', 'milk', 'country delight', 'bbdaily', 'freshtohome', 'licious']
+  },
+  {
+    cat: 'Investments & SIP',
+    keys: ['zerodha', 'groww', 'ppfas', 'mutual fund', 'ach d-', 'sip', 'nps', 'epfo', 'kuvera', 'indmoney', 'uti mutual', 'hdfc mutual', 'sbi mutual', 'icici pru', 'coin', 'smallcase', 'upstox', 'angel one', 'lic premium', 'lic of india', 'lic']
+  },
+  {
+    cat: 'Fuel & Transport',
+    keys: ['petrol', 'diesel', 'cng', 'fuel', 'hpcl', 'bpcl', 'iocl', 'indian oil', 'shell', 'uber', 'ola cabs', 'ola', 'rapido', 'fastag', 'toll', 'irctc', 'indian railway', 'metro', 'indigo', 'air india', 'spicejet', 'akasa', 'namma yatri']
+  },
+  {
+    cat: 'Bills & Utilities',
+    keys: ['bescom', 'airtel', 'jio', 'vodafone', 'vi recharge', 'act fibernet', 'electricity', 'water bill', 'gas bill', 'indane', 'hp gas', 'bharat gas', 'adani gas', 'recharge', 'bbps', 'bwssb', 'tataplay', 'dish tv', 'broadband', 'dth']
+  },
+  {
+    cat: 'Healthcare & Medical',
+    keys: ['hospital', 'manipal', 'apollo', 'pharmeasy', '1mg', 'tata 1mg', 'pharmacy', 'clinic', 'medplus', 'st johns', 'diagnostic', 'pathology', 'dr lal', 'metropolis health', 'max hospital', 'fortis', 'practo', 'chemist', 'medical', 'medicine']
+  },
+  {
+    cat: 'Shopping & Books',
+    keys: ['amazon', 'flipkart', 'myntra', 'blossom book', 'decathlon', 'nykaa', 'ajio', 'meesho', 'croma', 'reliance digital', 'ikea', 'zara', 'h&m', 'uniqlo', 'tata cliq', 'lenskart']
+  },
+  {
+    cat: 'Rent & Housing',
+    keys: ['rent', 'nobroker', 'maintenance', 'mygate', 'society', 'landlord', 'apartment maintenance', 'flat rent', 'house rent']
+  },
+  {
+    cat: 'Salary & Income',
+    keys: ['salary', 'stipend', 'fellowship', 'payroll', 'remuneration', 'wages', 'bonus']
+  },
+  {
+    cat: 'Bank Transfer',
+    keys: ['fund transfer', 'neft', 'rtgs', 'imps', 'transfer to', 'trf from', 'trf to', 'internal transfer', 'self transfer']
+  },
+  {
+    cat: 'Interest/Cashback',
+    keys: ['int.pd', 'interest credit', 'sb int', 'cashback', 'reward points', 'dividend', 'refund', 'reversal']
+  },
+  {
+    cat: 'Friend',
+    keys: ['splitwise', 'settleup', 'friend']
+  },
+  {
+    cat: 'Family',
+    keys: ['family', 'mother', 'father', 'sister', 'brother', 'parents', 'home expense']
+  },
+  {
+    cat: 'Cash Out',
+    keys: ['atm wdl', 'cash wdl', 'atm cash', 'self wdl', 'cash withdrawal', 'atm-']
+  }
 ];
 
 // Unique Vector Brand Icon Component (FinSight Rupee-Pulse Lens)
@@ -161,24 +207,43 @@ function detectChannel(narration) {
   return 'OTHER';
 }
 
+// Precompile categorization rules into token-boundary regexes
+function compileRulesEngine(rulesList) {
+  if (!rulesList || !rulesList.length) return [];
+  return rulesList.map(r => {
+    if (!r || !r.keys || !r.keys.length) return null;
+    const escaped = r.keys
+      .map(k => String(k || '').trim().toLowerCase())
+      .filter(Boolean)
+      .map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+    if (!escaped.length) return null;
+    // Strictly match as discrete word/token bounded by non-alphanumeric chars or boundaries
+    const pattern = `(^|[^a-z0-9])(${escaped.join('|')})([^a-z0-9]|$)`;
+    return { cat: r.cat, regex: new RegExp(pattern, 'i') };
+  }).filter(Boolean);
+}
+
+// SMARTER & EFFICIENT AUTO-CATEGORIZATION RULES ENGINE
+// 1. Preserves user manual category changes permanently across app relaunches
+// 2. Uses token-boundary matching so short words (e.g. 'ola') don't match substrings like 'kolkata' or 'cholamandalam'
 function applyCategorizationRules(transactionsList, rulesList) {
   if (!transactionsList || !transactionsList.length) return { updatedTxns: [], changedCount: 0 };
+  const compiled = compileRulesEngine(rulesList);
   let changedCount = 0;
+
   const updatedTxns = transactionsList.map(t => {
+    // CRITICAL: If the user manually assigned this category, preserve it permanently!
+    if (t.isManualCategory) {
+      return t;
+    }
+
     const s = (t.narration || '').toLowerCase();
     let matchedCat = null;
 
-    if (rulesList && rulesList.length) {
-      for (const r of rulesList) {
-        if (!r || !r.keys) continue;
-        for (const rawKey of r.keys) {
-          const k = String(rawKey || '').trim().toLowerCase();
-          if (k && s.includes(k)) {
-            matchedCat = r.cat;
-            break;
-          }
-        }
-        if (matchedCat) break;
+    for (const cr of compiled) {
+      if (cr.regex.test(s)) {
+        matchedCat = cr.cat;
+        break;
       }
     }
 
@@ -199,7 +264,6 @@ function applyCategorizationRules(transactionsList, rulesList) {
 }
 
 // SMART BANK TRANSFER PAIR DETECTION ENGINE
-// Identifies matching debit in Bank A and credit in Bank B with same amount within 2 days
 function detectTransferPairs(transactionsList) {
   if (!transactionsList || transactionsList.length < 2) return [];
   const pairs = [];
@@ -221,7 +285,6 @@ function detectTransferPairs(transactionsList) {
     for (const c of credits) {
       if (matchedCreditIds.has(c.id)) continue;
       const cBank = (c.bank || '').toLowerCase();
-      // Must be between different banks if bank names are populated
       if (dBank && cBank && dBank === cBank) continue;
 
       const cAmt = Number(c.amount);
@@ -239,7 +302,6 @@ function detectTransferPairs(transactionsList) {
       ];
       const hasKeyword = transferKeywords.some(k => dNarr.includes(k) || cNarr.includes(k));
 
-      // Extract 6-16 digit transaction references (e.g. UTR, RRN)
       const dDigits = (dNarr.match(/\b\d{6,16}\b/g) || []);
       const cDigits = (cNarr.match(/\b\d{6,16}\b/g) || []);
       const hasMatchingRef = dDigits.some(dig => cDigits.includes(dig));
@@ -268,7 +330,7 @@ function detectTransferPairs(transactionsList) {
 export default function App() {
   const [banks, setBanks] = useState(() => {
     try {
-      const saved = localStorage.getItem('finsight_banks_v130') || localStorage.getItem('finsight_banks_v120') || localStorage.getItem('finsight_banks_v110');
+      const saved = localStorage.getItem('finsight_banks_v140') || localStorage.getItem('finsight_banks_v130') || localStorage.getItem('finsight_banks_v120') || localStorage.getItem('finsight_banks_v110');
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
@@ -277,7 +339,7 @@ export default function App() {
 
   const [txns, setTxns] = useState(() => {
     try {
-      const saved = localStorage.getItem('finsight_txns_v130') || localStorage.getItem('finsight_txns_v120') || localStorage.getItem('finsight_txns_v110');
+      const saved = localStorage.getItem('finsight_txns_v140') || localStorage.getItem('finsight_txns_v130') || localStorage.getItem('finsight_txns_v120') || localStorage.getItem('finsight_txns_v110');
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
@@ -286,7 +348,7 @@ export default function App() {
 
   const [uploadedFiles, setUploadedFiles] = useState(() => {
     try {
-      const saved = localStorage.getItem('finsight_files_v130') || localStorage.getItem('finsight_files_v120') || localStorage.getItem('finsight_files_v110');
+      const saved = localStorage.getItem('finsight_files_v140') || localStorage.getItem('finsight_files_v130') || localStorage.getItem('finsight_files_v120') || localStorage.getItem('finsight_files_v110');
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
@@ -295,7 +357,7 @@ export default function App() {
 
   const [categories, setCategories] = useState(() => {
     try {
-      const saved = localStorage.getItem('finsight_categories_v130') || localStorage.getItem('finsight_categories_v120') || localStorage.getItem('finsight_categories_v110');
+      const saved = localStorage.getItem('finsight_categories_v140') || localStorage.getItem('finsight_categories_v130') || localStorage.getItem('finsight_categories_v120') || localStorage.getItem('finsight_categories_v110');
       if (saved) {
         const parsed = JSON.parse(saved);
         const combined = Array.from(new Set([...DEFAULT_CATEGORIES, ...parsed]));
@@ -309,7 +371,7 @@ export default function App() {
 
   const [rules, setRules] = useState(() => {
     try {
-      const saved = localStorage.getItem('finsight_rules_v130') || localStorage.getItem('finsight_rules_v120') || localStorage.getItem('finsight_rules_v110');
+      const saved = localStorage.getItem('finsight_rules_v140') || localStorage.getItem('finsight_rules_v130') || localStorage.getItem('finsight_rules_v120') || localStorage.getItem('finsight_rules_v110');
       return saved ? JSON.parse(saved) : DEFAULT_RULES;
     } catch {
       return DEFAULT_RULES;
@@ -318,7 +380,7 @@ export default function App() {
 
   const [excludeTransfersFromTotals, setExcludeTransfersFromTotals] = useState(() => {
     try {
-      const saved = localStorage.getItem('finsight_exclude_transfers_v130');
+      const saved = localStorage.getItem('finsight_exclude_transfers_v140') || localStorage.getItem('finsight_exclude_transfers_v130');
       return saved !== null ? JSON.parse(saved) : true;
     } catch {
       return true;
@@ -328,7 +390,13 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('DASHBOARD'); // DASHBOARD, SPEND, LEDGER, BANKS
   const [granularity, setGranularity] = useState('MONTHLY'); // DAILY, MONTHLY, QUARTERLY, YEARLY
   const [bankFilter, setBankFilter] = useState('ALL');
-  const [categoryFilter, setCategoryFilter] = useState('ALL');
+  
+  // MULTI-SELECT CATEGORIES FILTER STATE
+  // Empty array [] means all categories are selected
+  const [selectedCategories, setSelectedCategories] = useState([]);
+  const [showCategoryFilterModal, setShowCategoryFilterModal] = useState(false);
+  const [categoryFilterSearch, setCategoryFilterSearch] = useState('');
+
   const [typeFilter, setTypeFilter] = useState('ALL');
   const [search, setSearch] = useState('');
   const [statusMsg, setStatusMsg] = useState(null);
@@ -340,6 +408,9 @@ export default function App() {
   const [datePreset, setDatePreset] = useState('ALL'); // ALL, 7D, 30D, THIS_MONTH, 3M, THIS_YEAR, CUSTOM
   const [customFrom, setCustomFrom] = useState('');
   const [customTo, setCustomTo] = useState('');
+
+  // Export Menu State
+  const [showExportMenu, setShowExportMenu] = useState(false);
 
   // Target bank selection for file upload
   const [uploadTargetBank, setUploadTargetBank] = useState('AUTO');
@@ -396,32 +467,33 @@ export default function App() {
   // Transfer Pair Inspector Modal
   const [selectedTransferPair, setSelectedTransferPair] = useState(null);
 
-  // PERSISTENCE EFFECT (v1.3.0 Keys)
+  // PERSISTENCE EFFECT (v1.4.0 Keys)
   useEffect(() => {
-    try { localStorage.setItem('finsight_banks_v130', JSON.stringify(banks)); } catch {}
+    try { localStorage.setItem('finsight_banks_v140', JSON.stringify(banks)); } catch {}
   }, [banks]);
 
   useEffect(() => {
-    try { localStorage.setItem('finsight_txns_v130', JSON.stringify(txns)); } catch {}
+    try { localStorage.setItem('finsight_txns_v140', JSON.stringify(txns)); } catch {}
   }, [txns]);
 
   useEffect(() => {
-    try { localStorage.setItem('finsight_files_v130', JSON.stringify(uploadedFiles)); } catch {}
+    try { localStorage.setItem('finsight_files_v140', JSON.stringify(uploadedFiles)); } catch {}
   }, [uploadedFiles]);
 
   useEffect(() => {
-    try { localStorage.setItem('finsight_categories_v130', JSON.stringify(categories)); } catch {}
+    try { localStorage.setItem('finsight_categories_v140', JSON.stringify(categories)); } catch {}
   }, [categories]);
 
   useEffect(() => {
-    try { localStorage.setItem('finsight_rules_v130', JSON.stringify(rules)); } catch {}
+    try { localStorage.setItem('finsight_rules_v140', JSON.stringify(rules)); } catch {}
   }, [rules]);
 
   useEffect(() => {
-    try { localStorage.setItem('finsight_exclude_transfers_v130', JSON.stringify(excludeTransfersFromTotals)); } catch {}
+    try { localStorage.setItem('finsight_exclude_transfers_v140', JSON.stringify(excludeTransfersFromTotals)); } catch {}
   }, [excludeTransfersFromTotals]);
 
   // Real-time automatic rule re-evaluation:
+  // Preserves user manual categories through applyCategorizationRules()
   useEffect(() => {
     if (!txns || txns.length === 0) return;
     const { updatedTxns, changedCount } = applyCategorizationRules(txns, rules);
@@ -546,14 +618,9 @@ export default function App() {
 
   const detectCategoryWithRules = (narration, type, currentRules = rules) => {
     const s = (narration || '').toLowerCase();
-    if (currentRules && currentRules.length) {
-      for (const r of currentRules) {
-        if (!r || !r.keys) continue;
-        for (const rawKey of r.keys) {
-          const k = String(rawKey || '').trim().toLowerCase();
-          if (k && s.includes(k)) return r.cat;
-        }
-      }
+    const compiled = compileRulesEngine(currentRules);
+    for (const cr of compiled) {
+      if (cr.regex.test(s)) return cr.cat;
     }
     if (type === 'CREDIT') return 'Salary & Income';
     if (s.includes('upi/')) return 'Transfers & UPI';
@@ -614,7 +681,7 @@ export default function App() {
       }
       return r;
     }));
-    if (categoryFilter === oldName) setCategoryFilter(clean);
+    setSelectedCategories(prev => prev.map(c => c === oldName ? clean : c));
     if (ruleCat === oldName) setRuleCat(clean);
 
     setEditingCategory(null);
@@ -640,7 +707,7 @@ export default function App() {
       return t;
     }));
     setRules(prev => prev.filter(r => r.cat !== catName));
-    if (categoryFilter === catName) setCategoryFilter('ALL');
+    setSelectedCategories(prev => prev.filter(c => c !== catName));
     if (ruleCat === catName) setRuleCat(categories[0] || 'Uncategorized');
 
     showToast(`Removed category "${catName}" (${txnCount} txns moved to Uncategorized)`);
@@ -790,7 +857,6 @@ export default function App() {
         summaryParts.push(`${data.txns.length} txns`);
       }
     } else {
-      // MERGE mode
       if (restoreSelection.banks && Array.isArray(data.banks)) {
         setBanks(prev => {
           const existingNames = new Set(prev.map(b => b.name.toLowerCase()));
@@ -919,7 +985,8 @@ export default function App() {
           type,
           bank: resolvedBank,
           channel: detectChannel(narrStr),
-          category: detectCategoryWithRules(narrStr, type)
+          category: detectCategoryWithRules(narrStr, type),
+          isManualCategory: false
         });
       }
     }
@@ -979,7 +1046,8 @@ export default function App() {
                 type,
                 bank: resolvedBank,
                 channel: detectChannel(narrClean),
-                category: detectCategoryWithRules(narrClean, type)
+                category: detectCategoryWithRules(narrClean, type),
+                isManualCategory: false
               });
             }
           }
@@ -1096,12 +1164,24 @@ export default function App() {
     }
   };
 
+  // PERSISTENT MANUAL CATEGORY EDITING
   const handleSaveEdit = () => {
     if (!editingTxn) return;
     const bankName = ensureBankRegistered(editingTxn.bank || 'Primary Bank');
-    setTxns(prev => prev.map(t => t.id === editingTxn.id ? { ...editingTxn, bank: bankName, amount: parseFloat(editingTxn.amount) || 0 } : t));
+    setTxns(prev => prev.map(t => {
+      if (t.id === editingTxn.id) {
+        const isManuallyChanged = editingTxn.isManualCategory || (t.category !== editingTxn.category);
+        return {
+          ...editingTxn,
+          bank: bankName,
+          amount: parseFloat(editingTxn.amount) || 0,
+          isManualCategory: isManuallyChanged
+        };
+      }
+      return t;
+    }));
     setEditingTxn(null);
-    showToast('Transaction updated');
+    showToast('Transaction updated (tag saved permanently)');
   };
 
   const handleDeleteTxn = (id) => {
@@ -1126,7 +1206,8 @@ export default function App() {
       ...newTxnForm,
       bank: bankName,
       id: `manual-${Date.now()}`,
-      amount: amt
+      amount: amt,
+      isManualCategory: true // Explicitly marked as manual tag
     };
     setTxns(prev => [created, ...prev]);
     setShowAddModal(false);
@@ -1139,19 +1220,201 @@ export default function App() {
       channel: 'UPI',
       category: categories[0] || 'Food & Dining'
     });
-    showToast('Transaction added');
+    showToast('Transaction added (manual tag preserved)');
   };
 
-  const exportCsv = () => {
+  // EXPORT 1: PROPERLY FORMATTED EXCEL WORKBOOK (XLSX)
+  const exportToXlsx = () => {
     if (!filtered.length) {
       showToast('No transactions to export', true);
       return;
     }
-    const ws = XLSX.utils.json_to_sheet(filtered);
+
+    const exportRows = filtered.map(t => ({
+      'Date': t.date || '',
+      'Bank': t.bank || '',
+      'Channel': t.channel || '',
+      'Narration': t.narration || '',
+      'Category': t.category || '',
+      'Type': t.type || '',
+      'Amount (INR)': t.amount || 0
+    }));
+
+    const totalDebit = filtered.filter(t => t.type === 'DEBIT').reduce((s, t) => s + t.amount, 0);
+    const totalCredit = filtered.filter(t => t.type === 'CREDIT').reduce((s, t) => s + t.amount, 0);
+    const net = totalCredit - totalDebit;
+
+    exportRows.push({});
+    exportRows.push({ 'Narration': 'TOTAL OUTFLOW (DEBITS)', 'Amount (INR)': totalDebit });
+    exportRows.push({ 'Narration': 'TOTAL INFLOW (CREDITS)', 'Amount (INR)': totalCredit });
+    exportRows.push({ 'Narration': 'NET CASHFLOW BALANCE', 'Amount (INR)': net });
+
+    const ws = XLSX.utils.json_to_sheet(exportRows);
+
+    ws['!cols'] = [
+      { wch: 13 },
+      { wch: 18 },
+      { wch: 12 },
+      { wch: 45 },
+      { wch: 26 },
+      { wch: 10 },
+      { wch: 16 }
+    ];
+
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Transactions');
-    XLSX.writeFile(wb, `FinSight_v${APP_VERSION}_Export_${new Date().toISOString().slice(0, 10)}.xlsx`);
-    showToast('Exported filtered statement to XLSX');
+    XLSX.writeFile(wb, `FinSight_Statement_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    setShowExportMenu(false);
+    showToast(`Exported ${filtered.length} transactions to XLSX`);
+  };
+
+  // EXPORT 2: PROPERLY FORMATTED RFC 4180 CSV WITH UTF-8 BOM
+  const exportToCsv = () => {
+    if (!filtered.length) {
+      showToast('No transactions to export', true);
+      return;
+    }
+    const headers = ['Date', 'Bank', 'Channel', 'Narration', 'Category', 'Type', 'Amount (INR)'];
+    const rows = filtered.map(t => [
+      t.date || '',
+      t.bank || '',
+      t.channel || '',
+      `"${(t.narration || '').replace(/"/g, '""')}"`,
+      `"${(t.category || '').replace(/"/g, '""')}"`,
+      t.type || '',
+      (t.amount || 0).toFixed(2)
+    ]);
+
+    const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `FinSight_Statement_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    setShowExportMenu(false);
+    showToast(`Exported ${filtered.length} transactions to CSV`);
+  };
+
+  // EXPORT 3: PROPERLY FORMATTED PDF STATEMENT REPORT
+  const exportToPdf = () => {
+    if (!filtered.length) {
+      showToast('No transactions to export', true);
+      return;
+    }
+
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+    // Top Dark Slate Header Bar
+    doc.setFillColor(15, 23, 42);
+    doc.rect(0, 0, 210, 32, 'F');
+
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(15);
+    doc.setFont('helvetica', 'bold');
+    doc.text('FinSight India', 14, 13);
+
+    doc.setFontSize(8.5);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(148, 163, 184);
+    doc.text('Multi-Bank Statement & Transactions Report', 14, 19);
+
+    const dateScope = datePreset !== 'ALL' && dateRangeBounds.start && dateRangeBounds.end
+      ? `Period: ${dateRangeBounds.start} to ${dateRangeBounds.end}`
+      : 'Period: All Time';
+    const filterScope = `Scope: ${filtered.length} of ${txns.length} txns | Bank: ${bankFilter} | Category: ${selectedCategories.length ? `${selectedCategories.length} selected` : 'All'}`;
+    doc.text(`${dateScope}  •  ${filterScope}`, 14, 25);
+
+    // Summary KPI Cards
+    const totalDebit = filtered.filter(t => t.type === 'DEBIT').reduce((s, t) => s + t.amount, 0);
+    const totalCredit = filtered.filter(t => t.type === 'CREDIT').reduce((s, t) => s + t.amount, 0);
+    const net = totalCredit - totalDebit;
+
+    doc.setDrawColor(226, 232, 240);
+    doc.setFillColor(248, 250, 252);
+    doc.roundedRect(14, 37, 58, 16, 2, 2, 'FD');
+    doc.roundedRect(76, 37, 58, 16, 2, 2, 'FD');
+    doc.roundedRect(138, 37, 58, 16, 2, 2, 'FD');
+
+    doc.setFontSize(7.5);
+    doc.setTextColor(100, 116, 139);
+    doc.text('TOTAL INFLOW', 18, 43);
+    doc.text('TOTAL OUTFLOW', 80, 43);
+    doc.text('NET BALANCE', 142, 43);
+
+    doc.setFontSize(10.5);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(16, 185, 129);
+    doc.text(`Rs. ${totalCredit.toLocaleString('en-IN')}`, 18, 50);
+
+    doc.setTextColor(225, 29, 72);
+    doc.text(`Rs. ${totalDebit.toLocaleString('en-IN')}`, 80, 50);
+
+    doc.setTextColor(net >= 0 ? 16 : 225, net >= 0 ? 185 : 29, net >= 0 ? 129 : 72);
+    doc.text(`${net >= 0 ? '+' : ''}Rs. ${net.toLocaleString('en-IN')}`, 142, 50);
+
+    const tableData = filtered.map(t => [
+      t.date || '',
+      t.bank || '',
+      t.channel || '',
+      t.narration || '',
+      t.category || '',
+      t.type || '',
+      `${t.type === 'CREDIT' ? '+' : '-'}Rs. ${(t.amount || 0).toLocaleString('en-IN')}`
+    ]);
+
+    autoTable(doc, {
+      startY: 58,
+      head: [['Date', 'Bank', 'Channel', 'Narration', 'Category', 'Type', 'Amount']],
+      body: tableData,
+      theme: 'grid',
+      headStyles: {
+        fillColor: [15, 23, 42],
+        textColor: [255, 255, 255],
+        fontSize: 8,
+        fontStyle: 'bold',
+        halign: 'left'
+      },
+      bodyStyles: {
+        fontSize: 7.5,
+        textColor: [30, 41, 59]
+      },
+      alternateRowStyles: {
+        fillColor: [248, 250, 252]
+      },
+      columnStyles: {
+        0: { cellWidth: 22 },
+        1: { cellWidth: 24 },
+        2: { cellWidth: 16 },
+        3: { cellWidth: 50 },
+        4: { cellWidth: 30 },
+        5: { cellWidth: 16 },
+        6: { cellWidth: 24, halign: 'right', fontStyle: 'bold' }
+      },
+      didParseCell: function(data) {
+        if (data.section === 'body' && data.column.index === 6) {
+          if (data.cell.raw && String(data.cell.raw).startsWith('+')) {
+            data.cell.styles.textColor = [16, 185, 129];
+          } else {
+            data.cell.styles.textColor = [225, 29, 72];
+          }
+        }
+      },
+      didDrawPage: function(data) {
+        const str = 'Page ' + doc.internal.getNumberOfPages();
+        doc.setFontSize(8);
+        doc.setTextColor(148, 163, 184);
+        doc.text(str, data.settings.margin.left, doc.internal.pageSize.height - 8);
+        doc.text('FinSight India • 100% On-Device Financial Analytics', 120, doc.internal.pageSize.height - 8);
+      }
+    });
+
+    doc.save(`FinSight_Statement_${new Date().toISOString().slice(0, 10)}.pdf`);
+    setShowExportMenu(false);
+    showToast(`Exported ${filtered.length} transactions to PDF`);
   };
 
   // Date Range Bounds calculation
@@ -1188,17 +1451,21 @@ export default function App() {
     return { start: null, end: null };
   }, [datePreset, customFrom, customTo]);
 
+  // TRANSACTIONS FILTERING (With Multi-Category Selection Support)
   const filtered = useMemo(() => {
     return txns.filter(t => {
       if (bankFilter !== 'ALL' && t.bank !== bankFilter) return false;
-      if (categoryFilter !== 'ALL' && t.category !== categoryFilter) return false;
+      // Multi-Category Selection Check
+      if (selectedCategories.length > 0 && selectedCategories.length < categories.length) {
+        if (!selectedCategories.includes(t.category)) return false;
+      }
       if (typeFilter !== 'ALL' && t.type !== typeFilter) return false;
       if (dateRangeBounds.start && t.date < dateRangeBounds.start) return false;
       if (dateRangeBounds.end && t.date > dateRangeBounds.end) return false;
       if (search && !t.narration.toLowerCase().includes(search.toLowerCase()) && !t.category.toLowerCase().includes(search.toLowerCase()) && !(t.bank || '').toLowerCase().includes(search.toLowerCase())) return false;
       return true;
     }).sort((a, b) => b.date.localeCompare(a.date));
-  }, [txns, bankFilter, categoryFilter, typeFilter, search, dateRangeBounds]);
+  }, [txns, bankFilter, selectedCategories, categories, typeFilter, search, dateRangeBounds]);
 
   // TOTALS COMPUTATION (Respects Internal Transfer Exclusion)
   const totals = useMemo(() => {
@@ -1218,7 +1485,6 @@ export default function App() {
   const periodGroups = useMemo(() => {
     const map = {};
     filtered.forEach(t => {
-      // Exclude transfers if option enabled
       if (excludeTransfersFromTotals && transferMap.has(t.id)) return;
 
       const d = t.date || '2026-01-01';
@@ -1397,7 +1663,7 @@ export default function App() {
           </div>
         </div>
         <div className="flex items-center gap-1.5 sm:gap-2">
-          {/* Backup & Restore Quick Access */}
+          {/* Backup Quick Access */}
           <button
             onClick={handleExportBackup}
             className="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium px-2.5 py-2 rounded-xl border border-slate-700 flex items-center gap-1"
@@ -1470,7 +1736,7 @@ export default function App() {
         ))}
       </div>
 
-      {/* SMART BANK TRANSFERS BANNER / TOGGLE */}
+      {/* SMART BANK TRANSFERS BANNER */}
       {transferPairs.length > 0 && (
         <div className="bg-sky-950/40 border-b border-sky-900/60 px-4 py-2 flex items-center justify-between gap-2 text-xs flex-wrap">
           <div className="flex items-center gap-2">
@@ -1596,7 +1862,6 @@ export default function App() {
         {/* TAB 2: CATEGORY ANALYSIS (SPEND & EARNING SEPARATELY + NET FLOW) */}
         {activeTab === 'SPEND' && (
           <div className="space-y-4">
-            {/* Top Analysis Mode Pill Switcher */}
             <div className="bg-slate-900 border border-slate-800 p-2 rounded-2xl flex items-center justify-between gap-2 flex-wrap">
               <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800/80">
                 <button
@@ -1645,7 +1910,6 @@ export default function App() {
             {/* MODE 1: SPEND BREAKDOWN */}
             {categoryAnalysisMode === 'SPEND' && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Donut Chart & List */}
                 <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-3">
                   <div className="flex items-center justify-between">
                     <h2 className="text-xs font-bold text-slate-200 uppercase tracking-wider">Outflow by Category</h2>
@@ -1686,7 +1950,7 @@ export default function App() {
                           <div
                             key={c.name}
                             onClick={() => {
-                              setCategoryFilter(c.name);
+                              setSelectedCategories([c.name]);
                               setTypeFilter('DEBIT');
                               setActiveTab('LEDGER');
                             }}
@@ -1707,7 +1971,6 @@ export default function App() {
                   )}
                 </div>
 
-                {/* Spend Channel & Top Payees */}
                 <div className="space-y-4">
                   <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-3">
                     <h2 className="text-xs font-bold text-slate-200 uppercase tracking-wider">Outflow by Channel (UPI / NACH / NEFT / POS)</h2>
@@ -1747,7 +2010,6 @@ export default function App() {
             {/* MODE 2: EARNINGS BREAKDOWN */}
             {categoryAnalysisMode === 'EARN' && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Donut Chart & List */}
                 <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-3">
                   <div className="flex items-center justify-between">
                     <h2 className="text-xs font-bold text-slate-200 uppercase tracking-wider">Earnings / Inflow by Category</h2>
@@ -1788,7 +2050,7 @@ export default function App() {
                           <div
                             key={c.name}
                             onClick={() => {
-                              setCategoryFilter(c.name);
+                              setSelectedCategories([c.name]);
                               setTypeFilter('CREDIT');
                               setActiveTab('LEDGER');
                             }}
@@ -1809,7 +2071,6 @@ export default function App() {
                   )}
                 </div>
 
-                {/* Earning Channel & Top Sources */}
                 <div className="space-y-4">
                   <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-3">
                     <h2 className="text-xs font-bold text-slate-200 uppercase tracking-wider">Inflow by Channel (NEFT / IMPS / UPI / ACH)</h2>
@@ -1888,10 +2149,10 @@ export default function App() {
           </div>
         )}
 
-        {/* TAB 3: TRANSACTIONS LEDGER (With Duration Filter & Smart Bank Transfer Badges) */}
+        {/* TAB 3: TRANSACTIONS LEDGER (With Multi-Category Selection & Complete Export Options) */}
         {activeTab === 'LEDGER' && txns.length > 0 && (
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 space-y-3">
-            {/* Search and Filters Header */}
+            {/* Search, Multi-Category Filter, Type, Add & Export Controls */}
             <div className="flex flex-col sm:flex-row gap-2 justify-between">
               <div className="relative flex-1">
                 <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -1903,15 +2164,27 @@ export default function App() {
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-8 pr-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-emerald-500"
                 />
               </div>
-              <div className="flex gap-2 flex-wrap">
-                <select
-                  value={categoryFilter}
-                  onChange={e => setCategoryFilter(e.target.value)}
-                  className="bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-2 text-xs text-slate-200"
-                >
-                  <option value="ALL">All Categories ({categories.length})</option>
-                  {categories.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
+              <div className="flex gap-2 flex-wrap items-center">
+                {/* MULTI-OPTION CATEGORY SELECTOR BUTTON */}
+                <div className="relative">
+                  <button
+                    onClick={() => setShowCategoryFilterModal(true)}
+                    className={`px-3 py-2 rounded-xl text-xs flex items-center gap-1.5 transition border ${
+                      selectedCategories.length > 0 && selectedCategories.length < categories.length
+                        ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300 font-bold'
+                        : 'bg-slate-950 border-slate-800 text-slate-300 hover:border-slate-700'
+                    }`}
+                  >
+                    <Filter size={13} className={selectedCategories.length > 0 && selectedCategories.length < categories.length ? 'text-emerald-400' : 'text-slate-400'} />
+                    <span>
+                      {selectedCategories.length === 0 || selectedCategories.length === categories.length
+                        ? 'All Categories'
+                        : `Categories (${selectedCategories.length})`}
+                    </span>
+                    <ChevronDown size={12} className="opacity-70" />
+                  </button>
+                </div>
+
                 <select
                   value={typeFilter}
                   onChange={e => setTypeFilter(e.target.value)}
@@ -1921,9 +2194,58 @@ export default function App() {
                   <option value="DEBIT">Debit Only</option>
                   <option value="CREDIT">Credit Only</option>
                 </select>
+
+                {/* EXPORT DROPDOWN MENU (PDF, CSV, XLSX) */}
+                <div className="relative">
+                  <button
+                    onClick={() => setShowExportMenu(!showExportMenu)}
+                    className="bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-200 font-semibold px-3 py-2 rounded-xl text-xs flex items-center gap-1.5 shrink-0"
+                    title="Export filtered transactions"
+                  >
+                    <FileDown size={14} className="text-sky-400" />
+                    <span>Export</span>
+                    <ChevronDown size={12} className="opacity-70" />
+                  </button>
+
+                  {showExportMenu && (
+                    <div className="absolute right-0 mt-1.5 w-48 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl p-1.5 z-40 space-y-1">
+                      <button
+                        onClick={exportToPdf}
+                        className="w-full text-left px-2.5 py-2 hover:bg-slate-800 text-slate-200 rounded-lg text-xs flex items-center gap-2"
+                      >
+                        <FileText size={14} className="text-rose-400" />
+                        <div>
+                          <p className="font-semibold">Export to PDF</p>
+                          <p className="text-[10px] text-slate-400">Printable statement report</p>
+                        </div>
+                      </button>
+                      <button
+                        onClick={exportToXlsx}
+                        className="w-full text-left px-2.5 py-2 hover:bg-slate-800 text-slate-200 rounded-lg text-xs flex items-center gap-2"
+                      >
+                        <FileSpreadsheet size={14} className="text-emerald-400" />
+                        <div>
+                          <p className="font-semibold">Export to XLSX</p>
+                          <p className="text-[10px] text-slate-400">Formatted Excel workbook</p>
+                        </div>
+                      </button>
+                      <button
+                        onClick={exportToCsv}
+                        className="w-full text-left px-2.5 py-2 hover:bg-slate-800 text-slate-200 rounded-lg text-xs flex items-center gap-2"
+                      >
+                        <Download size={14} className="text-sky-400" />
+                        <div>
+                          <p className="font-semibold">Export to CSV</p>
+                          <p className="text-[10px] text-slate-400">Universal UTF-8 format</p>
+                        </div>
+                      </button>
+                    </div>
+                  )}
+                </div>
+
                 <button
                   onClick={() => setShowAddModal(true)}
-                  className="bg-emerald-500 text-slate-950 font-bold px-3 py-2 rounded-xl text-xs flex items-center gap-1 shrink-0"
+                  className="bg-emerald-500 text-slate-950 font-bold px-3 py-2 rounded-xl text-xs flex items-center gap-1 shrink-0 shadow-sm"
                 >
                   <Plus size={14} /> Add
                 </button>
@@ -1994,15 +2316,19 @@ export default function App() {
               )}
             </div>
 
+            {/* Filter Summary & Quick Clear Action Badges */}
             <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1 flex-wrap gap-1">
               <span>
                 Showing {filtered.length} of {txns.length} transactions
                 {dateRangeBounds.start && dateRangeBounds.end && ` (${dateRangeBounds.start} to ${dateRangeBounds.end})`}
               </span>
               <div className="flex items-center gap-2">
-                {categoryFilter !== 'ALL' && (
-                  <button onClick={() => setCategoryFilter('ALL')} className="text-emerald-400 underline">
-                    Clear Category
+                {selectedCategories.length > 0 && selectedCategories.length < categories.length && (
+                  <button
+                    onClick={() => setSelectedCategories([])}
+                    className="text-emerald-400 hover:underline flex items-center gap-0.5"
+                  >
+                    <RotateCcw size={11} /> Clear Categories ({selectedCategories.length})
                   </button>
                 )}
                 {datePreset !== 'ALL' && (
@@ -2013,7 +2339,7 @@ export default function App() {
               </div>
             </div>
 
-            {/* TRANSACTIONS LIST WITH SMART TRANSFER BADGES */}
+            {/* TRANSACTIONS LIST WITH PERSISTENT MANUAL TAG INDICATOR */}
             <div className="divide-y divide-slate-800/80 text-xs max-h-[58vh] overflow-y-auto">
               {filtered.map(t => {
                 const transferInfo = transferMap.get(t.id);
@@ -2032,7 +2358,13 @@ export default function App() {
                         <span className="text-[10px] px-2 py-0.5 rounded-md bg-slate-950 text-slate-400 border border-slate-800">
                           {t.channel}
                         </span>
-                        {/* SMART BANK TRANSFER BADGE */}
+                        {/* Persistent Manual Tag Indicator */}
+                        {t.isManualCategory && (
+                          <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30" title="Manually assigned category (persisted)">
+                            Manual Tag
+                          </span>
+                        )}
+                        {/* Smart Transfer Badge */}
                         {transferInfo && (
                           <span
                             onClick={(e) => {
@@ -2249,7 +2581,6 @@ export default function App() {
                 </button>
               </div>
 
-              {/* Add New Category Input */}
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -2267,7 +2598,6 @@ export default function App() {
                 </button>
               </div>
 
-              {/* Category Badges Grid */}
               <div className="flex flex-wrap gap-2 pt-1">
                 {categories.map(c => {
                   const count = txns.filter(t => t.category === c).length;
@@ -2300,15 +2630,15 @@ export default function App() {
               </div>
             </div>
 
-            {/* Section 4: Interactive Auto-Categorization Rules List */}
+            {/* Section 4: Smarter Interactive Auto-Categorization Rules List */}
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-xs font-bold text-slate-100 uppercase tracking-wider flex items-center gap-1.5">
-                    <Sparkles size={15} className="text-purple-400" /> Interactive Auto-Categorization Rules ({rules.length})
+                    <Sparkles size={15} className="text-purple-400" /> Smart Auto-Categorization Rules ({rules.length})
                   </h3>
                   <p className="text-[11px] text-slate-400">
-                    Match merchant keywords in narrations to assign categories. Modifying rules immediately re-evaluates all transactions.
+                    Token-boundary keyword matching ensures exact merchant classification without false positives. Manual tags are permanently preserved.
                   </p>
                 </div>
                 <button
@@ -2318,19 +2648,18 @@ export default function App() {
                     showToast(`Re-evaluated ${txns.length} transactions (${changedCount} updated)`);
                   }}
                   className="bg-purple-950/80 hover:bg-purple-900 text-purple-300 border border-purple-800 text-xs px-2.5 py-1.5 rounded-xl flex items-center gap-1 font-semibold"
-                  title="Re-apply all rules across all transactions"
+                  title="Re-apply all rules across all auto-categorized transactions"
                 >
                   <RefreshCw size={12} /> Re-apply Rules
                 </button>
               </div>
 
-              {/* Add Keyword Rule Form */}
               <div className="flex flex-col sm:flex-row gap-2 bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
                 <input
                   type="text"
                   value={ruleKey}
                   onChange={e => setRuleKey(e.target.value)}
-                  placeholder="Keyword(s) in narration (comma-separated, e.g. ubi, zepto, netflix)"
+                  placeholder="Keyword(s) in narration (comma-separated, e.g. uber, zepto, netflix)"
                   className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100"
                   onKeyDown={e => { if (e.key === 'Enter') handleAddRule(); }}
                 />
@@ -2349,7 +2678,6 @@ export default function App() {
                 </button>
               </div>
 
-              {/* Interactive Rules List */}
               <div className="space-y-2.5 max-h-96 overflow-y-auto pr-1">
                 {rules.map((rule, idx) => {
                   const matchedTxnCount = txns.filter(t => t.category === rule.cat).length;
@@ -2460,6 +2788,7 @@ export default function App() {
                     setTxns([]);
                     setUploadedFiles([]);
                     setBankFilter('ALL');
+                    setSelectedCategories([]);
                     showToast('Removed all banks, files, and transactions');
                   }}
                   className="bg-rose-950/80 hover:bg-rose-900 text-rose-200 text-xs px-3 py-2 rounded-xl border border-rose-800 flex items-center gap-1 font-semibold"
@@ -2472,7 +2801,128 @@ export default function App() {
         )}
       </main>
 
-      {/* RESTORE BACKUP MODAL (GRANULAR SELECTION & CONFLICT HANDLING) */}
+      {/* MULTI-OPTION CATEGORY SELECTOR MODAL */}
+      {showCategoryFilterModal && (
+        <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-4 space-y-3 max-h-[85vh] flex flex-col">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-2.5 shrink-0">
+              <div className="flex items-center gap-2">
+                <Filter size={16} className="text-emerald-400" />
+                <h3 className="text-sm font-bold text-white">Filter by Categories</h3>
+              </div>
+              <button onClick={() => setShowCategoryFilterModal(false)} className="text-slate-400 hover:text-white">
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Search Categories */}
+            <div className="relative shrink-0">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                value={categoryFilterSearch}
+                onChange={e => setCategoryFilterSearch(e.target.value)}
+                placeholder="Search categories..."
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-8 pr-3 py-2 text-xs text-slate-100"
+              />
+            </div>
+
+            {/* Quick Actions Bar */}
+            <div className="flex items-center justify-between text-xs shrink-0 py-1 border-b border-slate-800/80">
+              <span className="text-slate-400 text-[11px]">
+                {selectedCategories.length === 0 || selectedCategories.length === categories.length
+                  ? `All ${categories.length} categories active`
+                  : `${selectedCategories.length} of ${categories.length} selected`}
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSelectedCategories([...categories])}
+                  className="text-emerald-400 hover:underline text-[11px] font-semibold"
+                >
+                  Select All
+                </button>
+                <span className="text-slate-600">•</span>
+                <button
+                  type="button"
+                  onClick={() => setSelectedCategories([])}
+                  className="text-rose-400 hover:underline text-[11px] font-semibold"
+                >
+                  Clear / Reset
+                </button>
+              </div>
+            </div>
+
+            {/* Scrollable Categories Checklist */}
+            <div className="space-y-1 overflow-y-auto flex-1 pr-1 text-xs divide-y divide-slate-800/50">
+              {categories
+                .filter(c => c.toLowerCase().includes(categoryFilterSearch.toLowerCase()))
+                .map(c => {
+                  const isChecked = selectedCategories.length === 0 || selectedCategories.includes(c);
+                  const count = txns.filter(t => t.category === c).length;
+                  return (
+                    <label
+                      key={c}
+                      className="flex items-center justify-between p-2 rounded-xl hover:bg-slate-800/50 cursor-pointer transition"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              if (selectedCategories.length === 0) {
+                                // If was "all", select this one specifically
+                                setSelectedCategories([c]);
+                              } else {
+                                setSelectedCategories([...selectedCategories, c]);
+                              }
+                            } else {
+                              if (selectedCategories.length === 0) {
+                                // Deselecting one from "all"
+                                setSelectedCategories(categories.filter(cat => cat !== c));
+                              } else {
+                                const next = selectedCategories.filter(cat => cat !== c);
+                                setSelectedCategories(next);
+                              }
+                            }
+                          }}
+                          className="accent-emerald-500 rounded"
+                        />
+                        <span className="text-slate-200 font-medium">{c}</span>
+                      </div>
+                      <span className="text-[10px] bg-slate-950 text-slate-400 border border-slate-800 px-2 py-0.5 rounded-full">
+                        {count} txns
+                      </span>
+                    </label>
+                  );
+                })}
+            </div>
+
+            <div className="flex items-center justify-between pt-2 border-t border-slate-800 shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedCategories([]);
+                  setShowCategoryFilterModal(false);
+                }}
+                className="bg-slate-800 text-slate-300 px-3 py-1.5 rounded-xl text-xs"
+              >
+                Clear Filter
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowCategoryFilterModal(false)}
+                className="bg-emerald-500 text-slate-950 font-bold px-4 py-1.5 rounded-xl text-xs"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* RESTORE BACKUP MODAL */}
       {showRestoreModal && backupDataToRestore && (
         <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-4">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-4 space-y-4 max-h-[88vh] flex flex-col">
@@ -2491,7 +2941,6 @@ export default function App() {
             </p>
 
             <div className="space-y-2 text-xs flex-1 overflow-y-auto pr-1">
-              {/* Banks Checkbox */}
               <label className="flex items-center justify-between p-2.5 rounded-xl bg-slate-950 border border-slate-800 cursor-pointer hover:border-slate-700">
                 <div className="flex items-center gap-2.5">
                   <input
@@ -2510,7 +2959,6 @@ export default function App() {
                 <Building2 size={15} className="text-emerald-400" />
               </label>
 
-              {/* Statement Files Checkbox */}
               <label className="flex items-center justify-between p-2.5 rounded-xl bg-slate-950 border border-slate-800 cursor-pointer hover:border-slate-700">
                 <div className="flex items-center gap-2.5">
                   <input
@@ -2529,7 +2977,6 @@ export default function App() {
                 <FileSpreadsheet size={15} className="text-sky-400" />
               </label>
 
-              {/* Categories Checkbox */}
               <label className="flex items-center justify-between p-2.5 rounded-xl bg-slate-950 border border-slate-800 cursor-pointer hover:border-slate-700">
                 <div className="flex items-center gap-2.5">
                   <input
@@ -2548,7 +2995,6 @@ export default function App() {
                 <Tag size={15} className="text-emerald-400" />
               </label>
 
-              {/* Rules Checkbox */}
               <label className="flex items-center justify-between p-2.5 rounded-xl bg-slate-950 border border-slate-800 cursor-pointer hover:border-slate-700">
                 <div className="flex items-center gap-2.5">
                   <input
@@ -2567,7 +3013,6 @@ export default function App() {
                 <Sparkles size={15} className="text-purple-400" />
               </label>
 
-              {/* Transactions Checkbox */}
               <label className="flex items-center justify-between p-2.5 rounded-xl bg-slate-950 border border-slate-800 cursor-pointer hover:border-slate-700">
                 <div className="flex items-center gap-2.5">
                   <input
@@ -2586,7 +3031,6 @@ export default function App() {
                 <FileText size={15} className="text-emerald-400" />
               </label>
 
-              {/* Restoration Strategy Mode */}
               <div className="pt-2">
                 <label className="text-slate-400 block mb-1.5 font-medium">Restoration Mode:</label>
                 <div className="grid grid-cols-2 gap-2">
@@ -2799,7 +3243,7 @@ export default function App() {
         </div>
       )}
 
-      {/* MODAL 3: EDIT TRANSACTION */}
+      {/* MODAL 3: EDIT TRANSACTION (WITH PERMANENT MANUAL TAG RETENTION) */}
       {editingTxn && (
         <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-4">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-4 space-y-3">
@@ -2810,6 +3254,24 @@ export default function App() {
               </button>
             </div>
             <div className="space-y-2.5 text-xs">
+              {/* Persistent Manual Tag Status */}
+              {editingTxn.isManualCategory && (
+                <div className="flex items-center justify-between text-[11px] text-amber-300 bg-amber-500/10 border border-amber-500/25 px-2.5 py-1.5 rounded-xl">
+                  <span>📌 Category manually assigned (preserved permanently)</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const autoCat = detectCategoryWithRules(editingTxn.narration, editingTxn.type);
+                      setEditingTxn({ ...editingTxn, category: autoCat, isManualCategory: false });
+                      showToast(`Reset to auto-detected "${autoCat}"`);
+                    }}
+                    className="underline text-amber-200 hover:text-white font-semibold ml-2 text-[10px]"
+                  >
+                    Reset to Auto
+                  </button>
+                </div>
+              )}
+
               <div>
                 <label className="text-slate-400 block mb-1">Date</label>
                 <input
@@ -2852,10 +3314,10 @@ export default function App() {
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="text-slate-400 block mb-1">Category</label>
+                  <label className="text-slate-400 block mb-1">Category (Selecting marks as manual)</label>
                   <select
                     value={editingTxn.category}
-                    onChange={e => setEditingTxn({ ...editingTxn, category: e.target.value })}
+                    onChange={e => setEditingTxn({ ...editingTxn, category: e.target.value, isManualCategory: true })}
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-100"
                   >
                     {categories.map(c => <option key={c} value={c}>{c}</option>)}
@@ -3149,7 +3611,7 @@ export default function App() {
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-slate-100 text-xs focus:outline-none focus:border-emerald-500"
               />
               <p className="text-[10px] text-slate-500">
-                Saving will immediately re-evaluate transactions matching these keywords.
+                Saving will immediately re-evaluate auto-categorized transactions matching these keywords. Manual tags will remain unchanged.
               </p>
             </div>
             <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">

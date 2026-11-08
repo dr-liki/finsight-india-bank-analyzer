@@ -1,7 +1,7 @@
 # FinSight India — Android Multi-Bank Statement Analyzer
 
 ![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20Web-10b981?style=flat-square)
-![Release](https://img.shields.io/badge/Release-v1.8.0-0ea5e9?style=flat-square)
+![Release](https://img.shields.io/badge/Release-v1.9.0-0ea5e9?style=flat-square)
 ![Stack](https://img.shields.io/badge/Stack-React%2018%20%7C%20Vite%205%20%7C%20Tailwind%203%20%7C%20Capacitor%206-6366f1?style=flat-square)
 ![Privacy](https://img.shields.io/badge/Privacy-100%25%20On--Device%20%7C%20Zero%20Cloud-f59e0b?style=flat-square)
 ![License](https://img.shields.io/badge/License-MIT-slate?style=flat-square)
@@ -10,7 +10,7 @@
 
 ---
 
-## Key Features & Capabilities (v1.8.0)
+## Key Features & Capabilities (v1.9.0)
 
 ### 1. Multi-Format Batch Statement Ingestion
 - **Simultaneous File Parsing**: Ingest multiple statements across different banks and accounts in a single batch.
@@ -18,28 +18,34 @@
 - **Interactive Password-Protected PDF Decryption**: Decrypts password-protected Indian bank PDFs directly in your browser or phone memory.
 - **Robust Schema Normalization**: Scans header metadata, normalizes Indian date formats (`DD/MM/YYYY`, `DD-MM-YYYY`, ISO), extracts transaction channels (`UPI`, `NEFT`, `IMPS`, `NACH`, `POS`, `ATM`), and eliminates duplicate entries across overlapping statements.
 
-### 2. Smart Bank Transfer Matching & Management
+### 2. Bank Intelligence & Balance Analytics
+- **Initial & Latest Bank Balances**: Automatically analyzes uploaded statement files to determine opening/initial balances and latest closing balances with formatted dates in brackets (e.g. `Latest Balance: ₹54,320.50 (28 Oct 2026)` and `Initial Balance: ₹12,100.00 (1 Apr 2026)`).
+- **Interactive Edit Balance Popup**: Dedicated modal window allowing manual balance and date overrides with a one-click "Re-Calculate from Statements" reset tool.
+- **Real-Time Automatic Balance Updates**: When statements are uploaded, deleted, or re-assigned, all bank balances recalculate and update automatically.
+- **Responsive Workspace Hierarchy**: In the Bank & Rules workspace, primary action buttons (`Add Bank`, `Upload Files`, `Manage All`, `Manage Transfers`, `Re-apply Rules`) are positioned directly below descriptions, allowing descriptions to span full card width on mobile.
+
+### 3. Smart Bank Transfer Matching & Management
 - **Automatic Cross-Bank Transfer Pairing**: Automatically identifies money moved between your own accounts (e.g. ₹25,000 debited from HDFC matching ₹25,000 credited into SBI within a configurable clearing window).
 - **Synchronized 'Bank Transfer' Tagging**: Automatically assigns both debit and credit legs of a transfer to the `'Bank Transfer'` category in real time.
 - **Double-Counting Elimination**: An internal transfer exclusion toggle instantly excludes internal fund movements from your total income and total expense figures.
 - **Interactive Transfer Manager**: Inspect paired transfers, configure clearing delays (Same Day to 5 Days), unlink false positives (with automatic category reset), or manually link transfers with non-standard narrations.
 - **Centralized in Bank & Rules**: Transfer alerts, linked pair previews, and management controls are housed directly within the Bank & Rules (`BANKS`) page below the Categories Manager.
 
-### 3. Direction-Aware & Token-Bounded Auto-Categorization
+### 4. Direction-Aware & Token-Bounded Auto-Categorization
 - **Direction-Scoped Rules**: Evaluation rules have explicit direction constraints (`CREDIT`, `DEBIT`, `BOTH`), preventing credits (e.g. interest, salary, refunds, cashbacks) from accidentally receiving debit categories, and vice versa.
 - **Discrete Token-Boundary Regular Expressions**: Keywords are evaluated using bounded regex patterns `(^|[^a-z0-9])keyword([^a-z0-9]|$)` instead of naive substring matching, eliminating false positives (e.g. `ola` no longer incorrectly triggers on city names like *Kolkata* or *Solapur*).
 - **Persistent Manual Overrides**: User category modifications in the transaction edit modal are stamped with `isManualCategory: true` and permanently survive application restarts, data refreshes, and rule updates.
 - **Comprehensive Interactive Rules Editor**: Create, update, or remove keyword rules with live re-evaluation against your ledger.
 - **Custom Categories Suite**: Add custom categories with customizable color swatches; renames cascade dynamically to all assigned transactions.
 
-### 4. Dual Category Analysis & Net Flow Intelligence
+### 5. Dual Category Analysis & Net Flow Intelligence
 - **Spend Breakdown (Outflows)**: Interactive Donut and Bar charts visualizing debit distribution, percentage weights, channel breakdowns (UPI vs. POS vs. NACH), and clickable top spend merchants/payees.
 - **Earnings Breakdown (Inflows)**: Dedicated credit analysis isolating primary income streams, interest credits, cashbacks, refunds, and clickable top income sources.
 - **Clickable Merchant & Income Drill-Down Modal**: Tap any top merchant or payer to view all matching transactions with full date, bank badge, category, narration, and amount, plus tap-to-edit integration.
 - **Net Flow Relocated to Page Bottom**: Spend vs. Earning Net Flow Comparison is now positioned permanently at the bottom of the Analysis page, visible below active Spend or Earnings breakdowns.
 - **Fixed Text Overflow**: Redesigned Net Flow table with balanced column distribution (`w-[34%]`, `w-[22%]`, `w-[22%]`, `w-[22%]`), `min-w-[460px]`, `whitespace-nowrap tabular-nums`, and KPI header pills preventing line wraps or clipping.
 
-### 5. Multi-Select Duration & Category Filtering
+### 6. Multi-Select Duration & Category Filtering
 - **Multi-Select Temporal Filters**: Filter your ledger and metrics across multi-selected periods:
   - **Weekwise**: Compare multiple individual calendar weeks.
   - **Monthwise**: Multi-select arbitrary months (e.g., compare April and October).
@@ -48,18 +54,18 @@
   - **Quick Presets & Custom**: Instant presets (`Last 7 Days`, `Last 30 Days`, `This Month`, `Last 3 Months`, `This Year`, `All Time`) plus a custom date range picker.
 - **Multi-Option Category Filter in Ledger**: Select multiple spending verticals simultaneously with live transaction counter badges, real-time category search, and a single-tap clear button.
 
-### 6. Universal Formatted Export Suite
+### 7. Universal Formatted Export Suite
 - **Screen-Centered Export Modal**: A fixed, touch-friendly modal dialog replacing off-screen dropdown menus on mobile devices.
 - **Printable PDF Statement Reports**: Executive statement reports generated via `jspdf` and `jspdf-autotable` featuring slate branding, statement metadata, KPI summary cards (Total Outflow, Total Inflow, Net Balance), alternating shaded transaction rows, and running page numbers.
 - **Formatted Excel Workbooks (`.xlsx`)**: Structured spreadsheets with currency-formatted amounts, category headers, and automated sum formulas.
 - **Universal RFC 4180 CSV**: Clean comma-separated exports with UTF-8 BOM encoding for seamless compatibility across Excel, Google Sheets, and accounting software.
 - **Native Android Save & Share Sheet**: Integrates `@capacitor/filesystem` and `@capacitor/share` to write exported files to cache and launch the native Android Share Sheet ("Save to Downloads", Google Drive, WhatsApp, etc.), completely bypassing WebView download restrictions.
 
-### 7. Granular Backup & Restore Engine
+### 8. Granular Backup & Restore Engine
 - **Full Client-Side JSON Backups**: Export your entire financial profile into an encrypted or portable JSON file.
 - **Granular Restoration**: Selectively restore Banks, Statement Files metadata, Custom Categories, Auto-Categorization Rules, and/or Transactions.
 
-### 8. Material Design 3 Compliance & Polish
+### 9. Material Design 3 Compliance & Polish
 - **MD3 Adaptive Launcher Icons**: Full compliance with Android 13+ theming, providing background, foreground, and monochrome vector and raster drawables.
 - **Universal File Manager Icon Visibility**: High-resolution raster PNG mipmaps and drawables across all density buckets (`mdpi`, `hdpi`, `xhdpi`, `xxhdpi`, `xxxhdpi`) coupled with explicit activity/application attributes ensure thumbnail visibility in Files by Google, Samsung My Files, and third-party file managers.
 - **Conflict-Free Updates**: Built and signed with a persistent release keystore and monotonic version codes to allow seamless updates over existing installations.

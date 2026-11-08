@@ -1,5 +1,37 @@
 # FinSight India — Release Notes
 
+## Version 1.9.0 (November 2026)
+
+FinSight India v1.9.0 brings significant layout and account intelligence upgrades to the Bank & Rules workspace: **Relocation of Section Header Buttons** below descriptions across all workspace panels, **Automatic Statement File Balance Analysis** extracting opening/initial and latest closing balances with dates in brackets, an **Interactive Edit Bank Balances Popup Modal**, and **Real-Time Automatic Balance Updates** whenever statement files are uploaded, removed, or modified.
+
+---
+
+### Highlights & Key Improvements
+
+#### 1. Header Action Buttons Moved Below Descriptions
+- **Clean Responsive Layout**: In the Bank & Rules workspace, the primary action buttons (`Add Bank`, `Upload Files`, `Manage All`, `Manage Transfers`, and `Re-apply Rules`) have been moved directly below their respective section descriptions.
+- **Unconstrained Descriptions**: Section titles and descriptive guidance now span the full card width without line-wrapping congestion on mobile viewports.
+- **Unified Action Hierarchy**: All five workspace cards follow the exact same visual pattern: Title → Description → Uniform Action Button (`h-8 px-3 rounded-xl text-xs font-semibold`).
+
+#### 2. Automatic Statement File Balance Analysis
+- **Statement Balance Ingestion**: Both Excel/CSV matrix parsers and PDF statement extractors now automatically detect and capture running balances, opening balance entries, and closing balance amounts directly from bank statement files (supporting SBI, HDFC, ICICI, Axis, Kotak, UBI, etc.).
+- **Initial & Latest Bank Balances**: For each bank card in Section 1 (My Banks), FinSight automatically calculates:
+  - **Latest Bank Balance**: e.g., `Latest Balance: ₹54,320.50 (28 Oct 2026)`
+  - **Initial Bank Balance**: e.g., `Initial Balance: ₹12,100.00 (1 Apr 2026)`
+- **Dates in Brackets**: Formatted Indian calendar dates are cleanly displayed in brackets next to each balance.
+- **Net Flow Fallback**: For statement files without explicit balance columns, initial and closing balances are derived from chronological transaction dates and net cash flow movements.
+
+#### 3. Interactive Edit Bank Balance Popup Window
+- **Edit Balances on Demand**: Each bank card features an edit balance icon (`<Edit3 size={12} />`) opening a dedicated popup modal.
+- **Granular Baseline Controls**: Users can adjust Initial / Opening Balance (₹) and Initial Date, as well as Latest / Closing Balance (₹) and Latest Date.
+- **"Re-Calculate from Statements"**: Instant button inside the modal to re-analyze uploaded statement files and reset manual overrides back to statement-derived figures.
+- **Persistent Storage**: Saved balances and dates persist safely in device `localStorage`.
+
+#### 4. Automatic Balance Updates on Statement Changes
+- **Live Reactive Synchronization**: When new statements are uploaded, files re-assigned, or existing statements deleted, bank balances and their corresponding date ranges recalculate and update automatically in real time without requiring manual intervention.
+
+---
+
 ## Version 1.8.0 (November 2026)
 
 FinSight India v1.8.0 introduces four key UX enhancements: **Net Flow Comparison Relocation & Text Overflow Fix**, **Clickable Top Spend Merchants & Top Income Sources with Transaction Detail Drill-Down Modal**, **Relocation of Smart Bank Transfers to Bank & Rules Page** (positioned below Categories Manager), and **Standardized Uniform Design Structure for Header Action Buttons** across the Bank & Rules workspace.

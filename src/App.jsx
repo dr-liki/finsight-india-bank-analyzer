@@ -20,7 +20,7 @@ import {
   PieChart, Pie, Cell, CartesianGrid, Legend
 } from 'recharts';
 
-const APP_VERSION = '1.8.0';
+const APP_VERSION = '1.9.0';
 
 // Configure PDF.js worker via CDN for Android WebView compatibility
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`;
@@ -304,6 +304,117 @@ function normalizeDate(raw) {
   return new Date().toISOString().slice(0, 10);
 }
 
+
+// FORMAT BALANCE DATE HELPER (v1.9.0)
+function formatBalanceDate(dateStr) {
+  if (!dateStr || dateStr === 'N/A' || dateStr === 'No txns' || dateStr === 'No statements') return 'No statements';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    const [y, m, d] = dateStr.split('-');
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const mon = months[parseInt(m, 10) - 1] || m;
+    return `${parseInt(d, 10)} ${mon} ${y}`;
+  }
+  return dateStr;
+}
+
+// AUTOMATICALLY ANALYSE STATEMENT FILES FOR INITIAL & LATEST BANK BALANCES (v1.9.0)
+function getBankBalanceInfo(bank, allTxns) {
+  if (!bank) return { initial: 0, initialDate: 'No statements', latest: 0, latestDate: 'No statements', isManual: false, hasData: false };
+
+  // If user explicitly saved manual balance in modal:
+  if (bank.isManualBalance && bank.latestBalance !== undefined && bank.latestBalance !== null) {
+    return {
+      initial: Number(bank.initialBalance) || 0,
+      initialDate: bank.initialBalanceDate || 'N/A',
+      latest: Number(bank.latestBalance) || 0,
+      latestDate: bank.latestBalanceDate || 'N/A',
+      isManual: true,
+      hasData: true
+    };
+  }
+
+  // Filter all transactions for this bank
+  const bankTxns = (allTxns || []).filter(t => t.bank === bank.name);
+  if (bankTxns.length === 0) {
+    if (bank.initialBalance !== undefined && bank.initialBalance !== null) {
+      return {
+        initial: Number(bank.initialBalance) || 0,
+        initialDate: bank.initialBalanceDate || 'No statements',
+        latest: Number(bank.latestBalance || bank.initialBalance) || 0,
+        latestDate: bank.latestBalanceDate || bank.initialBalanceDate || 'No statements',
+        isManual: Boolean(bank.isManualBalance),
+        hasData: true
+      };
+    }
+    return {
+      initial: 0,
+      initialDate: 'No statements',
+      latest: 0,
+      latestDate: 'No statements',
+      isManual: false,
+      hasData: false
+    };
+  }
+
+  // Sort chronologically
+  const sorted = [...bankTxns].sort((a, b) => {
+    const diff = new Date(a.date || '2026-01-01').getTime() - new Date(b.date || '2026-01-01').getTime();
+    return diff !== 0 ? diff : (a.id > b.id ? 1 : -1);
+  });
+
+  const earliestTxn = sorted[0];
+  const latestTxn = sorted[sorted.length - 1];
+
+  // Check if any transactions have explicit balance
+  const txnsWithBal = sorted.filter(t => t.balance !== undefined && t.balance !== null && !isNaN(t.balance) && Number(t.balance) > 0);
+
+  if (txnsWithBal.length > 0) {
+    const firstWithBal = txnsWithBal[0];
+    const lastWithBal = txnsWithBal[txnsWithBal.length - 1];
+
+    let initialBal = Number(firstWithBal.balance);
+    if (firstWithBal.type === 'CREDIT') {
+      initialBal -= Number(firstWithBal.amount || 0);
+    } else {
+      initialBal += Number(firstWithBal.amount || 0);
+    }
+
+    let latestBal = Number(lastWithBal.balance);
+    const lastWithBalIdx = sorted.indexOf(lastWithBal);
+    if (lastWithBalIdx !== -1 && lastWithBalIdx < sorted.length - 1) {
+      for (let i = lastWithBalIdx + 1; i < sorted.length; i++) {
+        const t = sorted[i];
+        latestBal += (t.type === 'CREDIT' ? Number(t.amount || 0) : -Number(t.amount || 0));
+      }
+    }
+
+    return {
+      initial: Math.max(0, initialBal),
+      initialDate: firstWithBal.date || earliestTxn.date,
+      latest: latestBal,
+      latestDate: latestTxn.date || lastWithBal.date,
+      isManual: false,
+      hasData: true
+    };
+  }
+
+  // Fallback: Net cash flow
+  const netFlow = bankTxns.reduce((sum, t) => sum + (t.type === 'CREDIT' ? Number(t.amount || 0) : -Number(t.amount || 0)), 0);
+  const baseInitial = (bank.initialBalance !== undefined && bank.initialBalance !== null) ? Number(bank.initialBalance) : 0;
+  const initialDate = bank.initialBalanceDate || earliestTxn.date;
+  const latestDate = bank.latestBalanceDate || latestTxn.date;
+  const latestBal = baseInitial + netFlow;
+
+  return {
+    initial: baseInitial,
+    initialDate,
+    latest: latestBal,
+    latestDate,
+    isManual: Boolean(bank.isManualBalance),
+    hasData: true
+  };
+}
+
 function parseAmount(val) {
   if (typeof val === 'number') return Math.abs(val);
   if (!val) return 0;
@@ -521,7 +632,7 @@ function detectTransferPairs(transactionsList, manualPairs = [], unlinkedPairs =
 export default function App() {
   const [banks, setBanks] = useState(() => {
     try {
-      const saved = localStorage.getItem('finsight_banks_v180') || localStorage.getItem('finsight_banks_v170') || localStorage.getItem('finsight_banks_v161') || localStorage.getItem('finsight_banks_v160') || localStorage.getItem('finsight_banks_v150') || localStorage.getItem('finsight_banks_v140') || localStorage.getItem('finsight_banks_v130') || localStorage.getItem('finsight_banks_v120') || localStorage.getItem('finsight_banks_v110');
+      const saved = localStorage.getItem('finsight_banks_v190') || localStorage.getItem('finsight_banks_v180') || localStorage.getItem('finsight_banks_v170') || localStorage.getItem('finsight_banks_v161') || localStorage.getItem('finsight_banks_v160') || localStorage.getItem('finsight_banks_v150') || localStorage.getItem('finsight_banks_v140') || localStorage.getItem('finsight_banks_v130') || localStorage.getItem('finsight_banks_v120') || localStorage.getItem('finsight_banks_v110');
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
@@ -530,7 +641,7 @@ export default function App() {
 
   const [txns, setTxns] = useState(() => {
     try {
-      const saved = localStorage.getItem('finsight_txns_v180') || localStorage.getItem('finsight_txns_v170') || localStorage.getItem('finsight_txns_v161') || localStorage.getItem('finsight_txns_v160') || localStorage.getItem('finsight_txns_v150') || localStorage.getItem('finsight_txns_v140') || localStorage.getItem('finsight_txns_v130') || localStorage.getItem('finsight_txns_v120') || localStorage.getItem('finsight_txns_v110');
+      const saved = localStorage.getItem('finsight_txns_v190') || localStorage.getItem('finsight_txns_v180') || localStorage.getItem('finsight_txns_v170') || localStorage.getItem('finsight_txns_v161') || localStorage.getItem('finsight_txns_v160') || localStorage.getItem('finsight_txns_v150') || localStorage.getItem('finsight_txns_v140') || localStorage.getItem('finsight_txns_v130') || localStorage.getItem('finsight_txns_v120') || localStorage.getItem('finsight_txns_v110');
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
@@ -539,7 +650,7 @@ export default function App() {
 
   const [uploadedFiles, setUploadedFiles] = useState(() => {
     try {
-      const saved = localStorage.getItem('finsight_files_v180') || localStorage.getItem('finsight_files_v170') || localStorage.getItem('finsight_files_v161') || localStorage.getItem('finsight_files_v160') || localStorage.getItem('finsight_files_v150') || localStorage.getItem('finsight_files_v140') || localStorage.getItem('finsight_files_v130') || localStorage.getItem('finsight_files_v120') || localStorage.getItem('finsight_files_v110');
+      const saved = localStorage.getItem('finsight_files_v190') || localStorage.getItem('finsight_files_v180') || localStorage.getItem('finsight_files_v170') || localStorage.getItem('finsight_files_v161') || localStorage.getItem('finsight_files_v160') || localStorage.getItem('finsight_files_v150') || localStorage.getItem('finsight_files_v140') || localStorage.getItem('finsight_files_v130') || localStorage.getItem('finsight_files_v120') || localStorage.getItem('finsight_files_v110');
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
@@ -548,7 +659,7 @@ export default function App() {
 
   const [categories, setCategories] = useState(() => {
     try {
-      const saved = localStorage.getItem('finsight_categories_v180') || localStorage.getItem('finsight_categories_v170') || localStorage.getItem('finsight_categories_v161') || localStorage.getItem('finsight_categories_v160') || localStorage.getItem('finsight_categories_v150') || localStorage.getItem('finsight_categories_v140') || localStorage.getItem('finsight_categories_v130') || localStorage.getItem('finsight_categories_v120') || localStorage.getItem('finsight_categories_v110');
+      const saved = localStorage.getItem('finsight_categories_v190') || localStorage.getItem('finsight_categories_v180') || localStorage.getItem('finsight_categories_v170') || localStorage.getItem('finsight_categories_v161') || localStorage.getItem('finsight_categories_v160') || localStorage.getItem('finsight_categories_v150') || localStorage.getItem('finsight_categories_v140') || localStorage.getItem('finsight_categories_v130') || localStorage.getItem('finsight_categories_v120') || localStorage.getItem('finsight_categories_v110');
       if (saved) {
         const parsed = JSON.parse(saved);
         const combined = Array.from(new Set([...DEFAULT_CATEGORIES, ...parsed]));
@@ -562,7 +673,7 @@ export default function App() {
 
   const [rules, setRules] = useState(() => {
     try {
-      const saved = localStorage.getItem('finsight_rules_v180') || localStorage.getItem('finsight_rules_v170') || localStorage.getItem('finsight_rules_v161') || localStorage.getItem('finsight_rules_v160') || localStorage.getItem('finsight_rules_v150') || localStorage.getItem('finsight_rules_v140') || localStorage.getItem('finsight_rules_v130') || localStorage.getItem('finsight_rules_v120') || localStorage.getItem('finsight_rules_v110');
+      const saved = localStorage.getItem('finsight_rules_v190') || localStorage.getItem('finsight_rules_v180') || localStorage.getItem('finsight_rules_v170') || localStorage.getItem('finsight_rules_v161') || localStorage.getItem('finsight_rules_v160') || localStorage.getItem('finsight_rules_v150') || localStorage.getItem('finsight_rules_v140') || localStorage.getItem('finsight_rules_v130') || localStorage.getItem('finsight_rules_v120') || localStorage.getItem('finsight_rules_v110');
       return saved ? JSON.parse(saved) : DEFAULT_RULES;
     } catch {
       return DEFAULT_RULES;
@@ -571,7 +682,7 @@ export default function App() {
 
   const [excludeTransfersFromTotals, setExcludeTransfersFromTotals] = useState(() => {
     try {
-      const saved = localStorage.getItem('finsight_exclude_transfers_v180') || localStorage.getItem('finsight_exclude_transfers_v170') || localStorage.getItem('finsight_exclude_transfers_v161') || localStorage.getItem('finsight_exclude_transfers_v160') || localStorage.getItem('finsight_exclude_transfers_v150') || localStorage.getItem('finsight_exclude_transfers_v140') || localStorage.getItem('finsight_exclude_transfers_v130');
+      const saved = localStorage.getItem('finsight_exclude_transfers_v190') || localStorage.getItem('finsight_exclude_transfers_v180') || localStorage.getItem('finsight_exclude_transfers_v170') || localStorage.getItem('finsight_exclude_transfers_v161') || localStorage.getItem('finsight_exclude_transfers_v160') || localStorage.getItem('finsight_exclude_transfers_v150') || localStorage.getItem('finsight_exclude_transfers_v140') || localStorage.getItem('finsight_exclude_transfers_v130');
       return saved !== null ? JSON.parse(saved) : true;
     } catch {
       return true;
@@ -581,7 +692,7 @@ export default function App() {
   // SMART BANK TRANSFERS EDITING & MANAGEMENT STATE (v1.7.0)
   const [manualTransferPairs, setManualTransferPairs] = useState(() => {
     try {
-      const saved = localStorage.getItem('finsight_manual_pairs_v180') || localStorage.getItem('finsight_manual_pairs_v170') || localStorage.getItem('finsight_manual_pairs_v161') || localStorage.getItem('finsight_manual_pairs_v160') || localStorage.getItem('finsight_manual_pairs_v150');
+      const saved = localStorage.getItem('finsight_manual_pairs_v190') || localStorage.getItem('finsight_manual_pairs_v180') || localStorage.getItem('finsight_manual_pairs_v170') || localStorage.getItem('finsight_manual_pairs_v161') || localStorage.getItem('finsight_manual_pairs_v160') || localStorage.getItem('finsight_manual_pairs_v150');
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
@@ -590,7 +701,7 @@ export default function App() {
 
   const [unlinkedTransferPairs, setUnlinkedTransferPairs] = useState(() => {
     try {
-      const saved = localStorage.getItem('finsight_unlinked_pairs_v180') || localStorage.getItem('finsight_unlinked_pairs_v170') || localStorage.getItem('finsight_unlinked_pairs_v161') || localStorage.getItem('finsight_unlinked_pairs_v160') || localStorage.getItem('finsight_unlinked_pairs_v150');
+      const saved = localStorage.getItem('finsight_unlinked_pairs_v190') || localStorage.getItem('finsight_unlinked_pairs_v180') || localStorage.getItem('finsight_unlinked_pairs_v170') || localStorage.getItem('finsight_unlinked_pairs_v161') || localStorage.getItem('finsight_unlinked_pairs_v160') || localStorage.getItem('finsight_unlinked_pairs_v150');
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
@@ -599,7 +710,7 @@ export default function App() {
 
   const [transferClearingDays, setTransferClearingDays] = useState(() => {
     try {
-      const saved = localStorage.getItem('finsight_transfer_days_v180') || localStorage.getItem('finsight_transfer_days_v170') || localStorage.getItem('finsight_transfer_days_v161') || localStorage.getItem('finsight_transfer_days_v160') || localStorage.getItem('finsight_transfer_days_v150');
+      const saved = localStorage.getItem('finsight_transfer_days_v190') || localStorage.getItem('finsight_transfer_days_v180') || localStorage.getItem('finsight_transfer_days_v170') || localStorage.getItem('finsight_transfer_days_v161') || localStorage.getItem('finsight_transfer_days_v160') || localStorage.getItem('finsight_transfer_days_v150');
       return saved !== null ? Number(saved) : 2;
     } catch {
       return 2;
@@ -668,6 +779,16 @@ export default function App() {
   });
   const [restoreMode, setRestoreMode] = useState('MERGE'); // 'MERGE' or 'REPLACE'
 
+  // Bank Balances Modal & State (v1.9.0)
+  const [editingBankBalance, setEditingBankBalance] = useState(null);
+  const [balanceForm, setBalanceForm] = useState({
+    initialBalance: '',
+    initialBalanceDate: '',
+    latestBalance: '',
+    latestBalanceDate: '',
+    isAutoReset: false
+  });
+
   // Bank Management Modals (Add / Edit Bank)
   const [showBankModal, setShowBankModal] = useState(false);
   const [editingBank, setEditingBank] = useState(null);
@@ -707,41 +828,66 @@ export default function App() {
   // Transfer Pair Inspector Modal
   const [selectedTransferPair, setSelectedTransferPair] = useState(null);
 
-  // PERSISTENCE EFFECTS (v1.8.0 Keys)
+  // PERSISTENCE EFFECTS (v1.9.0 Keys)
   useEffect(() => {
-    try { localStorage.setItem('finsight_banks_v180', JSON.stringify(banks)); } catch {}
+    try { localStorage.setItem('finsight_banks_v190', JSON.stringify(banks)); } catch {}
   }, [banks]);
 
   useEffect(() => {
-    try { localStorage.setItem('finsight_txns_v180', JSON.stringify(txns)); } catch {}
+    try { localStorage.setItem('finsight_txns_v190', JSON.stringify(txns)); } catch {}
+  }, [txns]);
+  // Auto-sync bank balances when statement files / transactions change (v1.9.0)
+  useEffect(() => {
+    if (!banks || banks.length === 0 || !txns || txns.length === 0) return;
+    setBanks(prev => {
+      let changed = false;
+      const updated = prev.map(b => {
+        if (b.isManualBalance) return b;
+        const info = getBankBalanceInfo(b, txns);
+        if (info.hasData && (b.latestBalance !== info.latest || b.latestBalanceDate !== info.latestDate || b.initialBalance !== info.initial || b.initialBalanceDate !== info.initialDate)) {
+          changed = true;
+          return {
+            ...b,
+            initialBalance: info.initial,
+            initialBalanceDate: info.initialDate,
+            latestBalance: info.latest,
+            latestBalanceDate: info.latestDate,
+            isManualBalance: false
+          };
+        }
+        return b;
+      });
+      return changed ? updated : prev;
+    });
   }, [txns]);
 
+
   useEffect(() => {
-    try { localStorage.setItem('finsight_files_v180', JSON.stringify(uploadedFiles)); } catch {}
+    try { localStorage.setItem('finsight_files_v190', JSON.stringify(uploadedFiles)); } catch {}
   }, [uploadedFiles]);
 
   useEffect(() => {
-    try { localStorage.setItem('finsight_categories_v180', JSON.stringify(categories)); } catch {}
+    try { localStorage.setItem('finsight_categories_v190', JSON.stringify(categories)); } catch {}
   }, [categories]);
 
   useEffect(() => {
-    try { localStorage.setItem('finsight_rules_v180', JSON.stringify(rules)); } catch {}
+    try { localStorage.setItem('finsight_rules_v190', JSON.stringify(rules)); } catch {}
   }, [rules]);
 
   useEffect(() => {
-    try { localStorage.setItem('finsight_exclude_transfers_v180', JSON.stringify(excludeTransfersFromTotals)); } catch {}
+    try { localStorage.setItem('finsight_exclude_transfers_v190', JSON.stringify(excludeTransfersFromTotals)); } catch {}
   }, [excludeTransfersFromTotals]);
 
   useEffect(() => {
-    try { localStorage.setItem('finsight_manual_pairs_v180', JSON.stringify(manualTransferPairs)); } catch {}
+    try { localStorage.setItem('finsight_manual_pairs_v190', JSON.stringify(manualTransferPairs)); } catch {}
   }, [manualTransferPairs]);
 
   useEffect(() => {
-    try { localStorage.setItem('finsight_unlinked_pairs_v180', JSON.stringify(unlinkedTransferPairs)); } catch {}
+    try { localStorage.setItem('finsight_unlinked_pairs_v190', JSON.stringify(unlinkedTransferPairs)); } catch {}
   }, [unlinkedTransferPairs]);
 
   useEffect(() => {
-    try { localStorage.setItem('finsight_transfer_days_v180', String(transferClearingDays)); } catch {}
+    try { localStorage.setItem('finsight_transfer_days_v190', String(transferClearingDays)); } catch {}
   }, [transferClearingDays]);
 
   // Real-time automatic rule re-evaluation:
@@ -1282,7 +1428,7 @@ export default function App() {
       : (detected || (banks[0] ? banks[0].name : fileName.split('.')[0].slice(0, 16) || 'Primary Bank'));
 
     let headerRowIdx = -1;
-    let colMap = { date: -1, narration: -1, debit: -1, credit: -1, amount: -1, type: -1, ref: -1 };
+    let colMap = { date: -1, narration: -1, debit: -1, credit: -1, amount: -1, type: -1, ref: -1, balance: -1 };
 
     for (let i = 0; i < Math.min(matrix.length, 35); i++) {
       const row = (matrix[i] || []).map(c => String(c || '').toLowerCase().trim());
@@ -1298,6 +1444,7 @@ export default function App() {
           if (colMap.amount === -1 && cell.includes('amount') && !cell.includes('withdrawal') && !cell.includes('deposit')) colMap.amount = idx;
           if (colMap.type === -1 && (cell === 'type' || cell.includes('dr/cr') || cell.includes('cr/dr'))) colMap.type = idx;
           if (colMap.ref === -1 && (cell.includes('tran id') || cell.includes('chq') || cell.includes('ref no') || cell.includes('cheque'))) colMap.ref = idx;
+          if (colMap.balance === -1 && (cell.includes('balance') || cell.includes('bal') || cell.includes('closing bal') || cell.includes('running bal') || cell === 'bal' || cell.includes('available bal'))) colMap.balance = idx;
         });
         break;
       }
@@ -1317,6 +1464,7 @@ export default function App() {
       let debit = colMap.debit !== -1 ? parseAmount(row[colMap.debit]) : 0;
       let credit = colMap.credit !== -1 ? parseAmount(row[colMap.credit]) : 0;
       let amt = colMap.amount !== -1 ? parseAmount(row[colMap.amount]) : 0;
+      let balanceVal = colMap.balance !== -1 ? parseAmount(row[colMap.balance]) : undefined;
 
       if (colMap.debit === -1 && colMap.credit === -1 && colMap.amount === -1) {
         const nums = row.slice(2).map(parseAmount).filter(n => n > 0);
@@ -1351,7 +1499,8 @@ export default function App() {
           bank: resolvedBank,
           channel: detectChannel(narrStr),
           category: detectCategoryWithRules(narrStr, type),
-          isManualCategory: false
+          isManualCategory: false,
+          balance: balanceVal && !isNaN(balanceVal) && balanceVal > 0 ? balanceVal : undefined
         });
       }
     }
@@ -1397,6 +1546,11 @@ export default function App() {
           const numMatches = rest.match(/[\d,]+\.\d{2}/g);
           if (numMatches && numMatches.length >= 1) {
             const amountVal = parseAmount(numMatches[0]);
+            let pdfBalance = undefined;
+            if (numMatches.length >= 2) {
+              const possibleBal = parseAmount(numMatches[numMatches.length - 1]);
+              if (possibleBal > 0) pdfBalance = possibleBal;
+            }
             const narrClean = rest.replace(/[\d,]+\.\d{2}/g, '').replace(/\s+/g, ' ').trim();
             if (amountVal > 0 && narrClean.length > 2) {
               const isCredit = /\b(CR|CREDIT|NEFT CR|SALARY|DEP|DEPOSIT|REFUND)\b/i.test(line);
@@ -1412,7 +1566,8 @@ export default function App() {
                 bank: resolvedBank,
                 channel: detectChannel(narrClean),
                 category: detectCategoryWithRules(narrClean, type),
-                isManualCategory: false
+                isManualCategory: false,
+                balance: pdfBalance
               });
             }
           }
@@ -3209,12 +3364,14 @@ export default function App() {
           <div className="space-y-4">
             {/* Section 1: Banks Manager */}
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">
-              <div className="flex items-center justify-between">
+              <div className="space-y-2.5">
                 <div>
                   <h2 className="text-xs font-bold text-slate-100 uppercase tracking-wider flex items-center gap-1.5">
                     <Building2 size={15} className="text-emerald-400" /> My Banks ({banks.length})
                   </h2>
-                  <p className="text-[11px] text-slate-400">Add, edit, or remove banks and upload statements directly to a specific bank</p>
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    Add, edit, or remove banks and upload statements directly to a specific bank
+                  </p>
                 </div>
                 <button
                   onClick={() => {
@@ -3237,37 +3394,76 @@ export default function App() {
                   {banks.map(b => {
                     const bankFiles = uploadedFiles.filter(f => f.bank === b.name);
                     const bankTxns = txns.filter(t => t.bank === b.name);
+                    const balInfo = getBankBalanceInfo(b, txns);
                     return (
                       <div key={b.id} className="bg-slate-950 border border-slate-800/90 rounded-xl p-3 flex flex-col justify-between gap-2.5">
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-center gap-2">
-                            <span className="w-3.5 h-3.5 rounded-full shrink-0" style={{ backgroundColor: b.color || '#10b981' }} />
-                            <div>
-                              <h3 className="text-xs font-bold text-white">{b.name}</h3>
-                              <p className="text-[10px] text-slate-400">
-                                {b.accountHint ? `A/C: ${b.accountHint} • ` : ''}{bankFiles.length} files • {bankTxns.length} txns
-                              </p>
+                        <div className="space-y-2">
+                          <div className="flex items-start justify-between">
+                            <div className="flex items-center gap-2">
+                              <span className="w-3.5 h-3.5 rounded-full shrink-0" style={{ backgroundColor: b.color || '#10b981' }} />
+                              <div>
+                                <h3 className="text-xs font-bold text-white">{b.name}</h3>
+                                <p className="text-[10px] text-slate-400">
+                                  {b.accountHint ? `A/C: ${b.accountHint} • ` : ''}{bankFiles.length} files • {bankTxns.length} txns
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => {
+                                  setEditingBank(b);
+                                  setBankForm({ name: b.name, accountHint: b.accountHint || '', color: b.color || BANK_COLOR_PALETTE[0] });
+                                  setShowBankModal(true);
+                                }}
+                                className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800"
+                                title="Edit Bank Details"
+                              >
+                                <Edit3 size={13} />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteBank(b)}
+                                className="p-1.5 text-rose-400 hover:text-rose-300 rounded-lg hover:bg-rose-950/60"
+                                title="Delete Bank & its Data"
+                              >
+                                <Trash2 size={13} />
+                              </button>
                             </div>
                           </div>
-                          <div className="flex items-center gap-1">
-                            <button
-                              onClick={() => {
-                                setEditingBank(b);
-                                setBankForm({ name: b.name, accountHint: b.accountHint || '', color: b.color || BANK_COLOR_PALETTE[0] });
-                                setShowBankModal(true);
-                              }}
-                              className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800"
-                              title="Edit Bank"
-                            >
-                              <Edit3 size={13} />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteBank(b)}
-                              className="p-1.5 text-rose-400 hover:text-rose-300 rounded-lg hover:bg-rose-950/60"
-                              title="Delete Bank & its Data"
-                            >
-                              <Trash2 size={13} />
-                            </button>
+
+                          {/* Bank Balance Card: Latest & Initial with dates in brackets + option to edit in popup window (v1.9.0) */}
+                          <div className="bg-slate-900/90 border border-slate-800/90 rounded-xl p-2.5 space-y-1.5">
+                            <div className="flex items-center justify-between gap-1">
+                              <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+                                <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Latest Balance:</span>
+                                <span className="text-xs font-bold text-emerald-400 tabular-nums">
+                                  ₹{balInfo.latest.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </span>
+                                <span className="text-[10px] text-slate-400 font-medium">({formatBalanceDate(balInfo.latestDate)})</span>
+                              </div>
+                              <button
+                                onClick={() => {
+                                  setEditingBankBalance(b);
+                                  setBalanceForm({
+                                    initialBalance: String(balInfo.initial),
+                                    initialBalanceDate: balInfo.initialDate && balInfo.initialDate !== 'No statements' ? balInfo.initialDate : new Date().toISOString().slice(0, 10),
+                                    latestBalance: String(balInfo.latest),
+                                    latestBalanceDate: balInfo.latestDate && balInfo.latestDate !== 'No statements' ? balInfo.latestDate : new Date().toISOString().slice(0, 10),
+                                    isAutoReset: false
+                                  });
+                                }}
+                                className="p-1 text-slate-400 hover:text-sky-300 rounded-md hover:bg-slate-800 transition shrink-0"
+                                title="Edit Bank Balances in Popup"
+                              >
+                                <Edit3 size={12} />
+                              </button>
+                            </div>
+                            <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+                              <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Initial Balance:</span>
+                              <span className="text-xs font-semibold text-slate-200 tabular-nums">
+                                ₹{balInfo.initial.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </span>
+                              <span className="text-[10px] text-slate-400 font-medium">({formatBalanceDate(balInfo.initialDate)})</span>
+                            </div>
                           </div>
                         </div>
 
@@ -3297,12 +3493,14 @@ export default function App() {
 
             {/* Section 2: Statement Files Manager */}
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">
-              <div className="flex items-center justify-between">
+              <div className="space-y-2.5">
                 <div>
                   <h2 className="text-xs font-bold text-slate-100 uppercase tracking-wider flex items-center gap-1.5">
                     <FileSpreadsheet size={15} className="text-sky-400" /> Uploaded Statement Files ({uploadedFiles.length})
                   </h2>
-                  <p className="text-[11px] text-slate-400">Edit file names, reassign files to another bank, or remove specific files</p>
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    Edit file names, reassign files to another bank, or remove specific files
+                  </p>
                 </div>
                 <button
                   onClick={() => triggerFilePicker('AUTO')}
@@ -3363,12 +3561,14 @@ export default function App() {
 
             {/* Section 3: Categories Manager UI */}
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">
-              <div className="flex items-center justify-between">
+              <div className="space-y-2.5">
                 <div>
                   <h3 className="text-xs font-bold text-slate-100 uppercase tracking-wider flex items-center gap-1.5">
                     <Tag size={15} className="text-emerald-400" /> Categories Manager ({categories.length})
                   </h3>
-                  <p className="text-[11px] text-slate-400">Add, rename (cascades to all transactions and rules), or delete categories</p>
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    Add, rename (cascades to all transactions and rules), or delete categories
+                  </p>
                 </div>
                 <button
                   onClick={() => setShowCategoryModal(true)}
@@ -3429,12 +3629,12 @@ export default function App() {
 
                         {/* Section: Smart Bank Transfers (Moved below Categories Manager per v1.8.0 request) */}
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">
-              <div className="flex items-center justify-between flex-wrap gap-2">
+              <div className="space-y-2.5">
                 <div>
                   <h3 className="text-xs font-bold text-slate-100 uppercase tracking-wider flex items-center gap-1.5">
                     <ArrowLeftRight size={15} className="text-sky-400" /> Smart Bank Transfers ({transferPairs.length})
                   </h3>
-                  <p className="text-[11px] text-slate-400">
+                  <p className="text-[11px] text-slate-400 mt-0.5">
                     Automatically detect, match, and link inter-bank transfers between your accounts
                   </p>
                 </div>
@@ -5373,6 +5573,158 @@ export default function App() {
           </div>
         );
       })()}
+
+      {/* MODAL 11: EDIT BANK BALANCE POPUP WINDOW (v1.9.0) */}
+      {editingBankBalance && (
+        <div
+          className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-4"
+          onClick={() => setEditingBankBalance(null)}
+        >
+          <div
+            className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-4 space-y-4 shadow-2xl"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
+              <div className="flex items-center gap-2">
+                <span
+                  className="w-3.5 h-3.5 rounded-full shrink-0"
+                  style={{ backgroundColor: editingBankBalance.color || '#10b981' }}
+                />
+                <div>
+                  <h3 className="text-sm font-bold text-white">Edit Bank Balances — {editingBankBalance.name}</h3>
+                  <p className="text-[10px] text-slate-400">
+                    Set custom balances or auto-calculate from uploaded statements
+                  </p>
+                </div>
+              </div>
+              <button onClick={() => setEditingBankBalance(null)} className="text-slate-400 hover:text-white">
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              {/* Initial Balance */}
+              <div className="bg-slate-950/70 border border-slate-800/80 rounded-xl p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="font-bold text-slate-200 uppercase tracking-wider text-[10px]">
+                    Initial / Opening Balance
+                  </label>
+                  <span className="text-[10px] text-slate-400">Opening baseline</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <span className="text-[10px] text-slate-400 block mb-1">Amount (₹)</span>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={balanceForm.initialBalance}
+                      onChange={e => setBalanceForm({ ...balanceForm, initialBalance: e.target.value })}
+                      placeholder="0.00"
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 font-semibold focus:outline-none focus:border-emerald-500"
+                    />
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-slate-400 block mb-1">Date</span>
+                    <input
+                      type="date"
+                      value={balanceForm.initialBalanceDate}
+                      onChange={e => setBalanceForm({ ...balanceForm, initialBalanceDate: e.target.value })}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-2 text-xs text-slate-100 focus:outline-none focus:border-emerald-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Latest Balance */}
+              <div className="bg-slate-950/70 border border-slate-800/80 rounded-xl p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="font-bold text-slate-200 uppercase tracking-wider text-[10px]">
+                    Latest / Closing Balance
+                  </label>
+                  <span className="text-[10px] text-emerald-400 font-semibold">Active closing</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <span className="text-[10px] text-slate-400 block mb-1">Amount (₹)</span>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={balanceForm.latestBalance}
+                      onChange={e => setBalanceForm({ ...balanceForm, latestBalance: e.target.value })}
+                      placeholder="0.00"
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-emerald-400 font-bold focus:outline-none focus:border-emerald-500"
+                    />
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-slate-400 block mb-1">Date</span>
+                    <input
+                      type="date"
+                      value={balanceForm.latestBalanceDate}
+                      onChange={e => setBalanceForm({ ...balanceForm, latestBalanceDate: e.target.value })}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-2 text-xs text-slate-100 focus:outline-none focus:border-emerald-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Auto Detect Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  const autoInfo = getBankBalanceInfo({ ...editingBankBalance, isManualBalance: false }, txns);
+                  setBalanceForm({
+                    initialBalance: String(autoInfo.initial),
+                    initialBalanceDate: autoInfo.initialDate && autoInfo.initialDate !== 'No statements' ? autoInfo.initialDate : new Date().toISOString().slice(0, 10),
+                    latestBalance: String(autoInfo.latest),
+                    latestBalanceDate: autoInfo.latestDate && autoInfo.latestDate !== 'No statements' ? autoInfo.latestDate : new Date().toISOString().slice(0, 10),
+                    isAutoReset: true
+                  });
+                  showToast(`Auto-analyzed statements for ${editingBankBalance.name}`);
+                }}
+                className="w-full py-2 px-3 rounded-xl bg-slate-800/80 hover:bg-slate-800 text-sky-300 border border-sky-500/30 text-xs font-semibold flex items-center justify-center gap-1.5 transition"
+              >
+                <RefreshCw size={13} /> Re-Calculate from Uploaded Statements
+              </button>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
+              <button
+                onClick={() => setEditingBankBalance(null)}
+                className="bg-slate-800 hover:bg-slate-700 text-slate-300 px-3.5 py-2 rounded-xl text-xs font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  const initAmt = parseFloat(balanceForm.initialBalance) || 0;
+                  const latestAmt = parseFloat(balanceForm.latestBalance) || 0;
+                  const isAuto = Boolean(balanceForm.isAutoReset);
+
+                  setBanks(prev => prev.map(bank => {
+                    if (bank.id === editingBankBalance.id) {
+                      return {
+                        ...bank,
+                        initialBalance: initAmt,
+                        initialBalanceDate: balanceForm.initialBalanceDate || new Date().toISOString().slice(0, 10),
+                        latestBalance: latestAmt,
+                        latestBalanceDate: balanceForm.latestBalanceDate || new Date().toISOString().slice(0, 10),
+                        isManualBalance: !isAuto
+                      };
+                    }
+                    return bank;
+                  }));
+
+                  showToast(`Saved balances for ${editingBankBalance.name}`);
+                  setEditingBankBalance(null);
+                }}
+                className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs px-4 py-2 rounded-xl flex items-center gap-1.5"
+              >
+                <Save size={13} /> Save Balances
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
 {/* ANDROID BOTTOM NAVIGATION MENU */}
       <nav className="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur border-t border-slate-800 px-2 py-1.5 z-40">

@@ -20,7 +20,7 @@ import {
   PieChart, Pie, Cell, CartesianGrid, Legend
 } from 'recharts';
 
-const APP_VERSION = '1.7.0';
+const APP_VERSION = '1.8.0';
 
 // Configure PDF.js worker via CDN for Android WebView compatibility
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`;
@@ -521,7 +521,7 @@ function detectTransferPairs(transactionsList, manualPairs = [], unlinkedPairs =
 export default function App() {
   const [banks, setBanks] = useState(() => {
     try {
-      const saved = localStorage.getItem('finsight_banks_v170') || localStorage.getItem('finsight_banks_v161') || localStorage.getItem('finsight_banks_v160') || localStorage.getItem('finsight_banks_v150') || localStorage.getItem('finsight_banks_v140') || localStorage.getItem('finsight_banks_v130') || localStorage.getItem('finsight_banks_v120') || localStorage.getItem('finsight_banks_v110');
+      const saved = localStorage.getItem('finsight_banks_v180') || localStorage.getItem('finsight_banks_v170') || localStorage.getItem('finsight_banks_v161') || localStorage.getItem('finsight_banks_v160') || localStorage.getItem('finsight_banks_v150') || localStorage.getItem('finsight_banks_v140') || localStorage.getItem('finsight_banks_v130') || localStorage.getItem('finsight_banks_v120') || localStorage.getItem('finsight_banks_v110');
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
@@ -530,7 +530,7 @@ export default function App() {
 
   const [txns, setTxns] = useState(() => {
     try {
-      const saved = localStorage.getItem('finsight_txns_v170') || localStorage.getItem('finsight_txns_v161') || localStorage.getItem('finsight_txns_v160') || localStorage.getItem('finsight_txns_v150') || localStorage.getItem('finsight_txns_v140') || localStorage.getItem('finsight_txns_v130') || localStorage.getItem('finsight_txns_v120') || localStorage.getItem('finsight_txns_v110');
+      const saved = localStorage.getItem('finsight_txns_v180') || localStorage.getItem('finsight_txns_v170') || localStorage.getItem('finsight_txns_v161') || localStorage.getItem('finsight_txns_v160') || localStorage.getItem('finsight_txns_v150') || localStorage.getItem('finsight_txns_v140') || localStorage.getItem('finsight_txns_v130') || localStorage.getItem('finsight_txns_v120') || localStorage.getItem('finsight_txns_v110');
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
@@ -539,7 +539,7 @@ export default function App() {
 
   const [uploadedFiles, setUploadedFiles] = useState(() => {
     try {
-      const saved = localStorage.getItem('finsight_files_v170') || localStorage.getItem('finsight_files_v161') || localStorage.getItem('finsight_files_v160') || localStorage.getItem('finsight_files_v150') || localStorage.getItem('finsight_files_v140') || localStorage.getItem('finsight_files_v130') || localStorage.getItem('finsight_files_v120') || localStorage.getItem('finsight_files_v110');
+      const saved = localStorage.getItem('finsight_files_v180') || localStorage.getItem('finsight_files_v170') || localStorage.getItem('finsight_files_v161') || localStorage.getItem('finsight_files_v160') || localStorage.getItem('finsight_files_v150') || localStorage.getItem('finsight_files_v140') || localStorage.getItem('finsight_files_v130') || localStorage.getItem('finsight_files_v120') || localStorage.getItem('finsight_files_v110');
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
@@ -548,7 +548,7 @@ export default function App() {
 
   const [categories, setCategories] = useState(() => {
     try {
-      const saved = localStorage.getItem('finsight_categories_v170') || localStorage.getItem('finsight_categories_v161') || localStorage.getItem('finsight_categories_v160') || localStorage.getItem('finsight_categories_v150') || localStorage.getItem('finsight_categories_v140') || localStorage.getItem('finsight_categories_v130') || localStorage.getItem('finsight_categories_v120') || localStorage.getItem('finsight_categories_v110');
+      const saved = localStorage.getItem('finsight_categories_v180') || localStorage.getItem('finsight_categories_v170') || localStorage.getItem('finsight_categories_v161') || localStorage.getItem('finsight_categories_v160') || localStorage.getItem('finsight_categories_v150') || localStorage.getItem('finsight_categories_v140') || localStorage.getItem('finsight_categories_v130') || localStorage.getItem('finsight_categories_v120') || localStorage.getItem('finsight_categories_v110');
       if (saved) {
         const parsed = JSON.parse(saved);
         const combined = Array.from(new Set([...DEFAULT_CATEGORIES, ...parsed]));
@@ -562,7 +562,7 @@ export default function App() {
 
   const [rules, setRules] = useState(() => {
     try {
-      const saved = localStorage.getItem('finsight_rules_v170') || localStorage.getItem('finsight_rules_v161') || localStorage.getItem('finsight_rules_v160') || localStorage.getItem('finsight_rules_v150') || localStorage.getItem('finsight_rules_v140') || localStorage.getItem('finsight_rules_v130') || localStorage.getItem('finsight_rules_v120') || localStorage.getItem('finsight_rules_v110');
+      const saved = localStorage.getItem('finsight_rules_v180') || localStorage.getItem('finsight_rules_v170') || localStorage.getItem('finsight_rules_v161') || localStorage.getItem('finsight_rules_v160') || localStorage.getItem('finsight_rules_v150') || localStorage.getItem('finsight_rules_v140') || localStorage.getItem('finsight_rules_v130') || localStorage.getItem('finsight_rules_v120') || localStorage.getItem('finsight_rules_v110');
       return saved ? JSON.parse(saved) : DEFAULT_RULES;
     } catch {
       return DEFAULT_RULES;
@@ -571,7 +571,7 @@ export default function App() {
 
   const [excludeTransfersFromTotals, setExcludeTransfersFromTotals] = useState(() => {
     try {
-      const saved = localStorage.getItem('finsight_exclude_transfers_v170') || localStorage.getItem('finsight_exclude_transfers_v161') || localStorage.getItem('finsight_exclude_transfers_v160') || localStorage.getItem('finsight_exclude_transfers_v150') || localStorage.getItem('finsight_exclude_transfers_v140') || localStorage.getItem('finsight_exclude_transfers_v130');
+      const saved = localStorage.getItem('finsight_exclude_transfers_v180') || localStorage.getItem('finsight_exclude_transfers_v170') || localStorage.getItem('finsight_exclude_transfers_v161') || localStorage.getItem('finsight_exclude_transfers_v160') || localStorage.getItem('finsight_exclude_transfers_v150') || localStorage.getItem('finsight_exclude_transfers_v140') || localStorage.getItem('finsight_exclude_transfers_v130');
       return saved !== null ? JSON.parse(saved) : true;
     } catch {
       return true;
@@ -581,7 +581,7 @@ export default function App() {
   // SMART BANK TRANSFERS EDITING & MANAGEMENT STATE (v1.7.0)
   const [manualTransferPairs, setManualTransferPairs] = useState(() => {
     try {
-      const saved = localStorage.getItem('finsight_manual_pairs_v170') || localStorage.getItem('finsight_manual_pairs_v161') || localStorage.getItem('finsight_manual_pairs_v160') || localStorage.getItem('finsight_manual_pairs_v150');
+      const saved = localStorage.getItem('finsight_manual_pairs_v180') || localStorage.getItem('finsight_manual_pairs_v170') || localStorage.getItem('finsight_manual_pairs_v161') || localStorage.getItem('finsight_manual_pairs_v160') || localStorage.getItem('finsight_manual_pairs_v150');
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
@@ -590,7 +590,7 @@ export default function App() {
 
   const [unlinkedTransferPairs, setUnlinkedTransferPairs] = useState(() => {
     try {
-      const saved = localStorage.getItem('finsight_unlinked_pairs_v170') || localStorage.getItem('finsight_unlinked_pairs_v161') || localStorage.getItem('finsight_unlinked_pairs_v160') || localStorage.getItem('finsight_unlinked_pairs_v150');
+      const saved = localStorage.getItem('finsight_unlinked_pairs_v180') || localStorage.getItem('finsight_unlinked_pairs_v170') || localStorage.getItem('finsight_unlinked_pairs_v161') || localStorage.getItem('finsight_unlinked_pairs_v160') || localStorage.getItem('finsight_unlinked_pairs_v150');
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
@@ -599,7 +599,7 @@ export default function App() {
 
   const [transferClearingDays, setTransferClearingDays] = useState(() => {
     try {
-      const saved = localStorage.getItem('finsight_transfer_days_v170') || localStorage.getItem('finsight_transfer_days_v161') || localStorage.getItem('finsight_transfer_days_v160') || localStorage.getItem('finsight_transfer_days_v150');
+      const saved = localStorage.getItem('finsight_transfer_days_v180') || localStorage.getItem('finsight_transfer_days_v170') || localStorage.getItem('finsight_transfer_days_v161') || localStorage.getItem('finsight_transfer_days_v160') || localStorage.getItem('finsight_transfer_days_v150');
       return saved !== null ? Number(saved) : 2;
     } catch {
       return 2;
@@ -678,6 +678,7 @@ export default function App() {
 
   // Transaction Modals (Edit / Add)
   const [editingTxn, setEditingTxn] = useState(null);
+  const [selectedMerchantDrilldown, setSelectedMerchantDrilldown] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [newTxnForm, setNewTxnForm] = useState({
     date: new Date().toISOString().slice(0, 10),
@@ -706,41 +707,41 @@ export default function App() {
   // Transfer Pair Inspector Modal
   const [selectedTransferPair, setSelectedTransferPair] = useState(null);
 
-  // PERSISTENCE EFFECTS (v1.7.0 Keys)
+  // PERSISTENCE EFFECTS (v1.8.0 Keys)
   useEffect(() => {
-    try { localStorage.setItem('finsight_banks_v170', JSON.stringify(banks)); } catch {}
+    try { localStorage.setItem('finsight_banks_v180', JSON.stringify(banks)); } catch {}
   }, [banks]);
 
   useEffect(() => {
-    try { localStorage.setItem('finsight_txns_v170', JSON.stringify(txns)); } catch {}
+    try { localStorage.setItem('finsight_txns_v180', JSON.stringify(txns)); } catch {}
   }, [txns]);
 
   useEffect(() => {
-    try { localStorage.setItem('finsight_files_v170', JSON.stringify(uploadedFiles)); } catch {}
+    try { localStorage.setItem('finsight_files_v180', JSON.stringify(uploadedFiles)); } catch {}
   }, [uploadedFiles]);
 
   useEffect(() => {
-    try { localStorage.setItem('finsight_categories_v170', JSON.stringify(categories)); } catch {}
+    try { localStorage.setItem('finsight_categories_v180', JSON.stringify(categories)); } catch {}
   }, [categories]);
 
   useEffect(() => {
-    try { localStorage.setItem('finsight_rules_v170', JSON.stringify(rules)); } catch {}
+    try { localStorage.setItem('finsight_rules_v180', JSON.stringify(rules)); } catch {}
   }, [rules]);
 
   useEffect(() => {
-    try { localStorage.setItem('finsight_exclude_transfers_v170', JSON.stringify(excludeTransfersFromTotals)); } catch {}
+    try { localStorage.setItem('finsight_exclude_transfers_v180', JSON.stringify(excludeTransfersFromTotals)); } catch {}
   }, [excludeTransfersFromTotals]);
 
   useEffect(() => {
-    try { localStorage.setItem('finsight_manual_pairs_v170', JSON.stringify(manualTransferPairs)); } catch {}
+    try { localStorage.setItem('finsight_manual_pairs_v180', JSON.stringify(manualTransferPairs)); } catch {}
   }, [manualTransferPairs]);
 
   useEffect(() => {
-    try { localStorage.setItem('finsight_unlinked_pairs_v170', JSON.stringify(unlinkedTransferPairs)); } catch {}
+    try { localStorage.setItem('finsight_unlinked_pairs_v180', JSON.stringify(unlinkedTransferPairs)); } catch {}
   }, [unlinkedTransferPairs]);
 
   useEffect(() => {
-    try { localStorage.setItem('finsight_transfer_days_v170', String(transferClearingDays)); } catch {}
+    try { localStorage.setItem('finsight_transfer_days_v180', String(transferClearingDays)); } catch {}
   }, [transferClearingDays]);
 
   // Real-time automatic rule re-evaluation:
@@ -2097,9 +2098,10 @@ export default function App() {
       .filter(t => t.type === 'DEBIT' && (!excludeTransfersFromTotals || !transferMap.has(t.id)))
       .forEach(t => {
         const label = t.narration.split('/').slice(0, 3).join('/').slice(0, 28);
-        if (!map[label]) map[label] = { name: label, amount: 0, count: 0, category: t.category };
+        if (!map[label]) map[label] = { name: label, amount: 0, count: 0, category: t.category, type: 'DEBIT', txnIds: [] };
         map[label].amount += t.amount;
         map[label].count += 1;
+        map[label].txnIds.push(t.id);
       });
     return Object.values(map).sort((a, b) => b.amount - a.amount).slice(0, 6);
   }, [filtered, excludeTransfersFromTotals, transferMap]);
@@ -2111,9 +2113,10 @@ export default function App() {
       .filter(t => t.type === 'CREDIT' && (!excludeTransfersFromTotals || !transferMap.has(t.id)))
       .forEach(t => {
         const label = t.narration.split('/').slice(0, 3).join('/').slice(0, 28);
-        if (!map[label]) map[label] = { name: label, amount: 0, count: 0, category: t.category };
+        if (!map[label]) map[label] = { name: label, amount: 0, count: 0, category: t.category, type: 'CREDIT', txnIds: [] };
         map[label].amount += t.amount;
         map[label].count += 1;
+        map[label].txnIds.push(t.id);
       });
     return Object.values(map).sort((a, b) => b.amount - a.amount).slice(0, 6);
   }, [filtered, excludeTransfersFromTotals, transferMap]);
@@ -2299,7 +2302,7 @@ export default function App() {
           </div>
         )}
 
-        {/* TAB 2: CATEGORY ANALYSIS (SPEND & EARNING SEPARATELY + NET FLOW) - TEXT OVERFLOW FIXED & MANAGE CATEGORIES REMOVED (v1.6.0) */}
+        {/* TAB 2: CATEGORY ANALYSIS (SPEND & EARNING SEPARATELY WITH NET FLOW MOVED TO BOTTOM v1.8.0) */}
         {activeTab === 'SPEND' && (
           <div className="space-y-4">
             <div className="bg-slate-900 border border-slate-800 p-2 rounded-2xl flex items-center justify-between gap-2 overflow-hidden">
@@ -2307,7 +2310,7 @@ export default function App() {
                 <button
                   onClick={() => setCategoryAnalysisMode('SPEND')}
                   className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
-                    categoryAnalysisMode === 'SPEND'
+                    categoryAnalysisMode !== 'EARN'
                       ? 'bg-rose-500 text-white shadow-sm'
                       : 'text-slate-400 hover:text-slate-200'
                   }`}
@@ -2326,22 +2329,11 @@ export default function App() {
                   <TrendingUp size={13} className="shrink-0" />
                   <span>Earnings (₹{categoryEarnBreakdown.total.toLocaleString('en-IN')})</span>
                 </button>
-                <button
-                  onClick={() => setCategoryAnalysisMode('NET')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
-                    categoryAnalysisMode === 'NET'
-                      ? 'bg-sky-500 text-slate-950 shadow-sm'
-                      : 'text-slate-400 hover:text-slate-200'
-                  }`}
-                >
-                  <Layers size={13} className="shrink-0" />
-                  <span>Net Flow Comparison</span>
-                </button>
               </div>
             </div>
 
             {/* MODE 1: SPEND BREAKDOWN */}
-            {categoryAnalysisMode === 'SPEND' && (
+            {categoryAnalysisMode !== 'EARN' && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-3 min-w-0 overflow-hidden">
                   <div className="flex items-center justify-between">
@@ -2423,15 +2415,26 @@ export default function App() {
                   </div>
 
                   <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-2.5 min-w-0 overflow-hidden">
-                    <h2 className="text-xs font-bold text-slate-200 uppercase tracking-wider">Top Spend Merchants & Payees</h2>
+                    <div className="flex items-center justify-between">
+                      <h2 className="text-xs font-bold text-slate-200 uppercase tracking-wider">Top Spend Merchants & Payees</h2>
+                      <span className="text-[10px] text-slate-400">Tap to inspect</span>
+                    </div>
                     <div className="divide-y divide-slate-800 text-xs">
                       {topMerchants.map((m, idx) => (
-                        <div key={idx} className="py-2 flex items-center justify-between gap-2 min-w-0">
+                        <div
+                          key={idx}
+                          onClick={() => setSelectedMerchantDrilldown(m)}
+                          className="py-2.5 px-2 flex items-center justify-between gap-2 min-w-0 rounded-xl hover:bg-slate-800/60 cursor-pointer transition active:scale-[0.99] group"
+                          title={`Click to view ${m.count} transactions for ${m.name}`}
+                        >
                           <div className="min-w-0 flex-1 overflow-hidden">
-                            <p className="font-semibold text-slate-200 truncate">{m.name}</p>
-                            <p className="text-[10px] text-slate-400 truncate">{m.category} • {m.count} txns</p>
+                            <p className="font-semibold text-slate-200 truncate group-hover:text-rose-300 transition">{m.name}</p>
+                            <p className="text-[10px] text-slate-400 truncate">{m.category} • {m.count} {m.count === 1 ? 'txn' : 'txns'}</p>
                           </div>
-                          <span className="font-bold text-rose-400 shrink-0 whitespace-nowrap">₹{m.amount.toLocaleString('en-IN')}</span>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <span className="font-bold text-rose-400 whitespace-nowrap">₹{m.amount.toLocaleString('en-IN')}</span>
+                            <span className="text-slate-500 group-hover:text-slate-300 text-xs transition">→</span>
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -2523,15 +2526,26 @@ export default function App() {
                   </div>
 
                   <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-2.5 min-w-0 overflow-hidden">
-                    <h2 className="text-xs font-bold text-slate-200 uppercase tracking-wider">Top Income Sources & Payers</h2>
+                    <div className="flex items-center justify-between">
+                      <h2 className="text-xs font-bold text-slate-200 uppercase tracking-wider">Top Income Sources & Payers</h2>
+                      <span className="text-[10px] text-slate-400">Tap to inspect</span>
+                    </div>
                     <div className="divide-y divide-slate-800 text-xs">
                       {topEarningSources.map((m, idx) => (
-                        <div key={idx} className="py-2 flex items-center justify-between gap-2 min-w-0">
+                        <div
+                          key={idx}
+                          onClick={() => setSelectedMerchantDrilldown(m)}
+                          className="py-2.5 px-2 flex items-center justify-between gap-2 min-w-0 rounded-xl hover:bg-slate-800/60 cursor-pointer transition active:scale-[0.99] group"
+                          title={`Click to view ${m.count} transactions for ${m.name}`}
+                        >
                           <div className="min-w-0 flex-1 overflow-hidden">
-                            <p className="font-semibold text-slate-200 truncate">{m.name}</p>
-                            <p className="text-[10px] text-slate-400 truncate">{m.category} • {m.count} txns</p>
+                            <p className="font-semibold text-slate-200 truncate group-hover:text-emerald-300 transition">{m.name}</p>
+                            <p className="text-[10px] text-slate-400 truncate">{m.category} • {m.count} {m.count === 1 ? 'txn' : 'txns'}</p>
                           </div>
-                          <span className="font-bold text-emerald-400 shrink-0 whitespace-nowrap">₹{m.amount.toLocaleString('en-IN')}</span>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <span className="font-bold text-emerald-400 whitespace-nowrap">₹{m.amount.toLocaleString('en-IN')}</span>
+                            <span className="text-slate-500 group-hover:text-slate-300 text-xs transition">→</span>
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -2540,87 +2554,87 @@ export default function App() {
               </div>
             )}
 
-            {/* MODE 3: COMBINED DUAL VIEW / NET FLOW */}
-            {categoryAnalysisMode === 'NET' && (
-              <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-3 min-w-0 overflow-hidden">
-                <div className="flex items-center justify-between flex-wrap gap-2">
-                  <div>
-                    <h2 className="text-xs font-bold text-slate-200 uppercase tracking-wider">Spend vs Earning Net Flow Comparison</h2>
-                    <p className="text-[11px] text-slate-400">Compare incoming earnings against outgoing expenses across every category</p>
-                  </div>
-                  <div className="flex items-center gap-2 text-xs flex-wrap">
-                    <span className="text-rose-400 font-semibold whitespace-nowrap">Outflow: ₹{categorySpendBreakdown.total.toLocaleString('en-IN')}</span>
-                    <span>•</span>
-                    <span className="text-emerald-400 font-semibold whitespace-nowrap">Inflow: ₹{categoryEarnBreakdown.total.toLocaleString('en-IN')}</span>
-                  </div>
+            {/* NET FLOW COMPARISON CARD (MOVED TO BOTTOM & FIXED TEXT OVERFLOW v1.8.0) */}
+            <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-3 min-w-0 overflow-hidden">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div>
+                  <h2 className="text-xs font-bold text-slate-100 uppercase tracking-wider flex items-center gap-1.5">
+                    <ArrowUpDown size={14} className="text-sky-400" /> Spend vs Earning Net Flow Comparison
+                  </h2>
+                  <p className="text-[11px] text-slate-400">
+                    Category-by-category net cash flow balance across current active period
+                  </p>
                 </div>
-
-                <div className="divide-y divide-slate-800/80 text-xs overflow-x-auto -mx-1 px-1">
-                  <div className="py-2 grid grid-cols-12 font-bold text-slate-400 border-b border-slate-800 text-[11px] min-w-[420px]">
-                    <span className="col-span-4">Category</span>
-                    <span className="col-span-3 text-right">Spend (Outflow)</span>
-                    <span className="col-span-3 text-right">Earning (Inflow)</span>
-                    <span className="col-span-2 text-right">Net Flow</span>
-                  </div>
-
-                  {categoryCombinedBreakdown.map(item => (
-                    <div key={item.name} className="py-2.5 grid grid-cols-12 items-center hover:bg-slate-800/40 px-1 rounded-lg min-w-[420px]">
-                      <span className="col-span-4 font-semibold text-slate-200 truncate pr-1">{item.name}</span>
-                      <span className="col-span-3 text-right text-rose-400 font-medium">
-                        {item.spend > 0 ? `₹${item.spend.toLocaleString('en-IN')}` : '—'}
-                      </span>
-                      <span className="col-span-3 text-right text-emerald-400 font-medium">
-                        {item.earn > 0 ? `₹${item.earn.toLocaleString('en-IN')}` : '—'}
-                      </span>
-                      <span className={`col-span-2 text-right font-bold ${item.net >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                        {item.net >= 0 ? '+' : ''}₹{item.net.toLocaleString('en-IN')}
-                      </span>
-                    </div>
-                  ))}
+                <div className="flex items-center gap-1.5 text-xs flex-wrap">
+                  <span className="px-2 py-0.5 rounded-lg bg-rose-500/10 border border-rose-500/25 text-rose-400 font-semibold text-[11px] whitespace-nowrap">
+                    Outflow: ₹{categorySpendBreakdown.total.toLocaleString('en-IN')}
+                  </span>
+                  <span className="px-2 py-0.5 rounded-lg bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 font-semibold text-[11px] whitespace-nowrap">
+                    Inflow: ₹{categoryEarnBreakdown.total.toLocaleString('en-IN')}
+                  </span>
+                  <span className={`px-2 py-0.5 rounded-lg text-[11px] font-semibold whitespace-nowrap border ${
+                    (categoryEarnBreakdown.total - categorySpendBreakdown.total) >= 0
+                      ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300'
+                      : 'bg-rose-500/15 border-rose-500/30 text-rose-300'
+                  }`}>
+                    Net: {(categoryEarnBreakdown.total - categorySpendBreakdown.total) >= 0 ? '+' : '-'}₹{Math.abs(categoryEarnBreakdown.total - categorySpendBreakdown.total).toLocaleString('en-IN')}
+                  </span>
                 </div>
               </div>
-            )}
+
+              {categoryCombinedBreakdown.length === 0 ? (
+                <p className="text-xs text-slate-400 text-center py-6">No cash flow activity found in selected range.</p>
+              ) : (
+                <div className="overflow-x-auto -mx-1 px-1">
+                  <div className="min-w-[460px]">
+                    <div className="py-2 px-2 flex items-center font-bold text-slate-400 border-b border-slate-800 text-[11px]">
+                      <span className="w-[34%] text-left">Category</span>
+                      <span className="w-[22%] text-right">Spend (Outflow)</span>
+                      <span className="w-[22%] text-right">Earning (Inflow)</span>
+                      <span className="w-[22%] text-right">Net Flow</span>
+                    </div>
+
+                    <div className="divide-y divide-slate-800/60 text-xs">
+                      {categoryCombinedBreakdown.map(item => (
+                        <div
+                          key={item.name}
+                          onClick={() => {
+                            setSelectedCategories([item.name]);
+                            setTypeFilter('ALL');
+                            setActiveTab('LEDGER');
+                          }}
+                          className="py-2.5 px-2 flex items-center hover:bg-slate-800/40 rounded-xl cursor-pointer transition"
+                          title={`Click to view ledger for ${item.name}`}
+                        >
+                          <div className="w-[34%] flex items-center gap-1.5 min-w-0 pr-2">
+                            <span
+                              className="w-2.5 h-2.5 rounded-full shrink-0"
+                              style={{ backgroundColor: COLORS[categories.indexOf(item.name) % COLORS.length] || '#10b981' }}
+                            />
+                            <span className="font-semibold text-slate-200 truncate">{item.name}</span>
+                          </div>
+                          <span className="w-[22%] text-right text-rose-400 font-medium whitespace-nowrap tabular-nums">
+                            {item.spend > 0 ? `₹${item.spend.toLocaleString('en-IN')}` : '—'}
+                          </span>
+                          <span className="w-[22%] text-right text-emerald-400 font-medium whitespace-nowrap tabular-nums">
+                            {item.earn > 0 ? `₹${item.earn.toLocaleString('en-IN')}` : '—'}
+                          </span>
+                          <span className={`w-[22%] text-right font-bold whitespace-nowrap tabular-nums ${item.net >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                            {item.net >= 0 ? '+' : '-'}₹{Math.abs(item.net).toLocaleString('en-IN')}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
         {/* TAB 3: TRANSACTIONS LEDGER (Smart Transfers Exclusively in Transactions Tab & Fixed Export Modal v1.6.0) */}
         {activeTab === 'LEDGER' && txns.length > 0 && (
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 space-y-3">
-            {/* SMART BANK TRANSFERS BANNER (Exclusively kept in Transactions tab per v1.6.0 request) */}
-            {transferPairs.length > 0 && (
-              <div className="bg-sky-950/40 border border-sky-800/60 rounded-xl p-2.5 flex items-center justify-between gap-2 text-xs flex-wrap">
-                <div className="flex items-center gap-2">
-                  <ArrowLeftRight size={14} className="text-sky-400 shrink-0" />
-                  <span className="text-slate-200">
-                    <strong className="text-sky-300">{transferPairs.length} Smart Bank Transfers</strong> linked (₹{totalTransfersAmount.toLocaleString('en-IN')})
-                  </span>
-                  <button
-                    onClick={() => setShowTransferManagerModal(true)}
-                    className="text-[11px] text-sky-400 hover:text-sky-300 font-semibold underline ml-1"
-                  >
-                    Edit / Manage
-                  </button>
-                </div>
-                <div className="flex items-center gap-3">
-                  <label className="flex items-center gap-1.5 cursor-pointer text-[11px] text-sky-200 font-medium">
-                    <input
-                      type="checkbox"
-                      checked={excludeTransfersFromTotals}
-                      onChange={e => setExcludeTransfersFromTotals(e.target.checked)}
-                      className="accent-sky-500 rounded"
-                    />
-                    <span>Exclude from totals</span>
-                  </label>
-                  <button
-                    onClick={() => setShowTransferManagerModal(true)}
-                    className="px-2.5 py-1 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 text-[11px] font-semibold flex items-center gap-1 border border-sky-500/40"
-                  >
-                    <Sliders size={12} /> Manage Transfers
-                  </button>
-                </div>
-              </div>
-            )}
-
             {/* Search, Multi-Category Filter, Type, Add & Export Controls */}
             <div className="flex flex-col sm:flex-row gap-2 justify-between">
               <div className="relative flex-1">
@@ -3208,7 +3222,7 @@ export default function App() {
                     setBankForm({ name: '', accountHint: '', color: BANK_COLOR_PALETTE[banks.length % BANK_COLOR_PALETTE.length] });
                     setShowBankModal(true);
                   }}
-                  className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs px-3 py-2 rounded-xl flex items-center gap-1"
+                  className="h-8 px-3 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 text-xs font-semibold flex items-center gap-1.5 transition shrink-0"
                 >
                   <Plus size={14} /> Add Bank
                 </button>
@@ -3292,7 +3306,7 @@ export default function App() {
                 </div>
                 <button
                   onClick={() => triggerFilePicker('AUTO')}
-                  className="bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs px-3 py-2 rounded-xl flex items-center gap-1"
+                  className="h-8 px-3 rounded-xl bg-sky-500/15 hover:bg-sky-500/25 text-sky-300 border border-sky-500/30 text-xs font-semibold flex items-center gap-1.5 transition shrink-0"
                 >
                   <Upload size={14} /> Upload Files
                 </button>
@@ -3358,9 +3372,9 @@ export default function App() {
                 </div>
                 <button
                   onClick={() => setShowCategoryModal(true)}
-                  className="bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-emerald-500/30 text-xs font-medium px-3 py-1.5 rounded-xl flex items-center gap-1"
+                  className="h-8 px-3 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 text-xs font-semibold flex items-center gap-1.5 transition shrink-0"
                 >
-                  <Layers size={13} /> Manage All
+                  <Layers size={14} /> Manage All
                 </button>
               </div>
 
@@ -3413,7 +3427,97 @@ export default function App() {
               </div>
             </div>
 
-            {/* Section 4: Smarter Interactive Auto-Categorization Rules List */}
+                        {/* Section: Smart Bank Transfers (Moved below Categories Manager per v1.8.0 request) */}
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div>
+                  <h3 className="text-xs font-bold text-slate-100 uppercase tracking-wider flex items-center gap-1.5">
+                    <ArrowLeftRight size={15} className="text-sky-400" /> Smart Bank Transfers ({transferPairs.length})
+                  </h3>
+                  <p className="text-[11px] text-slate-400">
+                    Automatically detect, match, and link inter-bank transfers between your accounts
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowTransferManagerModal(true)}
+                  className="h-8 px-3 rounded-xl bg-sky-500/15 hover:bg-sky-500/25 text-sky-300 border border-sky-500/30 text-xs font-semibold flex items-center gap-1.5 transition shrink-0"
+                >
+                  <Sliders size={14} /> Manage Transfers
+                </button>
+              </div>
+
+              <div className="bg-slate-950 border border-slate-800/80 rounded-xl p-3 space-y-2.5">
+                <div className="flex items-center justify-between flex-wrap gap-2 text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-sky-400" />
+                    <span className="text-slate-200">
+                      <strong className="text-sky-300">{transferPairs.length} Transfer Pairs</strong> linked
+                    </span>
+                    <span className="text-slate-400">•</span>
+                    <span className="text-slate-300 font-semibold">
+                      ₹{totalTransfersAmount.toLocaleString('en-IN')} volume
+                    </span>
+                  </div>
+                  <label className="flex items-center gap-1.5 cursor-pointer text-slate-300 text-xs">
+                    <input
+                      type="checkbox"
+                      checked={excludeTransfersFromTotals}
+                      onChange={e => setExcludeTransfersFromTotals(e.target.checked)}
+                      className="accent-sky-500 rounded"
+                    />
+                    <span>Exclude from spend/earning totals</span>
+                  </label>
+                </div>
+
+                {transferPairs.length === 0 ? (
+                  <div className="text-center py-3 text-xs text-slate-400 space-y-1">
+                    <p>No matching inter-bank transfer pairs detected yet.</p>
+                    <p className="text-[11px] text-slate-500">
+                      Transfers between your accounts with matching amounts within the clearing window will be automatically detected and linked here.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
+                    {transferPairs.slice(0, 5).map(pair => (
+                      <div
+                        key={pair.pairId}
+                        onClick={() => setShowTransferManagerModal(true)}
+                        className="bg-slate-900/80 hover:bg-slate-800 border border-slate-800/90 rounded-xl p-2.5 flex items-center justify-between gap-2 text-xs cursor-pointer transition"
+                      >
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                          <span className="px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-300 border border-rose-500/20 text-[10px] font-semibold truncate">
+                            {pair.fromBank}
+                          </span>
+                          <ArrowLeftRight size={12} className="text-sky-400 shrink-0" />
+                          <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 text-[10px] font-semibold truncate">
+                            {pair.toBank}
+                          </span>
+                          <span className="text-slate-400 text-[11px] truncate hidden sm:inline ml-1">
+                            {pair.date}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="font-bold text-sky-300 tabular-nums">₹{pair.amount.toLocaleString('en-IN')}</span>
+                          {pair.isManualPair && (
+                            <span className="text-[9px] px-1.5 py-0.2 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">Manual</span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                    {transferPairs.length > 5 && (
+                      <p
+                        onClick={() => setShowTransferManagerModal(true)}
+                        className="text-[11px] text-center text-sky-400 hover:underline cursor-pointer pt-1"
+                      >
+                        + {transferPairs.length - 5} more transfer pairs (tap to manage all)
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+{/* Section 4: Smarter Interactive Auto-Categorization Rules List */}
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <div>
@@ -3430,10 +3534,10 @@ export default function App() {
                     if (changedCount > 0) setTxns(updatedTxns);
                     showToast(`Re-evaluated ${txns.length} transactions (${changedCount} updated)`);
                   }}
-                  className="bg-purple-950/80 hover:bg-purple-900 text-purple-300 border border-purple-800 text-xs px-2.5 py-1.5 rounded-xl flex items-center gap-1 font-semibold"
+                  className="h-8 px-3 rounded-xl bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 border border-purple-500/30 text-xs font-semibold flex items-center gap-1.5 transition shrink-0"
                   title="Re-apply all rules across all auto-categorized transactions"
                 >
-                  <RefreshCw size={12} /> Re-apply Rules
+                  <RefreshCw size={14} /> Re-apply Rules
                 </button>
               </div>
 
@@ -5141,7 +5245,136 @@ export default function App() {
         </div>
       )}
 
-      {/* ANDROID BOTTOM NAVIGATION MENU */}
+            {/* MODAL 10: MERCHANT / INCOME SOURCE TRANSACTION DRILL-DOWN MODAL (v1.8.0) */}
+      {selectedMerchantDrilldown && (() => {
+        const isDebit = selectedMerchantDrilldown.type === 'DEBIT';
+        const matchingTxns = txns.filter(t => {
+          if (selectedMerchantDrilldown.txnIds && selectedMerchantDrilldown.txnIds.length > 0) {
+            return selectedMerchantDrilldown.txnIds.includes(t.id);
+          }
+          const label = t.narration.split('/').slice(0, 3).join('/').slice(0, 28);
+          return t.type === selectedMerchantDrilldown.type && label === selectedMerchantDrilldown.name;
+        });
+
+        return (
+          <div
+            className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-4"
+            onClick={() => setSelectedMerchantDrilldown(null)}
+          >
+            <div
+              className="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-4 space-y-3 max-h-[85vh] flex flex-col shadow-2xl"
+              onClick={e => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3 shrink-0">
+                <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border ${
+                    isDebit ? 'bg-rose-500/15 border-rose-500/30 text-rose-400' : 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
+                  }`}>
+                    {isDebit ? <TrendingDown size={18} /> : <TrendingUp size={18} />}
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className="text-sm font-bold text-white truncate">{selectedMerchantDrilldown.name}</h3>
+                    <div className="flex items-center gap-1.5 text-[10px] text-slate-400 flex-wrap">
+                      <span className={`px-1.5 py-0.2 rounded font-semibold ${
+                        isDebit ? 'bg-rose-500/10 text-rose-300 border border-rose-500/20' : 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20'
+                      }`}>
+                        {isDebit ? 'Top Spend Merchant' : 'Top Income Source'}
+                      </span>
+                      <span>•</span>
+                      <span className="text-slate-300 font-medium">{selectedMerchantDrilldown.category}</span>
+                      <span>•</span>
+                      <span className="text-slate-400">{matchingTxns.length} {matchingTxns.length === 1 ? 'transaction' : 'transactions'}</span>
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setSelectedMerchantDrilldown(null)}
+                  className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 shrink-0"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* Total Summary Banner */}
+              <div className="p-3 rounded-xl bg-slate-950 border border-slate-800/80 flex items-center justify-between gap-2 shrink-0">
+                <div>
+                  <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+                    {isDebit ? 'Total Outflow' : 'Total Inflow'}
+                  </p>
+                  <p className={`text-base font-extrabold ${isDebit ? 'text-rose-400' : 'text-emerald-400'} tabular-nums`}>
+                    {isDebit ? '-' : '+'}₹{selectedMerchantDrilldown.amount.toLocaleString('en-IN')}
+                  </p>
+                </div>
+                <p className="text-[11px] text-slate-400 text-right">
+                  Tap any transaction below to view or edit details
+                </p>
+              </div>
+
+              {/* Transactions List */}
+              <div className="flex-1 overflow-y-auto space-y-2 pr-1 text-xs">
+                {matchingTxns.length === 0 ? (
+                  <p className="text-center py-6 text-slate-500 text-xs">No transactions found for this payee.</p>
+                ) : (
+                  matchingTxns.map(t => (
+                    <div
+                      key={t.id}
+                      onClick={() => {
+                        setSelectedMerchantDrilldown(null);
+                        setEditingTxn({ ...t });
+                      }}
+                      className="p-2.5 rounded-xl bg-slate-950/80 hover:bg-slate-800/90 border border-slate-800/80 hover:border-slate-700 cursor-pointer transition space-y-1 group"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-[11px] font-semibold text-slate-300">{t.date}</span>
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
+                            {t.bank}
+                          </span>
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-900 text-slate-400 border border-slate-800">
+                            {t.category}
+                          </span>
+                        </div>
+                        <span className={`font-bold tabular-nums text-xs whitespace-nowrap ${
+                          t.type === 'CREDIT' ? 'text-emerald-400' : 'text-rose-400'
+                        }`}>
+                          {t.type === 'CREDIT' ? '+' : '-'}₹{t.amount.toLocaleString('en-IN')}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-400 group-hover:text-slate-200 transition line-clamp-2">
+                        {t.narration}
+                      </p>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Footer actions */}
+              <div className="flex items-center justify-between pt-2 border-t border-slate-800 shrink-0">
+                <button
+                  onClick={() => {
+                    const merchantSearch = selectedMerchantDrilldown.name.slice(0, 15);
+                    setSelectedMerchantDrilldown(null);
+                    setSearch(merchantSearch);
+                    setActiveTab('LEDGER');
+                  }}
+                  className="text-xs text-sky-400 hover:text-sky-300 font-semibold flex items-center gap-1"
+                >
+                  <Search size={13} /> View in Ledger
+                </button>
+                <button
+                  onClick={() => setSelectedMerchantDrilldown(null)}
+                  className="bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-1.5 rounded-xl text-xs font-semibold"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+{/* ANDROID BOTTOM NAVIGATION MENU */}
       <nav className="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur border-t border-slate-800 px-2 py-1.5 z-40">
         <div className="max-w-md mx-auto grid grid-cols-4 gap-1">
           {[

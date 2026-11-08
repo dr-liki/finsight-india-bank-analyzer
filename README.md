@@ -1,7 +1,7 @@
 # FinSight India — Android Multi-Bank Statement Analyzer
 
 ![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20Web-10b981?style=flat-square)
-![Release](https://img.shields.io/badge/Release-v1.7.0-0ea5e9?style=flat-square)
+![Release](https://img.shields.io/badge/Release-v1.8.0-0ea5e9?style=flat-square)
 ![Stack](https://img.shields.io/badge/Stack-React%2018%20%7C%20Vite%205%20%7C%20Tailwind%203%20%7C%20Capacitor%206-6366f1?style=flat-square)
 ![Privacy](https://img.shields.io/badge/Privacy-100%25%20On--Device%20%7C%20Zero%20Cloud-f59e0b?style=flat-square)
 ![License](https://img.shields.io/badge/License-MIT-slate?style=flat-square)
@@ -10,7 +10,7 @@
 
 ---
 
-## Key Features & Capabilities (v1.7.0)
+## Key Features & Capabilities (v1.8.0)
 
 ### 1. Multi-Format Batch Statement Ingestion
 - **Simultaneous File Parsing**: Ingest multiple statements across different banks and accounts in a single batch.
@@ -23,7 +23,7 @@
 - **Synchronized 'Bank Transfer' Tagging**: Automatically assigns both debit and credit legs of a transfer to the `'Bank Transfer'` category in real time.
 - **Double-Counting Elimination**: An internal transfer exclusion toggle instantly excludes internal fund movements from your total income and total expense figures.
 - **Interactive Transfer Manager**: Inspect paired transfers, configure clearing delays (Same Day to 5 Days), unlink false positives (with automatic category reset), or manually link transfers with non-standard narrations.
-- **Scoped Transactions Focus**: Transfer alerts and management controls are housed exclusively within the Transactions (`LEDGER`) tab.
+- **Centralized in Bank & Rules**: Transfer alerts, linked pair previews, and management controls are housed directly within the Bank & Rules (`BANKS`) page below the Categories Manager.
 
 ### 3. Direction-Aware & Token-Bounded Auto-Categorization
 - **Direction-Scoped Rules**: Evaluation rules have explicit direction constraints (`CREDIT`, `DEBIT`, `BOTH`), preventing credits (e.g. interest, salary, refunds, cashbacks) from accidentally receiving debit categories, and vice versa.
@@ -33,10 +33,11 @@
 - **Custom Categories Suite**: Add custom categories with customizable color swatches; renames cascade dynamically to all assigned transactions.
 
 ### 4. Dual Category Analysis & Net Flow Intelligence
-- **Spend Breakdown (Outflows)**: Interactive Donut and Bar charts visualizing debit distribution, percentage weights, channel breakdowns (UPI vs. POS vs. NACH), and top merchants/payees.
-- **Earnings Breakdown (Inflows)**: Dedicated credit analysis isolating primary income streams, interest credits, cashbacks, refunds, and top payers.
-- **Spend vs. Earning Net Flow Comparison**: A unified comparison grid showing incoming vs. outgoing amounts and net cash surplus/deficit per category.
-- **Mobile-Responsive Layout**: Built with horizontal scroll support (`overflow-x-auto`) and text-overflow protection (`min-w-0 flex-1 truncate`) so descriptions and amounts never blow out mobile screens.
+- **Spend Breakdown (Outflows)**: Interactive Donut and Bar charts visualizing debit distribution, percentage weights, channel breakdowns (UPI vs. POS vs. NACH), and clickable top spend merchants/payees.
+- **Earnings Breakdown (Inflows)**: Dedicated credit analysis isolating primary income streams, interest credits, cashbacks, refunds, and clickable top income sources.
+- **Clickable Merchant & Income Drill-Down Modal**: Tap any top merchant or payer to view all matching transactions with full date, bank badge, category, narration, and amount, plus tap-to-edit integration.
+- **Net Flow Relocated to Page Bottom**: Spend vs. Earning Net Flow Comparison is now positioned permanently at the bottom of the Analysis page, visible below active Spend or Earnings breakdowns.
+- **Fixed Text Overflow**: Redesigned Net Flow table with balanced column distribution (`w-[34%]`, `w-[22%]`, `w-[22%]`, `w-[22%]`), `min-w-[460px]`, `whitespace-nowrap tabular-nums`, and KPI header pills preventing line wraps or clipping.
 
 ### 5. Multi-Select Duration & Category Filtering
 - **Multi-Select Temporal Filters**: Filter your ledger and metrics across multi-selected periods:

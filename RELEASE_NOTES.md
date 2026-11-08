@@ -1,5 +1,40 @@
 # FinSight India — Release Notes
 
+## Version 1.8.0 (November 2026)
+
+FinSight India v1.8.0 introduces four key UX enhancements: **Net Flow Comparison Relocation & Text Overflow Fix**, **Clickable Top Spend Merchants & Top Income Sources with Transaction Detail Drill-Down Modal**, **Relocation of Smart Bank Transfers to Bank & Rules Page** (positioned below Categories Manager), and **Standardized Uniform Design Structure for Header Action Buttons** across the Bank & Rules workspace.
+
+---
+
+### Highlights & Key Improvements
+
+#### 1. Net Flow Comparison Relocation & Text Overflow Fix
+- **Moved to Bottom of Analysis Page**: The Spend vs. Earning Net Flow Comparison card now sits permanently at the bottom of the Analysis tab, visible beneath whichever breakdown (Spend Outflow or Earnings Inflow) is actively selected at the top.
+- **Fixed Column Clipping & Overflow**: Redesigned the table layout with robust proportions (Category 34% with clean truncation, Spend 22%, Earning 22%, and Net Flow 22% with minimum 460px width constraint and smooth horizontal scroll on narrow mobile screens).
+- **Tabular Numerals & Signed Currency**: All rupee figures now render with `whitespace-nowrap tabular-nums` and clean sign prefixes (`+₹` or `-₹`), preventing line wraps or awkward negative signs.
+- **Header Net Flow Summary**: Added responsive badges at the top of the comparison card showing total Outflow, total Inflow, and net cash balance at a glance.
+- **Interactive Ledger Filtering**: Tapping any category row in the Net Flow table instantly filters the Transactions Ledger to that category.
+
+#### 2. Clickable Top Spend Merchants & Top Income Sources with Drill-Down Popup
+- **Interactive Merchant Rows**: Tapping any merchant under "Top Spend Merchants & Payees" or payer under "Top Income Sources & Payers" opens an interactive transaction detail popup window.
+- **Comprehensive Payee Overview**: Displays merchant/payer name, category badge, direction (Outflow vs. Inflow), and total transaction volume and count within the active date/account scope.
+- **Full Transaction List**: Displays every matching transaction with its date, bank badge (with color dot), full narration (untruncated with clean line wrapping), category, and signed amount.
+- **Tap to Edit / Recategorize**: Tapping any individual transaction in the popup immediately opens the transaction edit dialog to modify categories, narration, amount, or transfer links.
+- **"View in Ledger" Shortcut**: Quick button to pre-filter the ledger to transactions matching that merchant name.
+
+#### 3. Smart Bank Transfers Moved to Bank & Rules Page
+- **Clean Transactions Tab**: Removed the Smart Bank Transfers banner from the Transactions Ledger, giving maximum screen real estate to transaction filtering and browsing.
+- **Dedicated Section Below Categories Manager**: Embedded a full Smart Bank Transfers manager card in the Bank & Rules page directly beneath Section 3 (Categories Manager) and above Section 4 (Auto-Categorization Rules).
+- **Overview & Quick Controls**: Shows active paired transfer count, total volume, "Exclude from totals" toggle, and a preview of the latest 5 linked transfer pairs with bank-to-bank badges.
+- **Direct Manager Integration**: Seamlessly launches the Smart Bank Transfers Manager dialog for custom clearing windows, manual linking, and pair unlinking.
+
+#### 4. Uniform Design & Size Structure for Bank & Rules Buttons
+- **Standardized Header Action Buttons**: Standardized all primary section actions in the Bank & Rules page ("Add Bank", "Upload Files", "Manage All", "Manage Transfers", and "Re-apply Rules") to a cohesive uniform structure.
+- **Unified Dimensions & Geometry**: Exact same height (`h-8`), horizontal padding (`px-3`), corner radius (`rounded-xl`), font weight (`text-xs font-semibold`), icon size (`size={14}`), and layout (`flex items-center gap-1.5 shrink-0`).
+- **Refined Tinted Theme**: Polished tinted background badges with 30% border opacity and active scale animations, creating balanced visual harmony across all sections.
+
+---
+
 ## Version 1.7.0 (November 2026)
 
 FinSight India v1.7.0 introduces major workflow and visual enhancements to the Transactions Ledger: an interactive **Multi-Select Transactions Suite with Bulk Category Assignment**, a **Redesigned Transaction Type Filter Popup Window** (replacing the native HTML select with visual cards for All Types, Debit, and Credit), and a **Redesigned Category Picker Popup Window** mirroring the design language of the filter window with real-time search, category color swatches, transaction count badges, and touch-optimized selection across bulk actions and transaction editing.

@@ -20,7 +20,7 @@ import {
   PieChart, Pie, Cell, CartesianGrid, Legend
 } from 'recharts';
 
-const APP_VERSION = '1.6.0';
+const APP_VERSION = '1.6.1';
 
 // Configure PDF.js worker via CDN for Android WebView compatibility
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`;
@@ -521,7 +521,7 @@ function detectTransferPairs(transactionsList, manualPairs = [], unlinkedPairs =
 export default function App() {
   const [banks, setBanks] = useState(() => {
     try {
-      const saved = localStorage.getItem('finsight_banks_v160') || localStorage.getItem('finsight_banks_v150') || localStorage.getItem('finsight_banks_v140') || localStorage.getItem('finsight_banks_v130') || localStorage.getItem('finsight_banks_v120') || localStorage.getItem('finsight_banks_v110');
+      const saved = localStorage.getItem('finsight_banks_v161') || localStorage.getItem('finsight_banks_v160') || localStorage.getItem('finsight_banks_v150') || localStorage.getItem('finsight_banks_v140') || localStorage.getItem('finsight_banks_v130') || localStorage.getItem('finsight_banks_v120') || localStorage.getItem('finsight_banks_v110');
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
@@ -530,7 +530,7 @@ export default function App() {
 
   const [txns, setTxns] = useState(() => {
     try {
-      const saved = localStorage.getItem('finsight_txns_v160') || localStorage.getItem('finsight_txns_v150') || localStorage.getItem('finsight_txns_v140') || localStorage.getItem('finsight_txns_v130') || localStorage.getItem('finsight_txns_v120') || localStorage.getItem('finsight_txns_v110');
+      const saved = localStorage.getItem('finsight_txns_v161') || localStorage.getItem('finsight_txns_v160') || localStorage.getItem('finsight_txns_v150') || localStorage.getItem('finsight_txns_v140') || localStorage.getItem('finsight_txns_v130') || localStorage.getItem('finsight_txns_v120') || localStorage.getItem('finsight_txns_v110');
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
@@ -539,7 +539,7 @@ export default function App() {
 
   const [uploadedFiles, setUploadedFiles] = useState(() => {
     try {
-      const saved = localStorage.getItem('finsight_files_v160') || localStorage.getItem('finsight_files_v150') || localStorage.getItem('finsight_files_v140') || localStorage.getItem('finsight_files_v130') || localStorage.getItem('finsight_files_v120') || localStorage.getItem('finsight_files_v110');
+      const saved = localStorage.getItem('finsight_files_v161') || localStorage.getItem('finsight_files_v160') || localStorage.getItem('finsight_files_v150') || localStorage.getItem('finsight_files_v140') || localStorage.getItem('finsight_files_v130') || localStorage.getItem('finsight_files_v120') || localStorage.getItem('finsight_files_v110');
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
@@ -548,7 +548,7 @@ export default function App() {
 
   const [categories, setCategories] = useState(() => {
     try {
-      const saved = localStorage.getItem('finsight_categories_v160') || localStorage.getItem('finsight_categories_v150') || localStorage.getItem('finsight_categories_v140') || localStorage.getItem('finsight_categories_v130') || localStorage.getItem('finsight_categories_v120') || localStorage.getItem('finsight_categories_v110');
+      const saved = localStorage.getItem('finsight_categories_v161') || localStorage.getItem('finsight_categories_v160') || localStorage.getItem('finsight_categories_v150') || localStorage.getItem('finsight_categories_v140') || localStorage.getItem('finsight_categories_v130') || localStorage.getItem('finsight_categories_v120') || localStorage.getItem('finsight_categories_v110');
       if (saved) {
         const parsed = JSON.parse(saved);
         const combined = Array.from(new Set([...DEFAULT_CATEGORIES, ...parsed]));
@@ -562,7 +562,7 @@ export default function App() {
 
   const [rules, setRules] = useState(() => {
     try {
-      const saved = localStorage.getItem('finsight_rules_v160') || localStorage.getItem('finsight_rules_v150') || localStorage.getItem('finsight_rules_v140') || localStorage.getItem('finsight_rules_v130') || localStorage.getItem('finsight_rules_v120') || localStorage.getItem('finsight_rules_v110');
+      const saved = localStorage.getItem('finsight_rules_v161') || localStorage.getItem('finsight_rules_v160') || localStorage.getItem('finsight_rules_v150') || localStorage.getItem('finsight_rules_v140') || localStorage.getItem('finsight_rules_v130') || localStorage.getItem('finsight_rules_v120') || localStorage.getItem('finsight_rules_v110');
       return saved ? JSON.parse(saved) : DEFAULT_RULES;
     } catch {
       return DEFAULT_RULES;
@@ -571,17 +571,17 @@ export default function App() {
 
   const [excludeTransfersFromTotals, setExcludeTransfersFromTotals] = useState(() => {
     try {
-      const saved = localStorage.getItem('finsight_exclude_transfers_v160') || localStorage.getItem('finsight_exclude_transfers_v150') || localStorage.getItem('finsight_exclude_transfers_v140') || localStorage.getItem('finsight_exclude_transfers_v130');
+      const saved = localStorage.getItem('finsight_exclude_transfers_v161') || localStorage.getItem('finsight_exclude_transfers_v160') || localStorage.getItem('finsight_exclude_transfers_v150') || localStorage.getItem('finsight_exclude_transfers_v140') || localStorage.getItem('finsight_exclude_transfers_v130');
       return saved !== null ? JSON.parse(saved) : true;
     } catch {
       return true;
     }
   });
 
-  // SMART BANK TRANSFERS EDITING & MANAGEMENT STATE (v1.6.0)
+  // SMART BANK TRANSFERS EDITING & MANAGEMENT STATE (v1.6.1)
   const [manualTransferPairs, setManualTransferPairs] = useState(() => {
     try {
-      const saved = localStorage.getItem('finsight_manual_pairs_v160') || localStorage.getItem('finsight_manual_pairs_v150');
+      const saved = localStorage.getItem('finsight_manual_pairs_v161') || localStorage.getItem('finsight_manual_pairs_v160') || localStorage.getItem('finsight_manual_pairs_v150');
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
@@ -590,7 +590,7 @@ export default function App() {
 
   const [unlinkedTransferPairs, setUnlinkedTransferPairs] = useState(() => {
     try {
-      const saved = localStorage.getItem('finsight_unlinked_pairs_v160') || localStorage.getItem('finsight_unlinked_pairs_v150');
+      const saved = localStorage.getItem('finsight_unlinked_pairs_v161') || localStorage.getItem('finsight_unlinked_pairs_v160') || localStorage.getItem('finsight_unlinked_pairs_v150');
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
@@ -599,7 +599,7 @@ export default function App() {
 
   const [transferClearingDays, setTransferClearingDays] = useState(() => {
     try {
-      const saved = localStorage.getItem('finsight_transfer_days_v160') || localStorage.getItem('finsight_transfer_days_v150');
+      const saved = localStorage.getItem('finsight_transfer_days_v161') || localStorage.getItem('finsight_transfer_days_v160') || localStorage.getItem('finsight_transfer_days_v150');
       return saved !== null ? Number(saved) : 2;
     } catch {
       return 2;
@@ -696,41 +696,41 @@ export default function App() {
   // Transfer Pair Inspector Modal
   const [selectedTransferPair, setSelectedTransferPair] = useState(null);
 
-  // PERSISTENCE EFFECTS (v1.6.0 Keys)
+  // PERSISTENCE EFFECTS (v1.6.1 Keys)
   useEffect(() => {
-    try { localStorage.setItem('finsight_banks_v160', JSON.stringify(banks)); } catch {}
+    try { localStorage.setItem('finsight_banks_v161', JSON.stringify(banks)); } catch {}
   }, [banks]);
 
   useEffect(() => {
-    try { localStorage.setItem('finsight_txns_v160', JSON.stringify(txns)); } catch {}
+    try { localStorage.setItem('finsight_txns_v161', JSON.stringify(txns)); } catch {}
   }, [txns]);
 
   useEffect(() => {
-    try { localStorage.setItem('finsight_files_v160', JSON.stringify(uploadedFiles)); } catch {}
+    try { localStorage.setItem('finsight_files_v161', JSON.stringify(uploadedFiles)); } catch {}
   }, [uploadedFiles]);
 
   useEffect(() => {
-    try { localStorage.setItem('finsight_categories_v160', JSON.stringify(categories)); } catch {}
+    try { localStorage.setItem('finsight_categories_v161', JSON.stringify(categories)); } catch {}
   }, [categories]);
 
   useEffect(() => {
-    try { localStorage.setItem('finsight_rules_v160', JSON.stringify(rules)); } catch {}
+    try { localStorage.setItem('finsight_rules_v161', JSON.stringify(rules)); } catch {}
   }, [rules]);
 
   useEffect(() => {
-    try { localStorage.setItem('finsight_exclude_transfers_v160', JSON.stringify(excludeTransfersFromTotals)); } catch {}
+    try { localStorage.setItem('finsight_exclude_transfers_v161', JSON.stringify(excludeTransfersFromTotals)); } catch {}
   }, [excludeTransfersFromTotals]);
 
   useEffect(() => {
-    try { localStorage.setItem('finsight_manual_pairs_v160', JSON.stringify(manualTransferPairs)); } catch {}
+    try { localStorage.setItem('finsight_manual_pairs_v161', JSON.stringify(manualTransferPairs)); } catch {}
   }, [manualTransferPairs]);
 
   useEffect(() => {
-    try { localStorage.setItem('finsight_unlinked_pairs_v160', JSON.stringify(unlinkedTransferPairs)); } catch {}
+    try { localStorage.setItem('finsight_unlinked_pairs_v161', JSON.stringify(unlinkedTransferPairs)); } catch {}
   }, [unlinkedTransferPairs]);
 
   useEffect(() => {
-    try { localStorage.setItem('finsight_transfer_days_v160', String(transferClearingDays)); } catch {}
+    try { localStorage.setItem('finsight_transfer_days_v161', String(transferClearingDays)); } catch {}
   }, [transferClearingDays]);
 
   // Real-time automatic rule re-evaluation:
@@ -743,30 +743,7 @@ export default function App() {
     }
   }, [rules]);
 
-  // AUTOMATICALLY ASSIGN 'Bank Transfer' CATEGORY FOR BOTH PAIRED TRANSACTIONS (v1.6.0)
-  useEffect(() => {
-    if (!txns.length || !transferPairs.length) return;
-    const pairedTxnIds = new Set();
-    transferPairs.forEach(p => {
-      pairedTxnIds.add(p.debitTxnId);
-      pairedTxnIds.add(p.creditTxnId);
-    });
-
-    let hasChange = false;
-    const updated = txns.map(t => {
-      if (pairedTxnIds.has(t.id) && t.category !== 'Bank Transfer') {
-        hasChange = true;
-        return { ...t, category: 'Bank Transfer' };
-      }
-      return t;
-    });
-
-    if (hasChange) {
-      setTxns(updated);
-    }
-  }, [transferPairs]);
-
-  // SMART BANK TRANSFERS: Pair Detection and Quick Lookup Map (v1.5.0)
+  // SMART BANK TRANSFERS: Pair Detection and Quick Lookup Map
   const transferPairs = useMemo(() => {
     return detectTransferPairs(txns, manualTransferPairs, unlinkedTransferPairs, transferClearingDays);
   }, [txns, manualTransferPairs, unlinkedTransferPairs, transferClearingDays]);
@@ -792,6 +769,28 @@ export default function App() {
       });
     });
     return map;
+  }, [transferPairs]);
+
+  // AUTOMATICALLY ASSIGN 'Bank Transfer' CATEGORY FOR BOTH PAIRED TRANSACTIONS (v1.6.1 - Positioned after transferPairs declaration to resolve TDZ ReferenceError)
+  useEffect(() => {
+    if (!transferPairs || transferPairs.length === 0) return;
+    const pairedTxnIds = new Set();
+    transferPairs.forEach(p => {
+      pairedTxnIds.add(p.debitTxnId);
+      pairedTxnIds.add(p.creditTxnId);
+    });
+
+    setTxns(prev => {
+      let hasChange = false;
+      const updated = prev.map(t => {
+        if (pairedTxnIds.has(t.id) && t.category !== 'Bank Transfer') {
+          hasChange = true;
+          return { ...t, category: 'Bank Transfer' };
+        }
+        return t;
+      });
+      return hasChange ? updated : prev;
+    });
   }, [transferPairs]);
 
   // Smart Bank Transfer Action Handlers (v1.6.0)

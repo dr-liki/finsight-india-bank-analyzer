@@ -1,5 +1,23 @@
 # FinSight India — Release Notes
 
+## Version 1.6.1 (November 2026)
+
+FinSight India v1.6.1 is an immediate hotfix update resolving an initialization runtime exception that caused a blank screen on startup in v1.6.0:
+
+---
+
+### Highlights & Key Improvements
+
+#### 1. Resolved Blank Screen Initialization Crash (Temporal Dead Zone Fix)
+- **Root Cause**: In v1.6.0, an automatic category assignment `useEffect` was positioned before the declaration of `transferPairs = useMemo(...)`. Because React evaluates dependency arrays synchronously during component execution, JavaScript threw an uncaught `ReferenceError: Cannot access 'transferPairs' before initialization` (Temporal Dead Zone violation) on startup, crashing React before mounting and causing a blank screen.
+- **Resolution**: Reordered the `useEffect` hook to execute cleanly after `transferPairs` and `transferMap` are fully initialized. Refactored the updater to use functional state updates (`setTxns(prev => hasChange ? updated : prev)`), guaranteeing stability and eliminating re-render thrashing.
+
+#### 2. Native React ErrorBoundary with Self-Recovery Controls
+- **Fail-Safe UI Shell**: Wrapped the application root in an interactive `<ErrorBoundary>` component.
+- **Zero Silent Failures**: If any unexpected runtime error ever occurs, users are shown an informative recovery card with the error details, a "Reload Application" button, and a "Clear Cache & Restart" option rather than an unresponsive blank screen.
+
+---
+
 ## Version 1.6.0 (November 2026)
 
 FinSight India v1.6.0 delivers core visual, architectural, and workflow refinements: **Automatic 'Bank Transfer' Category Assignment** for smart-detected and manually linked cross-bank transfers, a **Focused Ledger-Exclusive Smart Bank Transfer Banner** (removed from Overview and Analysis tabs), a **Clean Minimal Top App Bar** (removing the 5 cluttering top action buttons), **Removal of "Manage Categories" from the Analysis tab**, **Comprehensive Text Overflow Fixes** across all category analysis and merchant views, a **Centered Modal Export Dialog** (eliminating off-screen dropdown clipping on mobile viewports), and **Universal File Manager APK Icon Visibility** across Android file explorers.

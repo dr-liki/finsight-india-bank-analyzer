@@ -6,7 +6,7 @@ import {
   Check, Tag, Layers, Sparkles, Calendar, Filter, RefreshCw,
   ArrowLeftRight, Database, TrendingUp, TrendingDown, CheckSquare, Square,
   CheckCheck, ChevronDown, RotateCcw, FileDown, Link, Unlink, Sliders,
-  ExternalLink, Share2
+  ExternalLink, Share2, ArrowUpDown
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import * as pdfjsLib from 'pdfjs-dist';
@@ -20,7 +20,7 @@ import {
   PieChart, Pie, Cell, CartesianGrid, Legend
 } from 'recharts';
 
-const APP_VERSION = '1.6.1';
+const APP_VERSION = '1.7.0';
 
 // Configure PDF.js worker via CDN for Android WebView compatibility
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`;
@@ -521,7 +521,7 @@ function detectTransferPairs(transactionsList, manualPairs = [], unlinkedPairs =
 export default function App() {
   const [banks, setBanks] = useState(() => {
     try {
-      const saved = localStorage.getItem('finsight_banks_v161') || localStorage.getItem('finsight_banks_v160') || localStorage.getItem('finsight_banks_v150') || localStorage.getItem('finsight_banks_v140') || localStorage.getItem('finsight_banks_v130') || localStorage.getItem('finsight_banks_v120') || localStorage.getItem('finsight_banks_v110');
+      const saved = localStorage.getItem('finsight_banks_v170') || localStorage.getItem('finsight_banks_v161') || localStorage.getItem('finsight_banks_v160') || localStorage.getItem('finsight_banks_v150') || localStorage.getItem('finsight_banks_v140') || localStorage.getItem('finsight_banks_v130') || localStorage.getItem('finsight_banks_v120') || localStorage.getItem('finsight_banks_v110');
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
@@ -530,7 +530,7 @@ export default function App() {
 
   const [txns, setTxns] = useState(() => {
     try {
-      const saved = localStorage.getItem('finsight_txns_v161') || localStorage.getItem('finsight_txns_v160') || localStorage.getItem('finsight_txns_v150') || localStorage.getItem('finsight_txns_v140') || localStorage.getItem('finsight_txns_v130') || localStorage.getItem('finsight_txns_v120') || localStorage.getItem('finsight_txns_v110');
+      const saved = localStorage.getItem('finsight_txns_v170') || localStorage.getItem('finsight_txns_v161') || localStorage.getItem('finsight_txns_v160') || localStorage.getItem('finsight_txns_v150') || localStorage.getItem('finsight_txns_v140') || localStorage.getItem('finsight_txns_v130') || localStorage.getItem('finsight_txns_v120') || localStorage.getItem('finsight_txns_v110');
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
@@ -539,7 +539,7 @@ export default function App() {
 
   const [uploadedFiles, setUploadedFiles] = useState(() => {
     try {
-      const saved = localStorage.getItem('finsight_files_v161') || localStorage.getItem('finsight_files_v160') || localStorage.getItem('finsight_files_v150') || localStorage.getItem('finsight_files_v140') || localStorage.getItem('finsight_files_v130') || localStorage.getItem('finsight_files_v120') || localStorage.getItem('finsight_files_v110');
+      const saved = localStorage.getItem('finsight_files_v170') || localStorage.getItem('finsight_files_v161') || localStorage.getItem('finsight_files_v160') || localStorage.getItem('finsight_files_v150') || localStorage.getItem('finsight_files_v140') || localStorage.getItem('finsight_files_v130') || localStorage.getItem('finsight_files_v120') || localStorage.getItem('finsight_files_v110');
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
@@ -548,7 +548,7 @@ export default function App() {
 
   const [categories, setCategories] = useState(() => {
     try {
-      const saved = localStorage.getItem('finsight_categories_v161') || localStorage.getItem('finsight_categories_v160') || localStorage.getItem('finsight_categories_v150') || localStorage.getItem('finsight_categories_v140') || localStorage.getItem('finsight_categories_v130') || localStorage.getItem('finsight_categories_v120') || localStorage.getItem('finsight_categories_v110');
+      const saved = localStorage.getItem('finsight_categories_v170') || localStorage.getItem('finsight_categories_v161') || localStorage.getItem('finsight_categories_v160') || localStorage.getItem('finsight_categories_v150') || localStorage.getItem('finsight_categories_v140') || localStorage.getItem('finsight_categories_v130') || localStorage.getItem('finsight_categories_v120') || localStorage.getItem('finsight_categories_v110');
       if (saved) {
         const parsed = JSON.parse(saved);
         const combined = Array.from(new Set([...DEFAULT_CATEGORIES, ...parsed]));
@@ -562,7 +562,7 @@ export default function App() {
 
   const [rules, setRules] = useState(() => {
     try {
-      const saved = localStorage.getItem('finsight_rules_v161') || localStorage.getItem('finsight_rules_v160') || localStorage.getItem('finsight_rules_v150') || localStorage.getItem('finsight_rules_v140') || localStorage.getItem('finsight_rules_v130') || localStorage.getItem('finsight_rules_v120') || localStorage.getItem('finsight_rules_v110');
+      const saved = localStorage.getItem('finsight_rules_v170') || localStorage.getItem('finsight_rules_v161') || localStorage.getItem('finsight_rules_v160') || localStorage.getItem('finsight_rules_v150') || localStorage.getItem('finsight_rules_v140') || localStorage.getItem('finsight_rules_v130') || localStorage.getItem('finsight_rules_v120') || localStorage.getItem('finsight_rules_v110');
       return saved ? JSON.parse(saved) : DEFAULT_RULES;
     } catch {
       return DEFAULT_RULES;
@@ -571,17 +571,17 @@ export default function App() {
 
   const [excludeTransfersFromTotals, setExcludeTransfersFromTotals] = useState(() => {
     try {
-      const saved = localStorage.getItem('finsight_exclude_transfers_v161') || localStorage.getItem('finsight_exclude_transfers_v160') || localStorage.getItem('finsight_exclude_transfers_v150') || localStorage.getItem('finsight_exclude_transfers_v140') || localStorage.getItem('finsight_exclude_transfers_v130');
+      const saved = localStorage.getItem('finsight_exclude_transfers_v170') || localStorage.getItem('finsight_exclude_transfers_v161') || localStorage.getItem('finsight_exclude_transfers_v160') || localStorage.getItem('finsight_exclude_transfers_v150') || localStorage.getItem('finsight_exclude_transfers_v140') || localStorage.getItem('finsight_exclude_transfers_v130');
       return saved !== null ? JSON.parse(saved) : true;
     } catch {
       return true;
     }
   });
 
-  // SMART BANK TRANSFERS EDITING & MANAGEMENT STATE (v1.6.1)
+  // SMART BANK TRANSFERS EDITING & MANAGEMENT STATE (v1.7.0)
   const [manualTransferPairs, setManualTransferPairs] = useState(() => {
     try {
-      const saved = localStorage.getItem('finsight_manual_pairs_v161') || localStorage.getItem('finsight_manual_pairs_v160') || localStorage.getItem('finsight_manual_pairs_v150');
+      const saved = localStorage.getItem('finsight_manual_pairs_v170') || localStorage.getItem('finsight_manual_pairs_v161') || localStorage.getItem('finsight_manual_pairs_v160') || localStorage.getItem('finsight_manual_pairs_v150');
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
@@ -590,7 +590,7 @@ export default function App() {
 
   const [unlinkedTransferPairs, setUnlinkedTransferPairs] = useState(() => {
     try {
-      const saved = localStorage.getItem('finsight_unlinked_pairs_v161') || localStorage.getItem('finsight_unlinked_pairs_v160') || localStorage.getItem('finsight_unlinked_pairs_v150');
+      const saved = localStorage.getItem('finsight_unlinked_pairs_v170') || localStorage.getItem('finsight_unlinked_pairs_v161') || localStorage.getItem('finsight_unlinked_pairs_v160') || localStorage.getItem('finsight_unlinked_pairs_v150');
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
@@ -599,12 +599,22 @@ export default function App() {
 
   const [transferClearingDays, setTransferClearingDays] = useState(() => {
     try {
-      const saved = localStorage.getItem('finsight_transfer_days_v161') || localStorage.getItem('finsight_transfer_days_v160') || localStorage.getItem('finsight_transfer_days_v150');
+      const saved = localStorage.getItem('finsight_transfer_days_v170') || localStorage.getItem('finsight_transfer_days_v161') || localStorage.getItem('finsight_transfer_days_v160') || localStorage.getItem('finsight_transfer_days_v150');
       return saved !== null ? Number(saved) : 2;
     } catch {
       return 2;
     }
   });
+
+  // MULTI-SELECT TRANSACTIONS & BULK CATEGORY STATE (v1.7.0)
+  const [selectedTxnIds, setSelectedTxnIds] = useState([]);
+  const [showTypeFilterModal, setShowTypeFilterModal] = useState(false);
+  const [showCategoryPickerModal, setShowCategoryPickerModal] = useState(false);
+  const [categoryPickerSearch, setCategoryPickerSearch] = useState('');
+  const [categoryPickerTarget, setCategoryPickerTarget] = useState('');
+  const [categoryPickerCallback, setCategoryPickerCallback] = useState(null);
+  const [categoryPickerTitle, setCategoryPickerTitle] = useState('Change Category');
+  const [categoryPickerSubtitle, setCategoryPickerSubtitle] = useState('');
 
   const [showTransferManagerModal, setShowTransferManagerModal] = useState(false);
   const [showManualLinkModal, setShowManualLinkModal] = useState(false);
@@ -696,41 +706,41 @@ export default function App() {
   // Transfer Pair Inspector Modal
   const [selectedTransferPair, setSelectedTransferPair] = useState(null);
 
-  // PERSISTENCE EFFECTS (v1.6.1 Keys)
+  // PERSISTENCE EFFECTS (v1.7.0 Keys)
   useEffect(() => {
-    try { localStorage.setItem('finsight_banks_v161', JSON.stringify(banks)); } catch {}
+    try { localStorage.setItem('finsight_banks_v170', JSON.stringify(banks)); } catch {}
   }, [banks]);
 
   useEffect(() => {
-    try { localStorage.setItem('finsight_txns_v161', JSON.stringify(txns)); } catch {}
+    try { localStorage.setItem('finsight_txns_v170', JSON.stringify(txns)); } catch {}
   }, [txns]);
 
   useEffect(() => {
-    try { localStorage.setItem('finsight_files_v161', JSON.stringify(uploadedFiles)); } catch {}
+    try { localStorage.setItem('finsight_files_v170', JSON.stringify(uploadedFiles)); } catch {}
   }, [uploadedFiles]);
 
   useEffect(() => {
-    try { localStorage.setItem('finsight_categories_v161', JSON.stringify(categories)); } catch {}
+    try { localStorage.setItem('finsight_categories_v170', JSON.stringify(categories)); } catch {}
   }, [categories]);
 
   useEffect(() => {
-    try { localStorage.setItem('finsight_rules_v161', JSON.stringify(rules)); } catch {}
+    try { localStorage.setItem('finsight_rules_v170', JSON.stringify(rules)); } catch {}
   }, [rules]);
 
   useEffect(() => {
-    try { localStorage.setItem('finsight_exclude_transfers_v161', JSON.stringify(excludeTransfersFromTotals)); } catch {}
+    try { localStorage.setItem('finsight_exclude_transfers_v170', JSON.stringify(excludeTransfersFromTotals)); } catch {}
   }, [excludeTransfersFromTotals]);
 
   useEffect(() => {
-    try { localStorage.setItem('finsight_manual_pairs_v161', JSON.stringify(manualTransferPairs)); } catch {}
+    try { localStorage.setItem('finsight_manual_pairs_v170', JSON.stringify(manualTransferPairs)); } catch {}
   }, [manualTransferPairs]);
 
   useEffect(() => {
-    try { localStorage.setItem('finsight_unlinked_pairs_v161', JSON.stringify(unlinkedTransferPairs)); } catch {}
+    try { localStorage.setItem('finsight_unlinked_pairs_v170', JSON.stringify(unlinkedTransferPairs)); } catch {}
   }, [unlinkedTransferPairs]);
 
   useEffect(() => {
-    try { localStorage.setItem('finsight_transfer_days_v161', String(transferClearingDays)); } catch {}
+    try { localStorage.setItem('finsight_transfer_days_v170', String(transferClearingDays)); } catch {}
   }, [transferClearingDays]);
 
   // Real-time automatic rule re-evaluation:
@@ -2058,6 +2068,28 @@ export default function App() {
     return Object.entries(map).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
   }, [filtered, excludeTransfersFromTotals, transferMap]);
 
+  // Type Filter Summary Statistics (v1.7.0)
+  const typeStats = useMemo(() => {
+    let debTotal = 0;
+    let debCount = 0;
+    let credTotal = 0;
+    let credCount = 0;
+    txns.forEach(t => {
+      if (t.type === 'DEBIT') {
+        debTotal += t.amount || 0;
+        debCount++;
+      } else if (t.type === 'CREDIT') {
+        credTotal += t.amount || 0;
+        credCount++;
+      }
+    });
+    return {
+      debit: { total: debTotal, count: debCount },
+      credit: { total: credTotal, count: credCount },
+      allCount: txns.length
+    };
+  }, [txns]);
+
   // Top Payees & Merchants (Spend)
   const topMerchants = useMemo(() => {
     const map = {};
@@ -2622,15 +2654,26 @@ export default function App() {
                   </button>
                 </div>
 
-                <select
-                  value={typeFilter}
-                  onChange={e => setTypeFilter(e.target.value)}
-                  className="bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-2 text-xs text-slate-200"
+                {/* REDESIGNED TYPE FILTER POPUP TRIGGER BUTTON (v1.7.0) */}
+                <button
+                  onClick={() => setShowTypeFilterModal(true)}
+                  className={`px-3 py-2 rounded-xl text-xs flex items-center gap-1.5 transition border shrink-0 ${
+                    typeFilter !== 'ALL'
+                      ? typeFilter === 'DEBIT'
+                        ? 'bg-rose-500/15 border-rose-500/40 text-rose-300 font-bold'
+                        : 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300 font-bold'
+                      : 'bg-slate-950 border-slate-800 text-slate-300 hover:border-slate-700'
+                  }`}
+                  title="Filter by transaction type"
                 >
-                  <option value="ALL">All Types</option>
-                  <option value="DEBIT">Debit Only</option>
-                  <option value="CREDIT">Credit Only</option>
-                </select>
+                  {typeFilter === 'ALL' && <Layers size={13} className="text-slate-400" />}
+                  {typeFilter === 'DEBIT' && <TrendingDown size={13} className="text-rose-400" />}
+                  {typeFilter === 'CREDIT' && <TrendingUp size={13} className="text-emerald-400" />}
+                  <span>
+                    {typeFilter === 'ALL' ? 'All Types' : typeFilter === 'DEBIT' ? 'Debit Only' : 'Credit Only'}
+                  </span>
+                  <ChevronDown size={12} className="opacity-70" />
+                </button>
 
                 {/* EXPORT BUTTON - TRIGGERS SCREEN-CENTERED MODAL (Fixes partially out-of-screen export bug in v1.6.0) */}
                 <button
@@ -2931,11 +2974,27 @@ export default function App() {
               )}
             </div>
 
-            {/* Filter Summary & Quick Clear Action Badges */}
-            <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1 flex-wrap gap-1">
-              <span>
-                Showing {filtered.length} of {txns.length} transactions
-              </span>
+            {/* Filter Summary & Multi-Select Quick Action Bar (v1.7.0) */}
+            <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1 flex-wrap gap-2">
+              <div className="flex items-center gap-2.5">
+                <span>
+                  Showing {filtered.length} of {txns.length} transactions
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (selectedTxnIds.length === filtered.length && filtered.length > 0) {
+                      setSelectedTxnIds([]);
+                    } else {
+                      setSelectedTxnIds(filtered.map(t => t.id));
+                    }
+                  }}
+                  className="text-emerald-400 hover:underline flex items-center gap-1 font-medium"
+                >
+                  <CheckSquare size={12} />
+                  <span>{selectedTxnIds.length === filtered.length && filtered.length > 0 ? 'Deselect All' : 'Select All'}</span>
+                </button>
+              </div>
               <div className="flex items-center gap-2">
                 {selectedCategories.length > 0 && selectedCategories.length < categories.length && (
                   <button
@@ -2965,16 +3024,112 @@ export default function App() {
               </div>
             </div>
 
-            {/* TRANSACTIONS LIST WITH TEXT-OVERFLOW PREVENTION (v1.5.0) */}
+            {/* MULTI-SELECT TRANSACTIONS BULK ACTION BAR (v1.7.0) */}
+            {selectedTxnIds.length > 0 && (
+              <div className="bg-emerald-950/80 border border-emerald-700/80 rounded-xl p-2.5 flex items-center justify-between gap-2 text-xs flex-wrap shadow-xl transition animate-fadeIn">
+                <div className="flex items-center gap-2">
+                  <span className="w-5 h-5 rounded-full bg-emerald-500 text-slate-950 font-bold flex items-center justify-center text-[10px]">
+                    {selectedTxnIds.length}
+                  </span>
+                  <span className="text-emerald-200 font-semibold">
+                    {selectedTxnIds.length} transaction{selectedTxnIds.length === 1 ? '' : 's'} selected
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (selectedTxnIds.length === filtered.length) {
+                        setSelectedTxnIds([]);
+                      } else {
+                        setSelectedTxnIds(filtered.map(t => t.id));
+                      }
+                    }}
+                    className="text-slate-300 hover:text-white underline text-[11px] font-medium"
+                  >
+                    {selectedTxnIds.length === filtered.length ? 'Deselect All' : `Select All (${filtered.length})`}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCategoryPickerTarget(categories[0] || 'Food & Dining');
+                      setCategoryPickerSearch('');
+                      setCategoryPickerTitle('Change Category');
+                      setCategoryPickerSubtitle(`Select a category to apply to ${selectedTxnIds.length} transaction${selectedTxnIds.length === 1 ? '' : 's'}`);
+                      setCategoryPickerCallback(() => (chosenCat) => {
+                        const idSet = new Set(selectedTxnIds);
+                        setTxns(prev => prev.map(t => {
+                          if (idSet.has(t.id)) {
+                            return { ...t, category: chosenCat, isManualCategory: true };
+                          }
+                          return t;
+                        }));
+                        showToast(`Updated category to "${chosenCat}" for ${selectedTxnIds.length} transaction${selectedTxnIds.length === 1 ? '' : 's'}`);
+                        setSelectedTxnIds([]);
+                      });
+                      setShowCategoryPickerModal(true);
+                    }}
+                    className="bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-slate-950 font-bold px-3 py-1.5 rounded-xl text-xs flex items-center gap-1.5 shadow-md transition"
+                  >
+                    <Tag size={13} />
+                    <span>Change Category</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedTxnIds([])}
+                    className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800"
+                    title="Clear selection"
+                  >
+                    <X size={15} />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* TRANSACTIONS LIST WITH CHECKBOX MULTI-SELECT & TEXT-OVERFLOW PREVENTION (v1.7.0) */}
             <div className="divide-y divide-slate-800/80 text-xs max-h-[58vh] overflow-y-auto">
               {filtered.map(t => {
                 const transferInfo = transferMap.get(t.id);
+                const isSelected = selectedTxnIds.includes(t.id);
                 return (
                   <div
                     key={t.id}
-                    onClick={() => setEditingTxn({ ...t })}
-                    className="py-3 px-2 hover:bg-slate-800/50 rounded-xl flex items-center justify-between gap-2 cursor-pointer transition min-w-0"
+                    onClick={() => {
+                      if (selectedTxnIds.length > 0) {
+                        setSelectedTxnIds(prev =>
+                          prev.includes(t.id) ? prev.filter(id => id !== t.id) : [...prev, t.id]
+                        );
+                      } else {
+                        setEditingTxn({ ...t });
+                      }
+                    }}
+                    className={`py-3 px-2 rounded-xl flex items-center justify-between gap-2.5 cursor-pointer transition min-w-0 ${
+                      isSelected
+                        ? 'bg-emerald-500/15 border border-emerald-500/40 shadow-sm'
+                        : 'hover:bg-slate-800/50 border border-transparent'
+                    }`}
                   >
+                    {/* Multi-Selection Checkbox */}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedTxnIds(prev =>
+                          prev.includes(t.id) ? prev.filter(id => id !== t.id) : [...prev, t.id]
+                        );
+                      }}
+                      className="p-1 -ml-1 rounded-lg text-slate-500 hover:text-emerald-400 shrink-0 transition"
+                      title={isSelected ? 'Deselect transaction' : 'Select transaction'}
+                    >
+                      <div className={`w-4 h-4 rounded border flex items-center justify-center transition ${
+                        isSelected
+                          ? 'bg-emerald-500 border-emerald-500 text-slate-950 font-bold'
+                          : 'border-slate-700 bg-slate-950/80 hover:border-slate-500'
+                      }`}>
+                        {isSelected && <Check size={11} strokeWidth={3} />}
+                      </div>
+                    </button>
+
                     <div className="space-y-1 min-w-0 flex-1 overflow-hidden">
                       <div className="flex items-center gap-1.5 flex-wrap min-w-0">
                         <span className="font-semibold text-slate-100 text-xs break-words break-all line-clamp-2 leading-tight">
@@ -3429,6 +3584,259 @@ export default function App() {
         )}
       </main>
 
+      {/* REDESIGNED TYPE FILTER POPUP WINDOW (v1.7.0) */}
+      {showTypeFilterModal && (
+        <div
+          className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-4 animate-fadeIn"
+          onClick={() => setShowTypeFilterModal(false)}
+        >
+          <div
+            className="bg-slate-900 border border-slate-800 rounded-2xl max-w-sm w-full p-4 space-y-3.5 shadow-2xl"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-sky-500/15 flex items-center justify-center border border-sky-500/30">
+                  <ArrowUpDown size={16} className="text-sky-400" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white">Filter by Type</h3>
+                  <p className="text-[10px] text-slate-400">Select credit, debit, or all transactions</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowTypeFilterModal(false)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="space-y-2">
+              {/* Option 1: All Types */}
+              <div
+                onClick={() => {
+                  setTypeFilter('ALL');
+                  setShowTypeFilterModal(false);
+                }}
+                className={`p-3 rounded-xl border transition cursor-pointer flex items-center justify-between ${
+                  typeFilter === 'ALL'
+                    ? 'bg-sky-500/15 border-sky-500/50 shadow-sm'
+                    : 'bg-slate-950/60 border-slate-800 hover:bg-slate-800/40'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-slate-800 flex items-center justify-center border border-slate-700 text-slate-300 shrink-0">
+                    <Layers size={18} />
+                  </div>
+                  <div>
+                    <p className="font-bold text-slate-100 text-xs">All Types</p>
+                    <p className="text-[10px] text-slate-400">Both income & expenses combined</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] bg-slate-900 text-slate-300 border border-slate-700 px-2 py-0.5 rounded-full font-semibold">
+                    {typeStats.allCount} txns
+                  </span>
+                  {typeFilter === 'ALL' && <Check size={16} className="text-sky-400 shrink-0" />}
+                </div>
+              </div>
+
+              {/* Option 2: Debit Only (Outflows / Expenses) */}
+              <div
+                onClick={() => {
+                  setTypeFilter('DEBIT');
+                  setShowTypeFilterModal(false);
+                }}
+                className={`p-3 rounded-xl border transition cursor-pointer flex items-center justify-between ${
+                  typeFilter === 'DEBIT'
+                    ? 'bg-rose-500/15 border-rose-500/50 shadow-sm'
+                    : 'bg-slate-950/60 border-slate-800 hover:bg-slate-800/40'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-rose-500/15 flex items-center justify-center border border-rose-500/30 text-rose-400 shrink-0">
+                    <TrendingDown size={18} />
+                  </div>
+                  <div>
+                    <p className="font-bold text-slate-100 text-xs">Debit Only (Expenses)</p>
+                    <p className="text-[10px] text-slate-400">Payments, withdrawals & outgoing</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="text-right">
+                    <span className="text-xs font-bold text-rose-400">₹{typeStats.debit.total.toLocaleString('en-IN')}</span>
+                    <p className="text-[10px] text-slate-400">{typeStats.debit.count} txns</p>
+                  </div>
+                  {typeFilter === 'DEBIT' && <Check size={16} className="text-rose-400 shrink-0" />}
+                </div>
+              </div>
+
+              {/* Option 3: Credit Only (Inflows / Earnings) */}
+              <div
+                onClick={() => {
+                  setTypeFilter('CREDIT');
+                  setShowTypeFilterModal(false);
+                }}
+                className={`p-3 rounded-xl border transition cursor-pointer flex items-center justify-between ${
+                  typeFilter === 'CREDIT'
+                    ? 'bg-emerald-500/15 border-emerald-500/50 shadow-sm'
+                    : 'bg-slate-950/60 border-slate-800 hover:bg-slate-800/40'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-500/15 flex items-center justify-center border border-emerald-500/30 text-emerald-400 shrink-0">
+                    <TrendingUp size={18} />
+                  </div>
+                  <div>
+                    <p className="font-bold text-slate-100 text-xs">Credit Only (Income)</p>
+                    <p className="text-[10px] text-slate-400">Salary, deposits, refunds & interest</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="text-right">
+                    <span className="text-xs font-bold text-emerald-400">₹{typeStats.credit.total.toLocaleString('en-IN')}</span>
+                    <p className="text-[10px] text-slate-400">{typeStats.credit.count} txns</p>
+                  </div>
+                  {typeFilter === 'CREDIT' && <Check size={16} className="text-emerald-400 shrink-0" />}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between pt-2 border-t border-slate-800">
+              <button
+                onClick={() => {
+                  setTypeFilter('ALL');
+                  setShowTypeFilterModal(false);
+                }}
+                className="bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-xl text-xs font-medium"
+              >
+                Reset to All
+              </button>
+              <button
+                onClick={() => setShowTypeFilterModal(false)}
+                className="bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold px-4 py-1.5 rounded-xl text-xs"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CATEGORY PICKER POPUP WINDOW - SIMILAR LOOK & FEEL TO FILTER WINDOW (v1.7.0) */}
+      {showCategoryPickerModal && (
+        <div
+          className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-4 animate-fadeIn"
+          onClick={() => setShowCategoryPickerModal(false)}
+        >
+          <div
+            className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-4 space-y-3 max-h-[85vh] flex flex-col shadow-2xl"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-slate-800 pb-2.5 shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-emerald-500/15 flex items-center justify-center border border-emerald-500/30">
+                  <Tag size={16} className="text-emerald-400" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white">{categoryPickerTitle}</h3>
+                  <p className="text-[10px] text-slate-400">{categoryPickerSubtitle || 'Select a category'}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowCategoryPickerModal(false)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Search Categories */}
+            <div className="relative shrink-0">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                value={categoryPickerSearch}
+                onChange={e => setCategoryPickerSearch(e.target.value)}
+                placeholder="Search categories..."
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-8 pr-8 py-2 text-xs text-slate-100 focus:outline-none focus:border-emerald-500"
+              />
+              {categoryPickerSearch && (
+                <button
+                  type="button"
+                  onClick={() => setCategoryPickerSearch('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                >
+                  <X size={13} />
+                </button>
+              )}
+            </div>
+
+            {/* Scrollable Categories List */}
+            <div className="space-y-1 overflow-y-auto flex-1 pr-1 text-xs divide-y divide-slate-800/50">
+              {categories
+                .filter(c => c.toLowerCase().includes(categoryPickerSearch.toLowerCase()))
+                .map(c => {
+                  const isSelected = categoryPickerTarget === c;
+                  const count = txns.filter(t => t.category === c).length;
+                  const catColor = COLORS[categories.indexOf(c) % COLORS.length] || '#10b981';
+                  return (
+                    <div
+                      key={c}
+                      onClick={() => setCategoryPickerTarget(c)}
+                      className={`flex items-center justify-between p-2.5 rounded-xl cursor-pointer transition ${
+                        isSelected
+                          ? 'bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 font-bold'
+                          : 'hover:bg-slate-800/50 text-slate-200 border border-transparent'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0 flex-1 pr-2">
+                        <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: catColor }} />
+                        <span className="truncate">{c}</span>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-[10px] bg-slate-950 text-slate-400 border border-slate-800 px-2 py-0.5 rounded-full">
+                          {count} txns
+                        </span>
+                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                          isSelected ? 'border-emerald-500 bg-emerald-500 text-slate-950 font-bold' : 'border-slate-700 bg-slate-950'
+                        }`}>
+                          {isSelected && <Check size={10} strokeWidth={3} />}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+
+            {/* Action Footer */}
+            <div className="flex items-center justify-between pt-2.5 border-t border-slate-800 shrink-0">
+              <button
+                type="button"
+                onClick={() => setShowCategoryPickerModal(false)}
+                className="bg-slate-800 hover:bg-slate-700 text-slate-300 px-3.5 py-1.5 rounded-xl text-xs font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={!categoryPickerTarget}
+                onClick={() => {
+                  if (categoryPickerTarget && categoryPickerCallback) {
+                    categoryPickerCallback(categoryPickerTarget);
+                    setShowCategoryPickerModal(false);
+                  }
+                }}
+                className="bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-slate-950 font-bold px-4 py-1.5 rounded-xl text-xs shadow-sm transition active:scale-95"
+              >
+                {selectedTxnIds.length > 0 ? `Apply to ${selectedTxnIds.length} Txns` : 'Confirm Category'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* MULTI-OPTION CATEGORY SELECTOR MODAL */}
       {showCategoryFilterModal && (
         <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-4">
@@ -3517,6 +3925,7 @@ export default function App() {
                           }}
                           className="accent-emerald-500 rounded"
                         />
+                        <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: COLORS[categories.indexOf(c) % COLORS.length] || '#10b981' }} />
                         <span className="text-slate-200 font-medium">{c}</span>
                       </div>
                       <span className="text-[10px] bg-slate-950 text-slate-400 border border-slate-800 px-2 py-0.5 rounded-full">
@@ -4019,13 +4428,29 @@ export default function App() {
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-slate-400 block mb-1">Category (Selecting marks as manual)</label>
-                  <select
-                    value={editingTxn.category}
-                    onChange={e => setEditingTxn({ ...editingTxn, category: e.target.value, isManualCategory: true })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-100"
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCategoryPickerTarget(editingTxn.category);
+                      setCategoryPickerSearch('');
+                      setCategoryPickerTitle('Choose Category');
+                      setCategoryPickerSubtitle(`Editing: ${editingTxn.narration.slice(0, 35)}...`);
+                      setCategoryPickerCallback(() => (chosenCat) => {
+                        setEditingTxn(prev => ({ ...prev, category: chosenCat, isManualCategory: true }));
+                      });
+                      setShowCategoryPickerModal(true);
+                    }}
+                    className="w-full bg-slate-950 border border-slate-800 hover:border-slate-700 rounded-xl px-3 py-2 text-slate-100 flex items-center justify-between text-xs transition"
                   >
-                    {categories.map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
+                    <div className="flex items-center gap-2 truncate">
+                      <span
+                        className="w-2.5 h-2.5 rounded-full shrink-0"
+                        style={{ backgroundColor: COLORS[categories.indexOf(editingTxn.category) % COLORS.length] || '#10b981' }}
+                      />
+                      <span className="font-semibold text-slate-200 truncate">{editingTxn.category}</span>
+                    </div>
+                    <ChevronDown size={14} className="text-slate-400 shrink-0" />
+                  </button>
                 </div>
                 <div>
                   <label className="text-slate-400 block mb-1">Bank</label>
@@ -4116,13 +4541,29 @@ export default function App() {
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-slate-400 block mb-1">Category</label>
-                  <select
-                    value={newTxnForm.category}
-                    onChange={e => setNewTxnForm({ ...newTxnForm, category: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-100"
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCategoryPickerTarget(newTxnForm.category);
+                      setCategoryPickerSearch('');
+                      setCategoryPickerTitle('Choose Category');
+                      setCategoryPickerSubtitle('Select category for new transaction');
+                      setCategoryPickerCallback(() => (chosenCat) => {
+                        setNewTxnForm(prev => ({ ...prev, category: chosenCat }));
+                      });
+                      setShowCategoryPickerModal(true);
+                    }}
+                    className="w-full bg-slate-950 border border-slate-800 hover:border-slate-700 rounded-xl px-3 py-2 text-slate-100 flex items-center justify-between text-xs transition"
                   >
-                    {categories.map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
+                    <div className="flex items-center gap-2 truncate">
+                      <span
+                        className="w-2.5 h-2.5 rounded-full shrink-0"
+                        style={{ backgroundColor: COLORS[categories.indexOf(newTxnForm.category) % COLORS.length] || '#10b981' }}
+                      />
+                      <span className="font-semibold text-slate-200 truncate">{newTxnForm.category}</span>
+                    </div>
+                    <ChevronDown size={14} className="text-slate-400 shrink-0" />
+                  </button>
                 </div>
                 <div>
                   <label className="text-slate-400 block mb-1">Bank Name *</label>

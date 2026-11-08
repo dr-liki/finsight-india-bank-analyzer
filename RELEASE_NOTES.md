@@ -1,5 +1,35 @@
 # FinSight India — Release Notes
 
+## Version 1.7.0 (November 2026)
+
+FinSight India v1.7.0 introduces major workflow and visual enhancements to the Transactions Ledger: an interactive **Multi-Select Transactions Suite with Bulk Category Assignment**, a **Redesigned Transaction Type Filter Popup Window** (replacing the native HTML select with visual cards for All Types, Debit, and Credit), and a **Redesigned Category Picker Popup Window** mirroring the design language of the filter window with real-time search, category color swatches, transaction count badges, and touch-optimized selection across bulk actions and transaction editing.
+
+---
+
+### Highlights & Key Improvements
+
+#### 1. Multi-Select Transactions & Bulk Category Changes
+- **Individual Checkbox Selection**: Each transaction row in the Transactions Ledger now features a responsive selection checkbox with clear checked/unchecked indicators.
+- **Bulk Action Floating Banner**: Selecting one or more transactions dynamically displays a sleek action bar showcasing the active selection count, "Select All" / "Deselect All", and a primary "Change Category" action.
+- **Bulk Category Application**: Tapping "Change Category" opens the Category Picker window; selecting any category updates all selected transactions at once and marks them with `isManualCategory: true` to prevent automatic rules from overwriting your classifications.
+- **Toast Confirmation**: Displays an immediate feedback notification detailing the number of transactions updated and resets the active selection.
+
+#### 2. Redesigned Transaction Type Popup Window
+- **Replaced Native `<select>`**: Replaced the native HTML dropdown with an elegant, responsive trigger button that dynamically displays the active type filter with dedicated icon badges (`Layers`, `TrendingDown`, or `TrendingUp`).
+- **Card-Based Type Selector Window**:
+  - **All Types**: Displays total transactions count with clean slate styling.
+  - **Debit Only (Expenses / Outflows)**: Features a rose indicator, live total debit expense amount, and transaction count.
+  - **Credit Only (Income / Inflows)**: Features an emerald indicator, live total credit income amount, and transaction count.
+  - Selected cards feature glowing borders and checkmark indicators with instant tap-to-select and quick "Reset to All" controls.
+
+#### 3. Redesigned Category Popup Window (Consistent with Filter Window)
+- **Visual Parity**: Built with the exact same visual design system as the multi-category filter window (screen-centered dark backdrop, rounded slate card, search bar with clear button, and action footer).
+- **Rich Category Cards**: Every category displays a dedicated color dot matching the application's color palette, category title, and a badge with the count of existing transactions in that bucket.
+- **Universal Category Selection**: Used for bulk category changes on multi-selected transactions as well as for selecting categories inside the Edit Transaction and Add Transaction modals, replacing basic native dropdowns with a search-enabled visual picker.
+- **Color Dots in Category Filter**: Enhanced the existing Multi-Option Category Filter modal to include the same colored indicator dots for each category row.
+
+---
+
 ## Version 1.6.1 (November 2026)
 
 FinSight India v1.6.1 is an immediate hotfix update resolving an initialization runtime exception that caused a blank screen on startup in v1.6.0:

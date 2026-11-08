@@ -1,7 +1,7 @@
 # FinSight India — Android Multi-Bank Statement Analyzer
 
 ![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20Web-10b981?style=flat-square)
-![Release](https://img.shields.io/badge/Release-v1.6.1-0ea5e9?style=flat-square)
+![Release](https://img.shields.io/badge/Release-v1.7.0-0ea5e9?style=flat-square)
 ![Stack](https://img.shields.io/badge/Stack-React%2018%20%7C%20Vite%205%20%7C%20Tailwind%203%20%7C%20Capacitor%206-6366f1?style=flat-square)
 ![Privacy](https://img.shields.io/badge/Privacy-100%25%20On--Device%20%7C%20Zero%20Cloud-f59e0b?style=flat-square)
 ![License](https://img.shields.io/badge/License-MIT-slate?style=flat-square)
@@ -10,7 +10,7 @@
 
 ---
 
-## Key Features & Capabilities (v1.6.0)
+## Key Features & Capabilities (v1.7.0)
 
 ### 1. Multi-Format Batch Statement Ingestion
 - **Simultaneous File Parsing**: Ingest multiple statements across different banks and accounts in a single batch.
@@ -118,7 +118,7 @@ finsight-india-bank-analyzer/
 ### Option 1: Download Signed Release APK (Recommended)
 Download the latest production release directly to your Android device from the Releases page:
 - **Latest Release**: [FinSight India Releases on GitHub](https://github.com/dr-liki/finsight-india-bank-analyzer/releases)
-- **Asset**: `FinSight-India-v1.6.1-release-signed.apk` (Installable directly over any previous version)
+- **Asset**: `FinSight-India-v1.7.0-release-signed.apk` (Installable directly over any previous version)
 
 ### Option 2: Automated Cloud CI/CD Build
 1. Fork or push changes to your GitHub repository on `main`.

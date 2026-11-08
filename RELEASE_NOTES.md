@@ -1,5 +1,17 @@
 # FinSight India — Release Notes
 
+## Version 1.9.1 (November 2026)
+
+FinSight India v1.9.1 delivers a comprehensive fix to bank balance calculations across uploaded bank statements:
+* **Fixed PDF Credit vs Debit Classification**: Strip balance columns ending in Cr (e.g., 45,230.50 Cr) from the transaction line before testing Credit/Debit keywords, preventing debit payments (UPI, Swiggy, ATM) from being misclassified as Credits.
+* **Intra-Day Sequence Tie-Breaking**: Preserves original file row order (fileOrderIndex) and detects statement direction (ASC vs DESC). For reverse-chronological statements (HDFC, SBI net banking), same-day transactions are sorted in genuine chronological execution order rather than scrambled by string IDs.
+* **Excel / CSV Column Collision Fix**: Enforces strict header boundaries for colMap so composite Dr/Cr columns do not collide with or displace Debit amount columns.
+* **Explicit Opening & Closing Balance Capture**: Detects OPENING BALANCE, BALANCE B/F, and CLOSING BALANCE rows in statements and sets them as true mathematical anchors instead of discarding them.
+* **PDF Summary Box Pre-Pass**: Automatically extracts statement-level Opening and Closing balance summaries from header/footer metadata.
+* **Overdraft & Signed Balances**: Handles negative balances and overdraft amounts (-Rs.X and Dr balances) accurately.
+
+---
+
 ## Version 1.9.0 (November 2026)
 
 FinSight India v1.9.0 brings significant layout and account intelligence upgrades to the Bank & Rules workspace: **Relocation of Section Header Buttons** below descriptions across all workspace panels, **Automatic Statement File Balance Analysis** extracting opening/initial and latest closing balances with dates in brackets, an **Interactive Edit Bank Balances Popup Modal**, and **Real-Time Automatic Balance Updates** whenever statement files are uploaded, removed, or modified.

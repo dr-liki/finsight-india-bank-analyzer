@@ -317,11 +317,11 @@ function formatBalanceDate(dateStr) {
   return dateStr;
 }
 
-// AUTOMATICALLY ANALYSE STATEMENT FILES FOR INITIAL & LATEST BANK BALANCES (v1.9.0)
+// AUTOMATICALLY ANALYSE STATEMENT FILES FOR INITIAL & LATEST BANK BALANCES (v1.9.1 Robust Fix)
 function getBankBalanceInfo(bank, allTxns) {
   if (!bank) return { initial: 0, initialDate: 'No statements', latest: 0, latestDate: 'No statements', isManual: false, hasData: false };
 
-  // If user explicitly saved manual balance in modal:
+  // 1. If user explicitly saved manual balance in modal:
   if (bank.isManualBalance && bank.latestBalance !== undefined && bank.latestBalance !== null) {
     return {
       initial: Number(bank.initialBalance) || 0,
@@ -333,7 +333,7 @@ function getBankBalanceInfo(bank, allTxns) {
     };
   }
 
-  // Filter all transactions for this bank
+  // 2. Filter all transactions for this bank
   const bankTxns = (allTxns || []).filter(t => t.bank === bank.name);
   if (bankTxns.length === 0) {
     if (bank.initialBalance !== undefined && bank.initialBalance !== null) {
@@ -356,41 +356,86 @@ function getBankBalanceInfo(bank, allTxns) {
     };
   }
 
-  // Sort chronologically
+  // 3. Sort chronologically (oldest first) with intra-day sequence tie-breaking:
   const sorted = [...bankTxns].sort((a, b) => {
-    const diff = new Date(a.date || '2026-01-01').getTime() - new Date(b.date || '2026-01-01').getTime();
-    return diff !== 0 ? diff : (a.id > b.id ? 1 : -1);
+    const timeA = new Date(a.date || '2026-01-01').getTime();
+    const timeB = new Date(b.date || '2026-01-01').getTime();
+    const diff = timeA - timeB;
+    if (diff !== 0) return diff;
+
+    // Tie-breaker for Opening and Closing balance rows:
+    if (a.isOpeningBalanceRow && !b.isOpeningBalanceRow) return -1;
+    if (b.isOpeningBalanceRow && !a.isOpeningBalanceRow) return 1;
+    if (a.isClosingBalanceRow && !b.isClosingBalanceRow) return 1;
+    if (b.isClosingBalanceRow && !a.isClosingBalanceRow) return -1;
+
+    // Both transactions occurred on the same date: use true statement file sequence
+    if (a.fileId && a.fileId === b.fileId) {
+      const idxA = typeof a.fileOrderIndex === 'number' ? a.fileOrderIndex : 0;
+      const idxB = typeof b.fileOrderIndex === 'number' ? b.fileOrderIndex : 0;
+      if (a.fileDirection === 'DESC') {
+        // In reverse-chronological statements, higher row index occurred earlier in the day
+        return idxB - idxA;
+      }
+      // In chronological statements, lower row index occurred earlier in the day
+      return idxA - idxB;
+    }
+
+    return (a.id > b.id ? 1 : -1);
   });
 
   const earliestTxn = sorted[0];
   const latestTxn = sorted[sorted.length - 1];
 
-  // Check if any transactions have explicit balance
-  const txnsWithBal = sorted.filter(t => t.balance !== undefined && t.balance !== null && !isNaN(t.balance) && Number(t.balance) > 0);
+  // 4. Check if any transactions have explicit balance
+  const txnsWithBal = sorted.filter(t => t.balance !== undefined && t.balance !== null && !isNaN(t.balance));
 
   if (txnsWithBal.length > 0) {
     const firstWithBal = txnsWithBal[0];
     const lastWithBal = txnsWithBal[txnsWithBal.length - 1];
 
-    let initialBal = Number(firstWithBal.balance);
-    if (firstWithBal.type === 'CREDIT') {
-      initialBal -= Number(firstWithBal.amount || 0);
+    // Compute Initial Balance:
+    let initialBal = 0;
+    if (earliestTxn.statementOpeningBalance !== undefined) {
+      initialBal = Number(earliestTxn.statementOpeningBalance);
+    } else if (firstWithBal.isOpeningBalanceRow) {
+      initialBal = Number(firstWithBal.balance);
+    } else if (firstWithBal.statementOpeningBalance !== undefined) {
+      initialBal = Number(firstWithBal.statementOpeningBalance);
     } else {
-      initialBal += Number(firstWithBal.amount || 0);
+      // Reverse deduction from the earliest transaction's closing balance:
+      initialBal = Number(firstWithBal.balance);
+      if (firstWithBal.type === 'CREDIT') {
+        initialBal -= Number(firstWithBal.amount || 0);
+      } else {
+        initialBal += Number(firstWithBal.amount || 0);
+      }
     }
 
-    let latestBal = Number(lastWithBal.balance);
-    const lastWithBalIdx = sorted.indexOf(lastWithBal);
-    if (lastWithBalIdx !== -1 && lastWithBalIdx < sorted.length - 1) {
-      for (let i = lastWithBalIdx + 1; i < sorted.length; i++) {
-        const t = sorted[i];
-        latestBal += (t.type === 'CREDIT' ? Number(t.amount || 0) : -Number(t.amount || 0));
+    // Compute Latest Balance:
+    let latestBal = 0;
+    if (latestTxn.statementClosingBalance !== undefined) {
+      latestBal = Number(latestTxn.statementClosingBalance);
+    } else if (lastWithBal.isClosingBalanceRow) {
+      latestBal = Number(lastWithBal.balance);
+    } else if (lastWithBal.statementClosingBalance !== undefined) {
+      latestBal = Number(lastWithBal.statementClosingBalance);
+    } else {
+      latestBal = Number(lastWithBal.balance);
+      const lastWithBalIdx = sorted.indexOf(lastWithBal);
+      if (lastWithBalIdx !== -1 && lastWithBalIdx < sorted.length - 1) {
+        for (let i = lastWithBalIdx + 1; i < sorted.length; i++) {
+          const t = sorted[i];
+          if (t.amount > 0) {
+            latestBal += (t.type === 'CREDIT' ? Number(t.amount || 0) : -Number(t.amount || 0));
+          }
+        }
       }
     }
 
     return {
       initial: Math.max(0, initialBal),
-      initialDate: firstWithBal.date || earliestTxn.date,
+      initialDate: earliestTxn.date || firstWithBal.date,
       latest: latestBal,
       latestDate: latestTxn.date || lastWithBal.date,
       isManual: false,
@@ -398,12 +443,21 @@ function getBankBalanceInfo(bank, allTxns) {
     };
   }
 
-  // Fallback: Net cash flow
-  const netFlow = bankTxns.reduce((sum, t) => sum + (t.type === 'CREDIT' ? Number(t.amount || 0) : -Number(t.amount || 0)), 0);
-  const baseInitial = (bank.initialBalance !== undefined && bank.initialBalance !== null) ? Number(bank.initialBalance) : 0;
+  // 5. Fallback: Net cash flow for statements without balance column
+  const netFlow = bankTxns.reduce((sum, t) => {
+    if (t.isOpeningBalanceRow || t.isClosingBalanceRow) return sum;
+    return sum + (t.type === 'CREDIT' ? Number(t.amount || 0) : -Number(t.amount || 0));
+  }, 0);
+
+  const baseInitial = (earliestTxn.statementOpeningBalance !== undefined)
+    ? Number(earliestTxn.statementOpeningBalance)
+    : ((bank.initialBalance !== undefined && bank.initialBalance !== null) ? Number(bank.initialBalance) : 0);
+
   const initialDate = bank.initialBalanceDate || earliestTxn.date;
   const latestDate = bank.latestBalanceDate || latestTxn.date;
-  const latestBal = baseInitial + netFlow;
+  const latestBal = (latestTxn.statementClosingBalance !== undefined)
+    ? Number(latestTxn.statementClosingBalance)
+    : (baseInitial + netFlow);
 
   return {
     initial: baseInitial,
@@ -421,6 +475,19 @@ function parseAmount(val) {
   const cleaned = String(val).replace(/,/g, '').replace(/[^\d.-]/g, '');
   const num = parseFloat(cleaned);
   return isNaN(num) ? 0 : Math.abs(num);
+}
+
+function parseSignedAmount(val) {
+  if (typeof val === 'number') return val;
+  if (!val) return 0;
+  const str = String(val).trim();
+  const isParenNeg = str.startsWith('(') && str.endsWith(')');
+  const isDr = /\bdr\b/i.test(str);
+  const cleaned = str.replace(/,/g, '').replace(/[^\d.-]/g, '');
+  const num = parseFloat(cleaned);
+  if (isNaN(num)) return 0;
+  if (isParenNeg || isDr || str.startsWith('-')) return -Math.abs(num);
+  return num;
 }
 
 function autoDetectBankName(text, userBanks = []) {
@@ -1420,7 +1487,7 @@ export default function App() {
     showToast(`Restored: ${summaryParts.join(', ')}`);
   };
 
-  // Tabular matrix parser with UBI and multi-bank support
+  // Tabular matrix parser with robust Indian bank balance detection, order preservation & tie-breaking (v1.9.1)
   const parseSheetMatrix = (matrix, fileName, fileId, preferredBank) => {
     const detected = autoDetectBankName(fileName + ' ' + JSON.stringify(matrix.slice(0, 25)), banks);
     const resolvedBank = preferredBank && preferredBank !== 'AUTO'
@@ -1437,14 +1504,21 @@ export default function App() {
       if (hasDate && (hasNarr || row.length >= 3)) {
         headerRowIdx = i;
         row.forEach((cell, idx) => {
-          if (colMap.date === -1 && (cell.includes('date') || cell.includes('txn dt') || cell.includes('value dt') || cell.includes('tran date') || cell.includes('txndate') || cell.includes('transaction date'))) colMap.date = idx;
-          if (colMap.narration === -1 && (cell.includes('narration') || cell.includes('description') || cell.includes('particular') || cell.includes('remarks') || cell.includes('details'))) colMap.narration = idx;
-          if (colMap.debit === -1 && (cell.includes('debit') || cell.includes('withdrawal') || cell.includes('dr'))) colMap.debit = idx;
-          if (colMap.credit === -1 && (cell.includes('credit') || cell.includes('deposit') || cell.includes('cr'))) colMap.credit = idx;
-          if (colMap.amount === -1 && cell.includes('amount') && !cell.includes('withdrawal') && !cell.includes('deposit')) colMap.amount = idx;
-          if (colMap.type === -1 && (cell === 'type' || cell.includes('dr/cr') || cell.includes('cr/dr'))) colMap.type = idx;
-          if (colMap.ref === -1 && (cell.includes('tran id') || cell.includes('chq') || cell.includes('ref no') || cell.includes('cheque'))) colMap.ref = idx;
-          if (colMap.balance === -1 && (cell.includes('balance') || cell.includes('bal') || cell.includes('closing bal') || cell.includes('running bal') || cell === 'bal' || cell.includes('available bal'))) colMap.balance = idx;
+          const isBalCol = cell.includes('balance') || cell.includes('closing bal') || cell.includes('running bal') || cell === 'bal' || cell.includes('available bal') || cell === 'closing balance';
+          const isDrCrCol = cell === 'type' || cell === 'dr/cr' || cell === 'cr/dr' || cell.includes('dr / cr') || cell.includes('cr / dr') || cell === 'txn type' || cell === 'transaction type';
+
+          if (isBalCol && colMap.balance === -1) {
+            colMap.balance = idx;
+          } else if (isDrCrCol && colMap.type === -1) {
+            colMap.type = idx;
+          } else {
+            if (colMap.date === -1 && (cell.includes('date') || cell.includes('txn dt') || cell.includes('value dt') || cell.includes('tran date') || cell.includes('txndate') || cell.includes('transaction date'))) colMap.date = idx;
+            if (colMap.narration === -1 && (cell.includes('narration') || cell.includes('description') || cell.includes('particular') || cell.includes('remarks') || cell.includes('details'))) colMap.narration = idx;
+            if (colMap.debit === -1 && (cell.includes('debit') || cell.includes('withdrawal') || cell === 'dr' || cell.startsWith('dr ') || cell.endsWith(' dr') || cell.includes('dr amt') || cell.includes('debit amt'))) colMap.debit = idx;
+            if (colMap.credit === -1 && (cell.includes('credit') || cell.includes('deposit') || cell === 'cr' || cell.startsWith('cr ') || cell.endsWith(' cr') || cell.includes('cr amt') || cell.includes('credit amt'))) colMap.credit = idx;
+            if (colMap.amount === -1 && (cell === 'amount' || cell.includes('tran amt') || cell.includes('txn amt') || (cell.includes('amount') && !cell.includes('withdrawal') && !cell.includes('deposit')))) colMap.amount = idx;
+            if (colMap.ref === -1 && (cell.includes('tran id') || cell.includes('chq') || cell.includes('ref no') || cell.includes('cheque') || cell.includes('utr'))) colMap.ref = idx;
+          }
         });
         break;
       }
@@ -1452,6 +1526,10 @@ export default function App() {
 
     const parsedTxns = [];
     const startIdx = headerRowIdx !== -1 ? headerRowIdx + 1 : 0;
+    let explicitOpeningBalance = undefined;
+    let explicitOpeningDate = undefined;
+    let explicitClosingBalance = undefined;
+    let explicitClosingDate = undefined;
 
     for (let i = startIdx; i < matrix.length; i++) {
       const row = matrix[i];
@@ -1464,7 +1542,51 @@ export default function App() {
       let debit = colMap.debit !== -1 ? parseAmount(row[colMap.debit]) : 0;
       let credit = colMap.credit !== -1 ? parseAmount(row[colMap.credit]) : 0;
       let amt = colMap.amount !== -1 ? parseAmount(row[colMap.amount]) : 0;
-      let balanceVal = colMap.balance !== -1 ? parseAmount(row[colMap.balance]) : undefined;
+
+      let balanceVal = undefined;
+      if (colMap.balance !== -1 && row[colMap.balance] !== undefined && row[colMap.balance] !== null) {
+        const rawBalStr = String(row[colMap.balance]).trim();
+        if (rawBalStr !== '' && rawBalStr !== '-') {
+          balanceVal = parseSignedAmount(rawBalStr);
+        }
+      }
+
+      const narrStr = String(narrRaw || '').trim();
+      const narrLower = narrStr.toLowerCase();
+
+      // Check for explicit Opening Balance / Balance B/F row in Excel
+      const isOpeningRow = narrLower.includes('opening balance') ||
+                           narrLower.includes('balance b/f') ||
+                           narrLower.includes('bal b/f') ||
+                           narrLower.includes('brought forward') ||
+                           narrLower.includes('by balance b/f') ||
+                           narrLower.includes('to balance b/f');
+
+      if (isOpeningRow) {
+        const openingAmt = balanceVal !== undefined ? balanceVal : (credit > 0 ? credit : (amt > 0 ? amt : debit));
+        if (openingAmt !== undefined && !isNaN(openingAmt)) {
+          explicitOpeningBalance = openingAmt;
+          explicitOpeningDate = normalizeDate(dateRaw);
+        }
+        continue;
+      }
+
+      // Check for explicit Closing Balance / Balance C/F row in Excel
+      const isClosingRow = narrLower.includes('closing balance') ||
+                           narrLower.includes('balance c/f') ||
+                           narrLower.includes('bal c/f') ||
+                           narrLower.includes('carried forward') ||
+                           narrLower.includes('by balance c/f') ||
+                           narrLower.includes('to balance c/f');
+
+      if (isClosingRow) {
+        const closingAmt = balanceVal !== undefined ? balanceVal : (debit > 0 ? debit : (amt > 0 ? amt : credit));
+        if (closingAmt !== undefined && !isNaN(closingAmt)) {
+          explicitClosingBalance = closingAmt;
+          explicitClosingDate = normalizeDate(dateRaw);
+        }
+        continue;
+      }
 
       if (colMap.debit === -1 && colMap.credit === -1 && colMap.amount === -1) {
         const nums = row.slice(2).map(parseAmount).filter(n => n > 0);
@@ -1486,12 +1608,12 @@ export default function App() {
         type = (typeCell.includes('CR') || typeCell.includes('CREDIT')) ? 'CREDIT' : 'DEBIT';
       }
 
-      const narrStr = String(narrRaw || '').trim();
-      if (finalAmount > 0 && narrStr && !narrStr.toLowerCase().includes('opening balance') && !narrStr.toLowerCase().includes('closing balance')) {
+      if (finalAmount > 0 && narrStr) {
         parsedTxns.push({
           id: `imp-${fileId}-${i}-${Math.random().toString(36).slice(2, 6)}`,
           fileId,
           fileName,
+          fileOrderIndex: i,
           date: normalizeDate(dateRaw),
           narration: narrStr,
           amount: finalAmount,
@@ -1500,14 +1622,42 @@ export default function App() {
           channel: detectChannel(narrStr),
           category: detectCategoryWithRules(narrStr, type),
           isManualCategory: false,
-          balance: balanceVal && !isNaN(balanceVal) && balanceVal > 0 ? balanceVal : undefined
+          balance: balanceVal !== undefined && !isNaN(balanceVal) ? balanceVal : undefined
         });
       }
     }
-    return { parsedTxns, resolvedBank };
+
+    // Determine statement chronological direction (Ascending vs Descending)
+    let fileDirection = 'ASC';
+    if (parsedTxns.length >= 2) {
+      const firstTime = new Date(parsedTxns[0].date).getTime();
+      const lastTime = new Date(parsedTxns[parsedTxns.length - 1].date).getTime();
+      if (firstTime > lastTime) {
+        fileDirection = 'DESC'; // Newest at top
+      }
+    }
+
+    parsedTxns.forEach(t => {
+      t.fileDirection = fileDirection;
+    });
+
+    if (parsedTxns.length > 0) {
+      const earliest = fileDirection === 'DESC' ? parsedTxns[parsedTxns.length - 1] : parsedTxns[0];
+      const latest = fileDirection === 'DESC' ? parsedTxns[0] : parsedTxns[parsedTxns.length - 1];
+      if (explicitOpeningBalance !== undefined && earliest) {
+        earliest.statementOpeningBalance = explicitOpeningBalance;
+        earliest.statementOpeningDate = explicitOpeningDate || earliest.date;
+      }
+      if (explicitClosingBalance !== undefined && latest) {
+        latest.statementClosingBalance = explicitClosingBalance;
+        latest.statementClosingDate = explicitClosingDate || latest.date;
+      }
+    }
+
+    return { parsedTxns, resolvedBank, explicitOpeningBalance, explicitClosingBalance };
   };
 
-  // PDF Parser with UBI, password unlocking, and flexible date patterns
+  // PDF Parser with balance stripping, summary box detection, and exact credit/debit classification (v1.9.1)
   const parsePdfBuffer = async (arrayBuffer, fileName, fileId, preferredBank, password = '') => {
     try {
       const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer, password: password || undefined });
@@ -1535,6 +1685,28 @@ export default function App() {
         ? preferredBank
         : (detected || (banks[0] ? banks[0].name : fileName.split('.')[0].slice(0, 16) || 'Primary Bank'));
 
+      // Pre-pass: Scan PDF summary boxes for Opening Balance and Closing Balance
+      let statementOpeningBalance = undefined;
+      let statementClosingBalance = undefined;
+
+      for (const line of fullLines.slice(0, 50)) {
+        if (statementOpeningBalance === undefined) {
+          const m = line.match(/(?:opening\s*bal(?:ance)?|bal(?:ance)?\s*b\/?f|brought\s*forward)[\s:]*(?:rs\.?|inr)?[\s:]*([\d,]+\.\d{2})/i);
+          if (m) statementOpeningBalance = parseAmount(m[1]);
+        }
+        if (statementClosingBalance === undefined) {
+          const m = line.match(/(?:closing\s*bal(?:ance)?|available\s*bal(?:ance)?|bal(?:ance)?\s*c\/?f)[\s:]*(?:rs\.?|inr)?[\s:]*([\d,]+\.\d{2})/i);
+          if (m) statementClosingBalance = parseAmount(m[1]);
+        }
+      }
+
+      for (const line of fullLines.slice(-35)) {
+        if (statementClosingBalance === undefined) {
+          const m = line.match(/(?:closing\s*bal(?:ance)?|available\s*bal(?:ance)?|clear\s*bal(?:ance)?)[\s:]*(?:rs\.?|inr)?[\s:]*([\d,]+\.\d{2})/i);
+          if (m) statementClosingBalance = parseAmount(m[1]);
+        }
+      }
+
       const parsedTxns = [];
       const dateRegex = /^(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}|\d{1,2}[\/\-][A-Za-z]{3}[\/\-]\d{2,4}|\d{1,2}\s+[A-Za-z]{3}\s+\d{2,4})\s+(.+)/;
 
@@ -1547,18 +1719,53 @@ export default function App() {
           if (numMatches && numMatches.length >= 1) {
             const amountVal = parseAmount(numMatches[0]);
             let pdfBalance = undefined;
+
             if (numMatches.length >= 2) {
-              const possibleBal = parseAmount(numMatches[numMatches.length - 1]);
-              if (possibleBal > 0) pdfBalance = possibleBal;
+              const lastNumStr = numMatches[numMatches.length - 1];
+              const possibleBal = parseAmount(lastNumStr);
+              // Check if Dr (overdraft) exists after the balance number
+              const postBalText = rest.slice(rest.lastIndexOf(lastNumStr) + lastNumStr.length);
+              const isOverdraft = /\bdr\b/i.test(postBalText);
+              pdfBalance = isOverdraft ? -possibleBal : possibleBal;
             }
-            const narrClean = rest.replace(/[\d,]+\.\d{2}/g, '').replace(/\s+/g, ' ').trim();
+
+            const lowerLine = line.toLowerCase();
+            // Handle table row opening or closing balances
+            if (lowerLine.includes('opening balance') || lowerLine.includes('balance b/f') || lowerLine.includes('bal b/f') || lowerLine.includes('brought forward') || lowerLine.includes('by balance b/f')) {
+              if (pdfBalance !== undefined) statementOpeningBalance = Math.abs(pdfBalance);
+              else if (amountVal > 0) statementOpeningBalance = amountVal;
+              return;
+            }
+            if (lowerLine.includes('closing balance') || lowerLine.includes('balance c/f') || lowerLine.includes('bal c/f') || lowerLine.includes('carried forward')) {
+              if (pdfBalance !== undefined) statementClosingBalance = Math.abs(pdfBalance);
+              else if (amountVal > 0) statementClosingBalance = amountVal;
+              return;
+            }
+
+            // Strip balance number and any trailing Cr/Dr from line before credit/debit classification
+            let txnText = rest;
+            if (pdfBalance !== undefined && numMatches.length >= 2) {
+              const lastNumStr = numMatches[numMatches.length - 1];
+              txnText = rest.slice(0, rest.lastIndexOf(lastNumStr));
+            }
+
+            const hasExplicitCredit = /\b(CR|CREDIT|NEFT CR|IMPS CR|RTGS CR|UPI CR|SALARY|DEP|DEPOSIT|REFUND|REVERSAL|INTEREST)\b/i.test(txnText);
+            const hasExplicitDebit = /\b(DR|DEBIT|WITHDRAWAL|WDL|CHQ|POS|ATM|PURCHASE)\b/i.test(txnText);
+
+            let type = 'DEBIT';
+            if (hasExplicitCredit && !hasExplicitDebit) {
+              type = 'CREDIT';
+            } else if (hasExplicitDebit) {
+              type = 'DEBIT';
+            }
+
+            const narrClean = txnText.replace(/[\d,]+\.\d{2}/g, '').replace(/\s+/g, ' ').trim();
             if (amountVal > 0 && narrClean.length > 2) {
-              const isCredit = /\b(CR|CREDIT|NEFT CR|SALARY|DEP|DEPOSIT|REFUND)\b/i.test(line);
-              const type = isCredit ? 'CREDIT' : 'DEBIT';
               parsedTxns.push({
                 id: `pdf-${fileId}-${idx}`,
                 fileId,
                 fileName,
+                fileOrderIndex: idx,
                 date: normalizeDate(rawDate),
                 narration: narrClean.slice(0, 90),
                 amount: amountVal,
@@ -1567,25 +1774,46 @@ export default function App() {
                 channel: detectChannel(narrClean),
                 category: detectCategoryWithRules(narrClean, type),
                 isManualCategory: false,
-                balance: pdfBalance
+                balance: pdfBalance !== undefined && !isNaN(pdfBalance) ? pdfBalance : undefined
               });
             }
           }
         }
       });
 
-      return { success: true, txns: parsedTxns, resolvedBank };
+      // Determine PDF statement direction
+      let fileDirection = 'ASC';
+      if (parsedTxns.length >= 2) {
+        const firstTime = new Date(parsedTxns[0].date).getTime();
+        const lastTime = new Date(parsedTxns[parsedTxns.length - 1].date).getTime();
+        if (firstTime > lastTime) {
+          fileDirection = 'DESC';
+        }
+      }
+      parsedTxns.forEach(t => {
+        t.fileDirection = fileDirection;
+      });
+
+      if (parsedTxns.length > 0) {
+        const earliest = fileDirection === 'DESC' ? parsedTxns[parsedTxns.length - 1] : parsedTxns[0];
+        const latest = fileDirection === 'DESC' ? parsedTxns[0] : parsedTxns[parsedTxns.length - 1];
+        if (statementOpeningBalance !== undefined && earliest) {
+          earliest.statementOpeningBalance = statementOpeningBalance;
+          earliest.statementOpeningDate = earliest.date;
+        }
+        if (statementClosingBalance !== undefined && latest) {
+          latest.statementClosingBalance = statementClosingBalance;
+          latest.statementClosingDate = latest.date;
+        }
+      }
+
+      return { success: true, txns: parsedTxns, resolvedBank, statementOpeningBalance, statementClosingBalance };
     } catch (err) {
       if (err && (err.name === 'PasswordException' || String(err.message || '').toLowerCase().includes('password'))) {
         return { needsPassword: true };
       }
       return { success: false, error: err.message || 'Could not parse PDF' };
     }
-  };
-
-  const triggerFilePicker = (targetBank = 'AUTO') => {
-    setUploadTargetBank(targetBank);
-    if (fileInputRef.current) fileInputRef.current.click();
   };
 
   const handleFileUpload = async (e) => {

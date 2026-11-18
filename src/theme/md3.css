@@ -1,0 +1,143 @@
+/**
+ * Android Material Design 3 (Material You) Theme Tokens & Components
+ * FinSight India v2.1.0
+ */
+
+:root {
+  --md-sys-color-surface: #0f131a;
+  --md-sys-color-surface-dim: #0b0e14;
+  --md-sys-color-surface-container-lowest: #0d1017;
+  --md-sys-color-surface-container-low: #151922;
+  --md-sys-color-surface-container: #1b202a;
+  --md-sys-color-surface-container-high: #222733;
+  --md-sys-color-surface-container-highest: #292f3d;
+
+  --md-sys-color-primary: #10b981;
+  --md-sys-color-primary-container: #004d36;
+  --md-sys-color-on-primary-container: #9df3cf;
+
+  --md-sys-color-secondary: #38bdf8;
+  --md-sys-color-secondary-container: #034b75;
+  --md-sys-color-on-secondary-container: #bae6fd;
+
+  --md-sys-color-tertiary: #a78bfa;
+  --md-sys-color-tertiary-container: #4c1d95;
+  --md-sys-color-on-tertiary-container: #ddd6fe;
+
+  --md-sys-color-error: #f87171;
+  --md-sys-color-error-container: #5c1313;
+  --md-sys-color-on-error-container: #fecaca;
+
+  --md-sys-color-outline: #4b5563;
+  --md-sys-color-outline-variant: #28303d;
+
+  --md-shape-corner-small: 8px;
+  --md-shape-corner-medium: 12px;
+  --md-shape-corner-large: 16px;
+  --md-shape-corner-extra-large: 28px;
+  --md-shape-corner-full: 9999px;
+}
+
+/* Base Body Surface */
+body {
+  background-color: var(--md-sys-color-surface);
+  color: #f1f5f9;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Material Design 3 Surface Containers */
+.md3-surface {
+  background-color: var(--md-sys-color-surface);
+}
+
+.md3-card {
+  background-color: var(--md-sys-color-surface-container);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-shape-corner-extra-large);
+}
+
+.md3-card-high {
+  background-color: var(--md-sys-color-surface-container-high);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-shape-corner-extra-large);
+}
+
+.md3-card-inner {
+  background-color: var(--md-sys-color-surface-container-low);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-shape-corner-large);
+}
+
+/* MD3 Input Field */
+.md3-input {
+  background-color: var(--md-sys-color-surface-container-highest);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-shape-corner-medium);
+  color: #f8fafc;
+  transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.md3-input:focus {
+  outline: none;
+  border-color: var(--md-sys-color-primary);
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+}
+
+/* MD3 Navigation Bar Active Pill */
+.md3-nav-pill {
+  width: 64px;
+  height: 32px;
+  border-radius: var(--md-shape-corner-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.25s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.md3-nav-pill.active {
+  background-color: rgba(16, 185, 129, 0.22);
+  color: #6ee7b7;
+}
+
+.md3-nav-pill.inactive {
+  background-color: transparent;
+  color: #94a3b8;
+}
+
+/* MD3 Touch Targets (Min 48px) */
+.md3-touch-target {
+  min-height: 48px;
+  min-width: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+/* Hide scrollbar utility */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

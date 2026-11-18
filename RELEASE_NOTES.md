@@ -1,5 +1,30 @@
 # FinSight India — Release Notes
 
+## Version 2.1.0 (November 2026)
+
+FinSight India v2.1.0 is a milestone release delivering a complete app-wide UI/UX transformation based on **Android Material Design 3 (Material You)** principles, along with a clean, modular architectural separation between Data Layers and UI Layers:
+* **Android Material Design 3 (Material You) Design System**:
+  - **Tonal Surface Hierarchy**: Replaced flat arbitrary dark shades with MD3 tonal surface containers (`surface` #0f131a, `surface-container-low` #151922, `surface-container` #1b202a, `surface-container-high` #222733, and `surface-container-highest` #292f3d).
+  - **MD3 Navigation Bar**: Standard 80dp bottom navigation bar featuring elongated active indicator pills (`w-14 h-8 rounded-full bg-emerald-500/25 text-emerald-300`), active scale animations, and bold typographic labels.
+  - **MD3 Top App Bar**: High-clarity 64dp header with vector brand logo, version badge, and min 48px touch target action icons.
+  - **Elevated & Outlined Cards**: Restyled overview metric cards, bank balance cards, cashflow trend containers, and transaction lists with `rounded-3xl` (28px) and `rounded-2xl` geometry.
+  - **Segmented Buttons & Filter Chips**: Horizontal-scrolling filter chips with selected states, segmented pills for Spend vs Earning modes, and touch targets conforming to Android $\ge 48\text{px}$ accessibility standards.
+* **Modular Architectural Separation (Data & UI Layers)**:
+  - **Data Layers** (`src/data/`):
+    - `constants.js`: Design tokens, color palettes, default Indian banking categories, and rule definitions.
+    - `balanceEngine.js`: True statement opening/closing balance math, chronological sorting, tie-breaking, and periodic extractors.
+    - `parsers.js`: Tabular Excel/CSV matrix parser, Mozilla PDF.js parser, Indian bank detection, and channel classifiers.
+    - `categorizationEngine.js`: Direction-aware token regex matching, rule compilation, and categorization evaluator.
+    - `transferEngine.js`: Cross-bank internal transfer detection, reference number matching, and unlinking.
+    - `exportEngine.js`: Excel XLSX workbook, RFC 4180 CSV, and autoTable PDF document generation with Android Share Sheet integration.
+    - `storage.js`: LocalStorage manager with versioned keys (`_v210`) and JSON backup/restore engine.
+  - **UI Layers** (`src/components/`, `src/theme/md3.css`):
+    - Separate navigation bars, modular view panels (`DashboardView`, `AnalysisView`, `LedgerView`, `BanksView`), and independent dialog modals.
+* **Preservation of All Financial Intelligence**:
+  - 100% backward-compatible persistence, password-protected PDF parsing, reverse-calculation opening balance math, Smart Bank Transfers, and multi-bank analytics.
+
+---
+
 ## Version 2.0.0 (November 2026)
 
 FinSight India v2.0.0 introduces true bank balance statement accounting and modern selection windows across transaction workflows:

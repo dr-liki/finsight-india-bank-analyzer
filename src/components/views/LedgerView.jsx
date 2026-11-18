@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   Search, Filter, Plus, CheckSquare, Square, Tag, Trash2, Edit3,
-  ArrowUpRight, ArrowDownRight, Layers, ArrowLeftRight
+  Building2, Layers, ArrowLeftRight
 } from 'lucide-react';
 
 export default function LedgerView({
@@ -10,7 +10,7 @@ export default function LedgerView({
   search,
   setSearch,
   bankFilter,
-  setBankFilter,
+  onOpenBankFilter,
   typeFilter,
   onOpenTypeFilter,
   selectedCategories,
@@ -56,6 +56,19 @@ export default function LedgerView({
 
         {/* MD3 Filter Chips (Horizontal Scroll) */}
         <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pt-1">
+          {/* Bank Filter Chip (Updated from native select to modern popup trigger) */}
+          <button
+            onClick={onOpenBankFilter}
+            className={`h-9 px-3.5 rounded-full text-xs font-semibold flex items-center gap-1.5 shrink-0 transition border ${
+              bankFilter !== 'ALL'
+                ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300'
+                : 'bg-[#151922] border-[#28303d] text-slate-300 hover:bg-[#222733]'
+            }`}
+          >
+            <Building2 size={14} />
+            {bankFilter === 'ALL' ? `All Banks (${banks.length})` : bankFilter}
+          </button>
+
           {/* Category Filter Chip */}
           <button
             onClick={onOpenCategoryFilter}
@@ -83,18 +96,6 @@ export default function LedgerView({
             <Filter size={14} />
             {typeFilter === 'ALL' ? 'All Types' : typeFilter === 'DEBIT' ? 'Debits Only' : 'Credits Only'}
           </button>
-
-          {/* Bank Selector Dropdown Chip */}
-          <select
-            value={bankFilter}
-            onChange={e => setBankFilter(e.target.value)}
-            className="h-9 px-3 rounded-full bg-[#151922] border border-[#28303d] text-xs font-semibold text-slate-300 focus:outline-none focus:border-emerald-500 shrink-0"
-          >
-            <option value="ALL">All Banks ({banks.length})</option>
-            {banks.map(b => (
-              <option key={b.id} value={b.name}>{b.name}</option>
-            ))}
-          </select>
         </div>
       </div>
 
@@ -148,7 +149,7 @@ export default function LedgerView({
             <p>No transactions match the selected filters.</p>
           </div>
         ) : (
-          <div className="space-y-2 pt-1">
+          <div className="space-y-2.5 pt-1">
             {filteredTxns.map(t => {
               const isSelected = selectedTxnIds.includes(t.id);
               const isCredit = t.type === 'CREDIT';
@@ -157,87 +158,96 @@ export default function LedgerView({
               return (
                 <div
                   key={t.id}
-                  className={`p-3.5 rounded-2xl border transition flex items-center justify-between gap-3 ${
+                  className={`p-3.5 rounded-2xl border transition space-y-2.5 ${
                     isSelected
                       ? 'bg-[#222733] border-emerald-500/40'
                       : 'bg-[#151922] hover:bg-[#1f2430] border-[#28303d]'
                   }`}
                 >
-                  {/* Left: Checkbox + Date/Bank/Narration/Tags */}
-                  <div className="flex items-start gap-3 min-w-0 flex-1">
-                    <button
-                      onClick={() => onToggleSelectTxn(t.id)}
-                      className="mt-1 text-slate-400 hover:text-emerald-400 shrink-0"
-                    >
-                      {isSelected ? <CheckSquare size={17} className="text-emerald-400" /> : <Square size={17} />}
-                    </button>
+                  {/* LINE 1: Date, Bank account, Channel and Amount in one line */}
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 flex-wrap min-w-0">
+                      <button
+                        onClick={() => onToggleSelectTxn(t.id)}
+                        className="text-slate-400 hover:text-emerald-400 shrink-0"
+                        title={isSelected ? 'Deselect transaction' : 'Select transaction'}
+                      >
+                        {isSelected ? <CheckSquare size={16} className="text-emerald-400" /> : <Square size={16} />}
+                      </button>
 
-                    <div className="min-w-0 flex-1 space-y-1">
-                      <div className="flex items-center gap-2 flex-wrap text-[10px]">
-                        <span className="font-semibold text-slate-300">{t.date}</span>
-                        <span className="px-2 py-0.5 rounded-md bg-[#1b202a] text-slate-300 border border-[#28303d] font-medium">
-                          {t.bank}
-                        </span>
-                        <span className="px-1.5 py-0.5 rounded bg-[#1b202a] text-slate-400 font-mono">
-                          {t.channel || 'OTHER'}
-                        </span>
-                        {isTransfer && (
-                          <span
-                            onClick={onOpenTransferManager}
-                            className="px-1.5 py-0.5 rounded bg-sky-500/15 text-sky-300 border border-sky-500/30 flex items-center gap-1 cursor-pointer hover:bg-sky-500/25 transition"
-                            title="Linked Smart Bank Transfer"
-                          >
-                            <ArrowLeftRight size={10} /> Transfer
-                          </span>
-                        )}
-                      </div>
+                      <span className="font-semibold text-slate-300 text-[11px] whitespace-nowrap">
+                        {t.date}
+                      </span>
 
-                      <p className="text-xs font-medium text-white truncate" title={t.narration}>
-                        {t.narration}
-                      </p>
+                      <span className="px-2 py-0.5 rounded-md bg-[#1b202a] text-slate-300 border border-[#28303d] font-medium text-[10px] whitespace-nowrap truncate max-w-[130px]">
+                        {t.bank}
+                      </span>
 
-                      <div className="flex items-center gap-2 flex-wrap text-[11px]">
-                        {/* Clickable Category Badge */}
-                        <button
-                          onClick={() => onSingleCategoryClick(t)}
-                          className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/25 hover:bg-emerald-500/20 transition font-semibold"
-                          title="Click to change category"
+                      <span className="px-1.5 py-0.5 rounded bg-[#1b202a] text-slate-400 font-mono text-[10px] whitespace-nowrap">
+                        {t.channel || 'OTHER'}
+                      </span>
+
+                      {isTransfer && (
+                        <span
+                          onClick={onOpenTransferManager}
+                          className="px-1.5 py-0.5 rounded bg-sky-500/15 text-sky-300 border border-sky-500/30 flex items-center gap-1 cursor-pointer hover:bg-sky-500/25 transition text-[10px] whitespace-nowrap"
+                          title="Linked Smart Bank Transfer"
                         >
-                          {t.category || 'Uncategorized'}
-                        </button>
+                          <ArrowLeftRight size={10} /> Transfer
+                        </span>
+                      )}
+                    </div>
 
-                        {/* Statement Balance Tag (v2.0.0) */}
-                        {t.balance !== undefined && t.balance !== null && !isNaN(t.balance) && (
-                          <span className="text-[10px] text-slate-400 font-medium">
-                            Bal: ₹{Number(t.balance).toLocaleString('en-IN')}
-                          </span>
-                        )}
-                      </div>
+                    {/* Amount in Line 1 */}
+                    <div className="text-right shrink-0">
+                      <span className={`text-sm font-bold tabular-nums whitespace-nowrap ${isCredit ? 'text-emerald-400' : 'text-rose-400'}`}>
+                        {isCredit ? '+' : '-'}₹{(t.amount || 0).toLocaleString('en-IN')}
+                      </span>
                     </div>
                   </div>
 
-                  {/* Right: Amount & Action Buttons */}
-                  <div className="flex items-center gap-2 shrink-0">
-                    <div className="text-right">
-                      <p className={`text-sm font-bold ${isCredit ? 'text-emerald-400' : 'text-rose-400'}`}>
-                        {isCredit ? '+' : '-'}₹{(t.amount || 0).toLocaleString('en-IN')}
-                      </p>
+                  {/* LINE 2: Narration shown completely without truncation */}
+                  <div className="pl-6">
+                    <p className="text-xs font-medium text-white break-words leading-relaxed">
+                      {t.narration}
+                    </p>
+                  </div>
+
+                  {/* LINE 3: Category, Edit and Delete buttons in third line */}
+                  <div className="flex items-center justify-between gap-2 pt-1 border-t border-[#28303d]/50 pl-6">
+                    <div className="flex items-center gap-2 flex-wrap min-w-0">
+                      {/* Clickable Category Badge */}
+                      <button
+                        onClick={() => onSingleCategoryClick(t)}
+                        className="px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/25 hover:bg-emerald-500/20 transition font-semibold text-[11px] truncate"
+                        title="Click to change category"
+                      >
+                        {t.category || 'Uncategorized'}
+                      </button>
+
+                      {/* Statement Running Balance */}
+                      {t.balance !== undefined && t.balance !== null && !isNaN(t.balance) && (
+                        <span className="text-[10px] text-slate-400 font-medium whitespace-nowrap">
+                          Bal: ₹{Number(t.balance).toLocaleString('en-IN')}
+                        </span>
+                      )}
                     </div>
 
-                    <div className="flex items-center gap-1 ml-1">
+                    {/* Edit and Delete Buttons in Line 3 */}
+                    <div className="flex items-center gap-1 shrink-0">
                       <button
                         onClick={() => onEditTransaction(t)}
                         className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-[#28303d] transition"
                         title="Edit transaction"
                       >
-                        <Edit3 size={14} />
+                        <Edit3 size={15} />
                       </button>
                       <button
                         onClick={() => onDeleteTransaction(t.id)}
                         className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-[#28303d] transition"
                         title="Delete transaction"
                       >
-                        <Trash2 size={14} />
+                        <Trash2 size={15} />
                       </button>
                     </div>
                   </div>

@@ -1,5 +1,23 @@
 # FinSight India — Release Notes
 
+## Version 2.2.0 (November 2026)
+
+FinSight India v2.2.0 introduces refined UI ergonomics, cleaner information hierarchy across the Top Bar and Ledger, and a modern popup window for bank filtering:
+* **Streamlined Top App Bar**:
+  - Removed the sub-header line to reclaim vertical screen estate and provide a distraction-free 64dp header.
+  - Kept only the essential Export button in the top bar; removed reset and backup buttons from the header (retaining safe, full access to Backup and Reset in the Banks & Rules workspace).
+* **Modern "All Banks" Popup Filter Window**:
+  - Replaced the native select dropdown with a dedicated Material Design 3 popup modal (`BankFilterModal`) matching the visual style of Type and Category filter dialogs.
+  - Features quick "All Banks Combined" selection, color-coded bank badges, account number hints, live transaction counters, and active checkmarks.
+* **Optimized 3-Line Transaction Card Layout**:
+  - **Line 1 (Core Facts)**: Multi-select checkbox, transaction date, bank badge, payment channel badge (UPI/NEFT/IMPS/ATM/POS/CARD/NET/CASH), transfer indicator, and clear signed amount (`+₹...` in emerald / `-₹...` in rose).
+  - **Line 2 (Complete Narration)**: Transaction description/narration is rendered completely without truncation (`break-words`), giving full visibility into beneficiary, remarks, and UPI handles.
+  - **Line 3 (Category & Actions)**: Category badge (with running statement balance `Bal: ₹...` when available) on the left, paired with dedicated Edit and Delete action buttons on the right.
+* **Reorganized Spend & Earning Toggle in Analysis**:
+  - Relocated the "Spend Outflow" and "Earning Inflow" selector directly below the "Category-wise Spending Outflow / Income & Earnings Inflow" container, creating an intuitive flow from category insights down into flow-mode switching.
+
+---
+
 ## Version 2.1.0 (November 2026)
 
 FinSight India v2.1.0 is a milestone release delivering a complete app-wide UI/UX transformation based on **Android Material Design 3 (Material You)** principles, along with a clean, modular architectural separation between Data Layers and UI Layers:

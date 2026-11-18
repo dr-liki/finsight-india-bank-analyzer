@@ -56,6 +56,7 @@ import TypePickerModal from './components/modals/TypePickerModal';
 import CategoryPickerModal from './components/modals/CategoryPickerModal';
 import TypeFilterModal from './components/modals/TypeFilterModal';
 import CategoryFilterModal from './components/modals/CategoryFilterModal';
+import BankFilterModal from './components/modals/BankFilterModal';
 import EditBalanceModal from './components/modals/EditBalanceModal';
 import BankModal from './components/modals/BankModal';
 import FileEditModal from './components/modals/FileEditModal';
@@ -127,6 +128,7 @@ export default function App() {
   // Filter Modals
   const [showTypeFilterModal, setShowTypeFilterModal] = useState(false);
   const [showCategoryFilterModal, setShowCategoryFilterModal] = useState(false);
+  const [showBankFilterModal, setShowBankFilterModal] = useState(false);
 
   // Bank & File Modals
   const [showBankModal, setShowBankModal] = useState(false);
@@ -1026,9 +1028,6 @@ export default function App() {
       {/* Material Design 3 Top App Bar */}
       <TopAppBar
         onOpenExport={() => setShowExportMenu(true)}
-        onOpenBackup={() => restoreFileInputRef.current?.click()}
-        onResetWorkspace={handleResetWorkspace}
-        hasTxns={txns.length > 0}
       />
 
       {/* Main Content Area */}
@@ -1101,7 +1100,7 @@ export default function App() {
             search={search}
             setSearch={setSearch}
             bankFilter={bankFilter}
-            setBankFilter={setBankFilter}
+            onOpenBankFilter={() => setShowBankFilterModal(true)}
             typeFilter={typeFilter}
             onOpenTypeFilter={() => setShowTypeFilterModal(true)}
             selectedCategories={selectedCategories}
@@ -1291,6 +1290,16 @@ export default function App() {
         categories={categories}
         onApply={setSelectedCategories}
         onClose={() => setShowCategoryFilterModal(false)}
+      />
+
+      {/* Bank Filter Modal (v2.2.0) */}
+      <BankFilterModal
+        isOpen={showBankFilterModal}
+        currentBank={bankFilter}
+        banks={banks}
+        transactions={txns}
+        onSelect={setBankFilter}
+        onClose={() => setShowBankFilterModal(false)}
       />
 
       {/* Edit Bank Balances Modal (v1.9.0 / v2.0.0) */}

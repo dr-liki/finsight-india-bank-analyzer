@@ -1,11 +1,10 @@
 import React from 'react';
 import {
   TrendingDown, TrendingUp, PieChart as PieIcon, BarChart3,
-  ArrowUpDown, ArrowUpRight, ArrowDownRight
+  ArrowUpDown
 } from 'lucide-react';
 import {
-  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip,
-  PieChart, Pie, Cell, CartesianGrid
+  ResponsiveContainer, PieChart, Pie, Cell, Tooltip
 } from 'recharts';
 import { COLORS, EARN_COLORS } from '../../data/constants';
 
@@ -27,40 +26,7 @@ export default function AnalysisView({
 
   return (
     <div className="space-y-4 pb-24">
-      {/* MD3 Mode Toggle (Segmented Pill Control) */}
-      <div className="bg-[#1b202a] border border-[#28303d] p-2.5 rounded-3xl flex items-center justify-between gap-3">
-        <div className="flex items-center gap-1.5 bg-[#151922] p-1 rounded-full border border-[#28303d]">
-          <button
-            onClick={() => setCategoryAnalysisMode('SPEND')}
-            className={`px-4 py-1.5 rounded-full text-xs font-bold transition flex items-center gap-1.5 ${
-              isSpend
-                ? 'bg-rose-500 text-slate-950 shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <TrendingDown size={14} /> Spend Outflow
-          </button>
-          <button
-            onClick={() => setCategoryAnalysisMode('EARN')}
-            className={`px-4 py-1.5 rounded-full text-xs font-bold transition flex items-center gap-1.5 ${
-              !isSpend
-                ? 'bg-emerald-500 text-slate-950 shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <TrendingUp size={14} /> Earning Inflow
-          </button>
-        </div>
-
-        <div className="px-3.5 py-1.5 rounded-full bg-[#151922] border border-[#28303d] text-xs">
-          <span className="text-slate-400">Total {isSpend ? 'Spent' : 'Earned'}: </span>
-          <span className={`font-bold ${isSpend ? 'text-rose-400' : 'text-emerald-400'}`}>
-            ₹{activeBreakdown.total.toLocaleString('en-IN')}
-          </span>
-        </div>
-      </div>
-
-      {/* Category Breakdown & Charts Container */}
+      {/* 1. Category Breakdown & Charts Container (Category-Wise Box on Top) */}
       <div className="bg-[#1b202a] border border-[#28303d] p-5 rounded-3xl space-y-5">
         <div className="flex items-center justify-between">
           <div>
@@ -137,7 +103,40 @@ export default function AnalysisView({
         )}
       </div>
 
-      {/* Top Spend Merchants / Top Income Sources (Clickable for drilldown popup) */}
+      {/* 2. Spend Outflow and Earning Inflow Box (Moved Below Category-Wise Box as requested) */}
+      <div className="bg-[#1b202a] border border-[#28303d] p-3 rounded-3xl flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-1.5 bg-[#151922] p-1 rounded-full border border-[#28303d]">
+          <button
+            onClick={() => setCategoryAnalysisMode('SPEND')}
+            className={`px-4 py-1.5 rounded-full text-xs font-bold transition flex items-center gap-1.5 ${
+              isSpend
+                ? 'bg-rose-500 text-slate-950 shadow-sm'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <TrendingDown size={14} /> Spend Outflow
+          </button>
+          <button
+            onClick={() => setCategoryAnalysisMode('EARN')}
+            className={`px-4 py-1.5 rounded-full text-xs font-bold transition flex items-center gap-1.5 ${
+              !isSpend
+                ? 'bg-emerald-500 text-slate-950 shadow-sm'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <TrendingUp size={14} /> Earning Inflow
+          </button>
+        </div>
+
+        <div className="px-3.5 py-1.5 rounded-full bg-[#151922] border border-[#28303d] text-xs">
+          <span className="text-slate-400">Total {isSpend ? 'Spent' : 'Earned'}: </span>
+          <span className={`font-bold ${isSpend ? 'text-rose-400' : 'text-emerald-400'}`}>
+            ₹{activeBreakdown.total.toLocaleString('en-IN')}
+          </span>
+        </div>
+      </div>
+
+      {/* 3. Top Spend Merchants / Top Income Sources (Clickable for drilldown popup) */}
       <div className="bg-[#1b202a] border border-[#28303d] p-5 rounded-3xl space-y-4">
         <div>
           <h2 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
@@ -184,7 +183,7 @@ export default function AnalysisView({
         )}
       </div>
 
-      {/* NET FLOW COMPARISON CARD (MOVED TO BOTTOM & FIXED TEXT OVERFLOW v1.8.0) */}
+      {/* 4. Spend vs Earning Net Flow Comparison Card */}
       <div className="bg-[#1b202a] border border-[#28303d] p-5 rounded-3xl space-y-4 overflow-hidden">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div>

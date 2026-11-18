@@ -3,19 +3,18 @@
 ## Version 2.3.0 (November 2026)
 
 ### Changes over Version 2.2.0:
-* **Multi-Selection Period & Presets Duration Filtering**:
-  - Re-introduced granular period filtering across **Weekwise**, **Monthwise**, **Quarterwise**, and **Yearwise** horizons with multi-select support, itemized transaction counters, and Select All / Clear controls.
-  - Added instant one-tap duration presets: **This Week**, **This Month**, **This Quarter**, and **This Year**, alongside Last 7 Days, Last 30 Days, and Last 3 Months.
-  - Added Custom Date Range with dual date pickers, quick Clear Dates button, and one-tap duration reset.
-* **Transaction Card Layout & Checkbox Relocation**:
-  - Moved the transaction selection checkbox from Line 1 to **Line 3 (left of Category)**.
-  - Reclaimed full horizontal card width for **Line 1** (Date, Bank badge, Channel, Transfer badge, signed Amount) and **Line 2** (complete Narration with zero cutoff and no unnecessary left indent).
+* **Duration Filtering & Presets in Transactions Page**:
+  - Added multi-selection period duration filters for **Weekwise**, **Monthwise**, **Quarterwise**, and **Yearwise** horizons with itemized transaction count badges and Select All / Clear controls.
+  - Added duration presets: **This Week**, **This Month**, **This Quarter**, and **This Year** (plus Last 7 Days, Last 30 Days, Last 3 Months).
+  - Added Custom Date Range with dual date pickers, Clear Dates button, and one-tap duration reset.
+* **Transaction Card Checkbox Relocation**:
+  - Moved the transaction selection checkbox from Line 1 to **Line 3 (left of Category)**, freeing full horizontal width for Line 1 (Core Facts) and Line 2 (Narration).
 * **Pinned Sticky Bulk Actions Bar**:
-  - When multiple transactions are selected, the action bar (**Change Category** and **Delete**) stays pinned at the top (`sticky top-2 z-30`) with a blur backdrop (`backdrop-blur-md`). Only the transactions list scrolls beneath it.
+  - When multiple transactions are selected, the action bar (**Change Category** and **Delete**) stays fixed at the top (`sticky top-2 z-30`) with a blur backdrop (`backdrop-blur-md`), with only transactions scrolling beneath it.
 * **Restored Mode Toggle Design in Analysis**:
-  - Re-applied the crisp, compact MD3 segmented pill toggle design from v2.1 for **Spend Outflow** and **Earning Inflow**, positioned directly below the Category-wise Breakdown card.
-* **De-Cluttered Overview Tab**:
-  - Removed the redundant Bank Balances container from the Overview tab, placing full visual focus on the primary KPI cards and Multi-Bank Cashflow Trend chart (bank balances and editing tools remain fully available in Banks & Rules).
+  - Restored the compact MD3 segmented pill toggle design for the **Spend Outflow** and **Earning Inflow** box positioned below the category-wise container.
+* **Removed Bank Balance Box from Overview**:
+  - Removed the Bank Balances card from the Overview tab to declutter the dashboard (bank balances remain accessible in Banks & Rules).
 
 ---
 
@@ -23,18 +22,17 @@
 
 ### Changes over Version 2.1.0:
 * **Streamlined Top App Bar**:
-  - Removed the sub-header tagline (`100% On-Device Financial Intelligence`) to reclaim vertical screen estate.
-  - Kept only the essential Export button in the top bar; removed reset and backup buttons from the header (retaining full access in the Banks & Rules workspace).
+  - Removed the sub-header line (`100% On-Device Financial Intelligence`) to reclaim vertical screen estate.
+  - Kept only the essential Export button in the top bar; removed reset and backup buttons from the header.
 * **Material Design 3 "All Banks" Popup Filter Window**:
-  - Replaced the native select dropdown with a dedicated Material Design 3 popup modal (`BankFilterModal`) matching the Type and Category filter dialogs.
-  - Added "All Banks Combined" selection, color-coded bank badges, account number hints, live transaction counters, and active checkmarks.
+  - Replaced the native select dropdown with a dedicated Material Design 3 popup modal (`BankFilterModal`) with "All Banks Combined", color-coded bank badges, account number hints, live transaction counters, and active checkmarks.
 * **Optimized 3-Line Transaction Card Layout**:
-  - Restructured transaction card into three distinct horizontal lines:
-    - **Line 1**: Transaction date, bank account badge, payment channel badge, transfer indicator, and clear signed amount (`+₹...` / `-₹...`).
-    - **Line 2**: Complete narration rendered in full without truncation (`break-words`).
-    - **Line 3**: Category badge (with running statement balance `Bal: ₹...` when available) on the left, paired with Edit and Delete action buttons on the right.
-* **Reorganized Analysis View Flow**:
-  - Relocated the "Spend Outflow" and "Earning Inflow" selector directly below the "Category-wise Spending Outflow / Income & Earnings Inflow" container.
+  - Restructured transaction cards into three distinct lines:
+    - **Line 1**: Date, bank account, channel, and amount all in one line.
+    - **Line 2**: Complete transaction description (narration) displayed fully without truncation.
+    - **Line 3**: Category badge (with running statement balance `Bal: ₹...`) on the left; Edit and Delete action buttons on the right.
+* **Reorganized Analysis View**:
+  - Moved the box containing Spend Outflow and Earning Inflow buttons below the category-wise breakdown box.
 
 ---
 
@@ -259,6 +257,6 @@
 * **Multi-Bank Cashflow Tracking**:
   - Daywise, Monthwise, Quarterly, and Yearly cash-flow trend charts.
 * **Transaction Ledger**:
-  - Searchable transaction ledger with inline add, edit, and delete functionality.
+  - Searchable transaction ledger with inline add, edit, and delete controls.
 * **Excel Data Export**:
   - Basic client-side spreadsheet export of parsed transactions.

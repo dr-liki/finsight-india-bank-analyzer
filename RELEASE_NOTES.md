@@ -1,5 +1,25 @@
 # FinSight India — Release Notes
 
+## Version 2.3.0 (November 2026)
+
+FinSight India v2.3.0 introduces comprehensive duration filtering capabilities, refined transaction layout geometry, sticky bulk action controls, and focused overview metrics:
+* **Multi-Selection Period & Presets Duration Filtering in Ledger**:
+  - **Multi-Select Periods**: Re-introduced granular period filtering across **Weekwise**, **Monthwise**, **Quarterwise**, and **Yearwise** horizons with multi-select support, itemized transaction counters, and Select All / Clear controls.
+  - **Quick Presets**: Added instant duration presets for **This Week**, **This Month**, **This Quarter**, and **This Year**, alongside Last 7 Days, Last 30 Days, and Last 3 Months.
+  - **Custom Date Range**: Date pickers for start and end dates with dedicated Clear Dates and one-tap duration reset.
+  - **Seamless MD3 Design**: Horizontal segmented chips, tonal sub-panels, and active indicator pills.
+* **Optimized Transaction Card Checkbox Placement**:
+  - Moved the transaction selection checkbox from Line 1 to **Line 3 (left of Category)**.
+  - Reclaims horizontal space in **Line 1** (Date, Bank badge, Channel, Transfer badge, signed Amount) and **Line 2** (complete Narration with zero cutoff and no unnecessary left indent).
+* **Pinned Sticky Bulk Actions Bar**:
+  - When multiple transactions are selected, the action bar containing **Change Category** and **Delete** stays firmly pinned at the top (`sticky top-2 z-30`) with a blur backdrop (`backdrop-blur-md`). Only the transactions list scrolls beneath it.
+* **Restored Version 2.1 Mode Toggle Design in Analysis**:
+  - Re-applied the crisp, compact MD3 segmented pill toggle design from v2.1 for **Spend Outflow** and **Earning Inflow**, positioned directly below the Category-wise Breakdown card.
+* **De-Cluttered Overview Workspace**:
+  - Removed the Bank Balances card from the Overview tab to maintain focus on primary KPIs and cashflow trends (bank balances and editing tools remain fully available in Banks & Rules).
+
+---
+
 ## Version 2.2.0 (November 2026)
 
 FinSight India v2.2.0 introduces refined UI ergonomics, cleaner information hierarchy across the Top Bar and Ledger, and a modern popup window for bank filtering:

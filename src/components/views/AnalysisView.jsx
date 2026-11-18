@@ -103,8 +103,8 @@ export default function AnalysisView({
         )}
       </div>
 
-      {/* 2. Spend Outflow and Earning Inflow Box (Moved Below Category-Wise Box as requested) */}
-      <div className="bg-[#1b202a] border border-[#28303d] p-3 rounded-3xl flex items-center justify-between gap-3 flex-wrap">
+      {/* 2. Spend Outflow and Earning Inflow Box (MD3 Mode Toggle from v2.1) */}
+      <div className="bg-[#1b202a] border border-[#28303d] p-2.5 rounded-3xl flex items-center justify-between gap-3">
         <div className="flex items-center gap-1.5 bg-[#151922] p-1 rounded-full border border-[#28303d]">
           <button
             onClick={() => setCategoryAnalysisMode('SPEND')}

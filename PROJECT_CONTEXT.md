@@ -49,6 +49,7 @@
 | **v2.0.0** | Completed | Redesigned single-txn edit dialogs with dedicated Type & Category selection windows (`z-[80]`); implemented true bank running balance accounting (`Initial = First Bal ± Amount`, `Latest = Last Recorded Bal`); displayed `Bal: ₹...` in transaction ledger. |
 | **v2.1.0** | Completed | Full app UI/UX update applying Android Material Design 3 (Material You) principles: tonal surface containers, 80dp bottom navigation bar with active indicator pills, 64dp Top App Bar, rounded-3xl cards, and minimum 48px touch targets; complete architectural modularization into Data Layers (`src/data/`) and UI Layers (`src/components/`, `src/theme/`). |
 | **v2.2.0** | Completed | Streamlined Top App Bar (removed sub-header, export-only action); dedicated MD3 "All Banks" filter popup modal; 3-line transaction ledger card layout (L1: Date, Bank, Channel, Amount; L2: Full complete narration; L3: Category & Edit/Delete actions); relocated Spend/Earning toggle below category-wise card in Analysis. |
+| **v2.3.0** | Completed | Re-introduced multi-selection period (weekwise, monthwise, quarterwise, yearwise) & presets (this week, this month, this quarter, this year) with custom date range; moved selection checkbox to Line 3 left of category (freeing space in lines 1 and 2); pinned sticky bulk action bar at top while transactions scroll; restored v2.1 Spend/Earning pill toggle design in Analysis; removed bank balances card from Overview. |
 
 ---
 

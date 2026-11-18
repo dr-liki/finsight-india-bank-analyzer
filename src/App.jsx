@@ -321,12 +321,70 @@ export default function App() {
     showToast('Manual transfer pair linked successfully');
   };
 
+  // Available Period Options for Multi-Select Duration Filtering (v2.3.0)
+  const availableWeeks = useMemo(() => {
+    const map = new Map();
+    txns.forEach(t => {
+      const w = getIsoWeek(t.date);
+      if (!map.has(w.key)) {
+        map.set(w.key, { key: w.key, label: w.label, count: 0 });
+      }
+      map.get(w.key).count++;
+    });
+    return Array.from(map.values()).sort((a, b) => b.key.localeCompare(a.key));
+  }, [txns]);
+
+  const availableMonths = useMemo(() => {
+    const map = new Map();
+    txns.forEach(t => {
+      const m = getMonthInfo(t.date);
+      if (!map.has(m.key)) {
+        map.set(m.key, { key: m.key, label: m.label, count: 0 });
+      }
+      map.get(m.key).count++;
+    });
+    return Array.from(map.values()).sort((a, b) => b.key.localeCompare(a.key));
+  }, [txns]);
+
+  const availableQuarters = useMemo(() => {
+    const map = new Map();
+    txns.forEach(t => {
+      const q = getQuarterInfo(t.date);
+      if (!map.has(q.key)) {
+        map.set(q.key, { key: q.key, label: q.label, count: 0 });
+      }
+      map.get(q.key).count++;
+    });
+    return Array.from(map.values()).sort((a, b) => b.key.localeCompare(a.key));
+  }, [txns]);
+
+  const availableYears = useMemo(() => {
+    const map = new Map();
+    txns.forEach(t => {
+      const y = getYearInfo(t.date);
+      if (!map.has(y.key)) {
+        map.set(y.key, { key: y.key, label: y.label, count: 0 });
+      }
+      map.get(y.key).count++;
+    });
+    return Array.from(map.values()).sort((a, b) => b.key.localeCompare(a.key));
+  }, [txns]);
+
   // Date Range Bounds calculation
   const dateRangeBounds = useMemo(() => {
     const now = new Date();
     const pad = (n) => String(n).padStart(2, '0');
     const toYMD = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 
+    if (datePreset === 'THIS_WEEK') {
+      const d = new Date(now);
+      const day = d.getDay();
+      const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+      const monday = new Date(new Date(d).setDate(diff));
+      const sunday = new Date(monday);
+      sunday.setDate(monday.getDate() + 6);
+      return { start: toYMD(monday), end: toYMD(sunday) };
+    }
     if (datePreset === '7D') {
       const past = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
       return { start: toYMD(past), end: toYMD(now) };
@@ -338,6 +396,12 @@ export default function App() {
     if (datePreset === 'THIS_MONTH') {
       const start = new Date(now.getFullYear(), now.getMonth(), 1);
       const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      return { start: toYMD(start), end: toYMD(end) };
+    }
+    if (datePreset === 'THIS_QUARTER') {
+      const currentQ = Math.floor(now.getMonth() / 3);
+      const start = new Date(now.getFullYear(), currentQ * 3, 1);
+      const end = new Date(now.getFullYear(), (currentQ + 1) * 3, 0);
       return { start: toYMD(start), end: toYMD(end) };
     }
     if (datePreset === '3M') {
@@ -1136,6 +1200,26 @@ export default function App() {
             }}
             transferMap={transferMap}
             onOpenTransferManager={() => setShowTransferManagerModal(true)}
+            durationMode={durationMode}
+            setDurationMode={setDurationMode}
+            datePreset={datePreset}
+            setDatePreset={setDatePreset}
+            selectedWeeks={selectedWeeks}
+            setSelectedWeeks={setSelectedWeeks}
+            availableWeeks={availableWeeks}
+            selectedMonths={selectedMonths}
+            setSelectedMonths={setSelectedMonths}
+            availableMonths={availableMonths}
+            selectedQuarters={selectedQuarters}
+            setSelectedQuarters={setSelectedQuarters}
+            availableQuarters={availableQuarters}
+            selectedYears={selectedYears}
+            setSelectedYears={setSelectedYears}
+            availableYears={availableYears}
+            customFrom={customFrom}
+            setCustomFrom={setCustomFrom}
+            customTo={customTo}
+            setCustomTo={setCustomTo}
           />
         )}
 

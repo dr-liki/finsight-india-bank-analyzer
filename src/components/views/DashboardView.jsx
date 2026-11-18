@@ -1,11 +1,10 @@
 import React from 'react';
 import {
-  ArrowDownRight, ArrowUpRight, ArrowLeftRight, FileSpreadsheet, Building2, Upload
+  ArrowDownRight, ArrowUpRight, ArrowLeftRight, FileSpreadsheet, Upload
 } from 'lucide-react';
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend
 } from 'recharts';
-import { formatBalanceDate } from '../../data/balanceEngine';
 
 export default function DashboardView({
   totals,
@@ -130,85 +129,6 @@ export default function DashboardView({
           </div>
         )}
       </div>
-
-      {/* Bank Account Balances - MD3 Cards */}
-      {banks.length > 0 && (
-        <div className="bg-[#1b202a] border border-[#28303d] p-5 rounded-3xl space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
-              <Building2 size={16} className="text-emerald-400" /> Bank Balances ({banks.length})
-            </h2>
-            <button
-              onClick={() => onTriggerUpload('AUTO')}
-              className="text-xs text-emerald-400 hover:underline flex items-center gap-1 font-semibold"
-            >
-              <Upload size={13} /> Upload More
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {banks.map(b => {
-              const balInfo = getBankBalanceInfo(b, txns);
-              const bFiles = uploadedFiles.filter(f => f.bank === b.name);
-              const bTxns = txns.filter(t => t.bank === b.name);
-
-              return (
-                <div
-                  key={b.id}
-                  className="bg-[#151922] border border-[#28303d] rounded-2xl p-3.5 flex flex-col justify-between gap-3 hover:border-emerald-500/40 transition"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-2.5">
-                      <span className="w-3.5 h-3.5 rounded-full shrink-0" style={{ backgroundColor: b.color || '#10b981' }} />
-                      <div>
-                        <h3 className="text-xs font-bold text-white">{b.name}</h3>
-                        <p className="text-[10px] text-slate-400">
-                          {b.accountHint ? `A/C: ${b.accountHint} • ` : ''}{bFiles.length} files • {bTxns.length} txns
-                        </p>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => onEditBankBalance(b)}
-                      className="text-[11px] font-semibold text-emerald-400 hover:underline px-2 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/25"
-                    >
-                      Edit Balance
-                    </button>
-                  </div>
-
-                  {/* Initial & Latest Balances */}
-                  <div className="grid grid-cols-2 gap-2 bg-[#0f131a] p-2.5 rounded-xl border border-[#28303d]/80 text-[11px]">
-                    <div>
-                      <span className="text-[10px] text-slate-400 block font-medium">Initial Balance</span>
-                      <span className="font-bold text-slate-200">₹{balInfo.initial.toLocaleString('en-IN')}</span>
-                      <span className="text-[9px] text-slate-400 block">({formatBalanceDate(balInfo.initialDate)})</span>
-                    </div>
-                    <div>
-                      <span className="text-[10px] text-slate-400 block font-medium">Latest Balance</span>
-                      <span className="font-bold text-emerald-400">₹{balInfo.latest.toLocaleString('en-IN')}</span>
-                      <span className="text-[9px] text-slate-400 block">({formatBalanceDate(balInfo.latestDate)})</span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between text-xs pt-1 border-t border-[#28303d]/60">
-                    <button
-                      onClick={() => onSelectBankFilter(b.name)}
-                      className="text-sky-400 hover:underline text-[11px] font-medium"
-                    >
-                      View Ledger →
-                    </button>
-                    <button
-                      onClick={() => onTriggerUpload(b.name)}
-                      className="text-[11px] text-slate-300 hover:text-emerald-300 flex items-center gap-1 font-medium"
-                    >
-                      <Upload size={12} /> Upload
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

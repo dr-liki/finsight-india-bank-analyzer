@@ -1,7 +1,7 @@
 # FinSight India — Multi-Bank Statement Analyzer
 
 [![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20Web-10b981?style=flat-square)](https://github.com/dr-liki/finsight-india-bank-analyzer/releases)
-[![Release](https://img.shields.io/badge/Release-v2.2.0-0ea5e9?style=flat-square)](https://github.com/dr-liki/finsight-india-bank-analyzer/releases/tag/v2.2.0)
+[![Release](https://img.shields.io/badge/Release-v2.3.0-0ea5e9?style=flat-square)](https://github.com/dr-liki/finsight-india-bank-analyzer/releases/tag/v2.3.0)
 [![Design](https://img.shields.io/badge/Design-Material%20Design%203-8b5cf6?style=flat-square)](https://m3.material.io/)
 [![Privacy](https://img.shields.io/badge/Privacy-100%25%20Offline%20%7C%20Zero%20Cloud-f59e0b?style=flat-square)](https://github.com/dr-liki/finsight-india-bank-analyzer)
 [![License](https://img.shields.io/badge/License-MIT-slate?style=flat-square)](LICENSE)
@@ -14,29 +14,32 @@
 
 Download the latest signed Android APK directly to your phone:
 
-* ⬇️ **[Download FinSight India v2.2.0 APK](https://github.com/dr-liki/finsight-india-bank-analyzer/releases/download/v2.2.0/FinSight-India-v2.2.0-release-signed.apk)** *(Installable over any prior version)*
+* ⬇️ **[Download FinSight India v2.3.0 APK](https://github.com/dr-liki/finsight-india-bank-analyzer/releases/download/v2.3.0/FinSight-India-v2.3.0-release-signed.apk)** *(Installable over any prior version)*
 * 📦 **[View All GitHub Releases](https://github.com/dr-liki/finsight-india-bank-analyzer/releases)**
 
 ---
 
-## ✨ Features & What's New in v2.2.0
+## ✨ Features & What's New in v2.3.0
 
-### 🚀 1. Streamlined Top App Bar
-* **Ultra-Clean Header**: Removed the redundant sub-header text for a sleek, compact profile.
-* **Focused Action**: Retained the primary Export button (`.xlsx`, `.csv`, `.pdf`) directly on the header while removing cluttered secondary controls (accessible in Banks & Rules).
+### ⏱️ 1. Multi-Selection Period & Presets Duration Filtering
+* **Comprehensive Period Controls**: Filter transactions seamlessly across **Weekwise**, **Monthwise**, **Quarterwise**, and **Yearwise** periods with multi-select support and transaction count badges.
+* **Smart Presets**: Instant one-tap time windows including **This Week**, **This Month**, **This Quarter**, and **This Year** (plus Last 7 Days, Last 30 Days, and Last 3 Months).
+* **Custom Date Range**: Date picker inputs with quick "Clear Dates" button and one-tap duration reset.
 
-### 📋 2. Optimized 3-Line Transaction Card Layout
-* **Complete Narration**: Transaction descriptions are now rendered in full without any truncation or text cutoff.
-* **Balanced 3-Line Visual Flow**:
-  * **Line 1**: Transaction Date, Bank account badge, Payment Channel badge, and Amount formatted in one clear line.
-  * **Line 2**: Complete Narration / Description with natural text wrapping.
-  * **Line 3**: Interactive Category badge (with running balance) alongside Edit and Delete action buttons.
+### 📋 2. Streamlined Transaction Cards & Checkbox Relocation
+* **Freed Up Space in Lines 1 & 2**: Moved the transaction selection checkbox to **Line 3 (left of Category)**, removing previous left indentation and giving full horizontal width to Core Facts and Narration.
+* **Line 1 (Core Facts)**: Transaction Date, Bank account badge, Payment Channel badge (UPI/NEFT/IMPS/ATM/POS/CARD/NET/CASH), and signed Amount all in one clean line.
+* **Line 2 (Complete Narration)**: Transaction description rendered fully with zero truncation.
+* **Line 3 (Actions & Category)**: Selection checkbox on the far left, clickable Category badge, statement running balance (`Bal: ₹...`), and Edit/Delete buttons on the right.
 
-### 🏦 3. All Banks Filter Popup Window
-* Replaced the legacy native `<select>` dropdown with a dedicated **All Banks Popup Dialog** that strictly adheres to the app's Material Design 3 design system, matching the Type and Category filter popups with account hints, transaction counts, and active checks.
+### 📌 3. Pinned Sticky Bulk Actions Bar
+* When multiple transactions are selected, the **Change Category** and **Delete** action bar remains firmly pinned/fixed at the top of the screen (`sticky top-2 z-30`) with a blur backdrop, while only the transactions list scrolls beneath it.
 
-### 📊 4. Re-Ordered Analysis Workspace
-* Moved the **Spend Outflow / Earning Inflow** toggle control and total amount summary directly below the **Category-wise Breakdown Box** for a more intuitive analytical hierarchy.
+### 📊 4. Refined Analysis Mode Toggle Design
+* Restored the clean, high-precision MD3 segmented pill toggle design from version 2.1 for **Spend Outflow** and **Earning Inflow**, positioned directly below the Category-wise Breakdown card.
+
+### 🎯 5. De-Cluttered Overview Workspace
+* Removed the redundant Bank Balances container from the Overview tab, placing full focus on the high-level KPI cards and Multi-Bank Cashflow Trend chart (bank balances remain fully accessible in the Banks & Rules workspace).
 
 ### 💰 5. True Running Balance Accounting
 * Extracts running statement balances and displays **`Bal: ₹XX,XXX.XX`** directly in your transaction ledger.

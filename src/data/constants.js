@@ -1,9 +1,9 @@
 /**
  * FinSight India - Application Constants & Material Design 3 Design Tokens
- * Version: 2.2.0
+ * Version: 2.3.0
  */
 
-export const APP_VERSION = '2.2.0';
+export const APP_VERSION = '2.3.0';
 
 // MD3 Tonal Color Tokens
 export const MD3_THEME = {

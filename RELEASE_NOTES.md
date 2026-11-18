@@ -24,7 +24,7 @@ FinSight India v2.3.0 introduces comprehensive duration filtering capabilities, 
 
 FinSight India v2.2.0 introduces refined UI ergonomics, cleaner information hierarchy across the Top Bar and Ledger, and a modern popup window for bank filtering:
 * **Streamlined Top App Bar**:
-  - Removed the sub-header line to reclaim vertical screen estate and provide a distraction-free 64dp header.
+  - Removed the sub-header tagline to reclaim vertical screen estate and provide a distraction-free 64dp header.
   - Kept only the essential Export button in the top bar; removed reset and backup buttons from the header (retaining safe, full access to Backup and Reset in the Banks & Rules workspace).
 * **Modern "All Banks" Popup Filter Window**:
   - Replaced the native select dropdown with a dedicated Material Design 3 popup modal (`BankFilterModal`) matching the visual style of Type and Category filter dialogs.
@@ -58,8 +58,6 @@ FinSight India v2.1.0 is a milestone release delivering a complete app-wide UI/U
     - `storage.js`: LocalStorage manager with versioned keys (`_v210`) and JSON backup/restore engine.
   - **UI Layers** (`src/components/`, `src/theme/md3.css`):
     - Separate navigation bars, modular view panels (`DashboardView`, `AnalysisView`, `LedgerView`, `BanksView`), and independent dialog modals.
-* **Preservation of All Financial Intelligence**:
-  - 100% backward-compatible persistence, password-protected PDF parsing, reverse-calculation opening balance math, Smart Bank Transfers, and multi-bank analytics.
 
 ---
 
@@ -67,329 +65,133 @@ FinSight India v2.1.0 is a milestone release delivering a complete app-wide UI/U
 
 FinSight India v2.0.0 introduces true bank balance statement accounting and modern selection windows across transaction workflows:
 * **Modern Selection Windows for Type and Category in Edit Transaction**:
-  - Replaced the old native OS select dropdowns with dedicated, full-featured popup windows styled identically to the Filter and Category Manager dialogs.
-  - Features the signature dark-slate container, emerald/sky highlights, icons, active radio checks, and search filtering.
-  - Stacked at `z-[80]`, ensuring the selection window opens comfortably in front of the Edit Transaction dialog and never behind it.
-  - Also deployed to the Add Manual Transaction dialog for universal UX consistency.
+  - Replaced native OS select dropdowns with dedicated popup windows matching the Filter and Category Manager dialogs.
+  - Stacked at `z-[80]`, ensuring the selection window opens comfortably in front of the Edit Transaction dialog.
+  - Deployed to both Add Manual Transaction and Edit Transaction modals for universal consistency.
 * **True Bank Statement Running Balance Accounting Engine**:
-  - **Explicit 'Balance' Column Recording**: Running balances from uploaded Excel, CSV, and PDF statements are comprehensively extracted, stored on every transaction (`t.balance`), and displayed directly under the transaction amount in the Ledger.
-  - **Oldest-to-Newest Chronological Sorting**: Transactions assigned to each bank are sorted chronologically from oldest to newest with intra-day sequence tie-breaking.
+  - **Explicit 'Balance' Column Recording**: Running balances from uploaded statements are captured and displayed directly in the Ledger (`Bal: ₹...`).
+  - **Oldest-to-Newest Chronological Sorting**: Transactions assigned to each bank are sorted chronologically with intra-day sequence tie-breaking.
   - **Exact Initial Balance Reverse-Deduction**:
-    - If first transaction was a `CREDIT`: `Initial Balance = First Recorded Running Balance - Amount`
-    - If first transaction was a `DEBIT`: `Initial Balance = First Recorded Running Balance + Amount`
-  - **Exact Latest Balance**: Takes the running balance of the last transaction that recorded a balance.
-  - Displayed alongside formatted dates in brackets on each bank card and auto-synced on statement changes.
+    - If first transaction was a Credit: $\text{Initial Balance} = \text{First Recorded Balance} - \text{Amount}$
+    - If first transaction was a Debit: $\text{Initial Balance} = \text{First Recorded Balance} + \text{Amount}$
+  - **Exact Latest Balance**: Anchors to the closing running balance of the latest statement transaction.
+  - Displayed alongside formatted dates in brackets on each bank card and auto-synced on statement modifications.
 
 ---
 
 ## Version 1.9.2 (November 2026)
 
-FinSight India v1.9.2 brings streamlined transaction category editing and uniform workspace layout refinements:
-* **Single Transaction Category Editing (Old Style Restored)**: In the Edit Transaction window (and Add Transaction modal), category selection now uses the direct native dropdown select element instead of invoking the category picker modal. This eliminates the layered modal conflict where the picker popped up behind the edit dialog.
-* **Multi-Select Transactions (New Style Preserved)**: Bulk editing multiple selected transactions continues to leverage the modern Category Picker popup window with instant search, color tags, and category pills.
-* **Elevated Modal Stacking (z-[70])**: Boosted the Category Picker modal stacking index to z-[70] to guarantee it always renders on top of all other application overlays.
-* **Re-apply Rules Button Relocated**: In the Bank & Rules workspace, the "Re-apply Rules" button in Section 4 (Smart Auto-Categorization Rules) has been moved directly below the section description, achieving 100% visual and layout consistency with Sections 1, 2, 3, and Smart Bank Transfers.
+* **Single Transaction Category Editing**: Restored inline dropdown select for single-transaction editing to eliminate modal stacking conflicts.
+* **Multi-Select Transactions**: Preserved modern Category Picker popup window with instant search and color tags for bulk edits.
+* **Elevated Modal Stacking (`z-[70]`)**: Boosted picker modal stacking index to guarantee rendering on top of all application overlays.
+* **Re-apply Rules Button Relocated**: In Section 4 (Smart Auto-Categorization Rules), moved the button below description for visual consistency.
 
 ---
 
 ## Version 1.9.1 (November 2026)
 
-FinSight India v1.9.1 delivers a comprehensive fix to bank balance calculations across uploaded bank statements:
-* **Fixed PDF Credit vs Debit Classification**: Strip balance columns ending in Cr (e.g., 45,230.50 Cr) from the transaction line before testing Credit/Debit keywords, preventing debit payments (UPI, Swiggy, ATM) from being misclassified as Credits.
-* **Intra-Day Sequence Tie-Breaking**: Preserves original file row order (fileOrderIndex) and detects statement direction (ASC vs DESC). For reverse-chronological statements (HDFC, SBI net banking), same-day transactions are sorted in genuine chronological execution order rather than scrambled by string IDs.
-* **Excel / CSV Column Collision Fix**: Enforces strict header boundaries for colMap so composite Dr/Cr columns do not collide with or displace Debit amount columns.
-* **Explicit Opening & Closing Balance Capture**: Detects OPENING BALANCE, BALANCE B/F, and CLOSING BALANCE rows in statements and sets them as true mathematical anchors instead of discarding them.
-* **PDF Summary Box Pre-Pass**: Automatically extracts statement-level Opening and Closing balance summaries from header/footer metadata.
-* **Overdraft & Signed Balances**: Handles negative balances and overdraft amounts (-Rs.X and Dr balances) accurately.
+* **Fixed PDF Credit vs Debit Classification**: Stripped balance columns ending in `Cr` before keyword testing, preventing debit payments from being misclassified as Credits.
+* **Intra-Day Sequence Tie-Breaking**: Preserves original row order (`fileOrderIndex`) and detects statement direction (`ASC` vs `DESC`).
+* **Excel / CSV Column Collision Fix**: Enforces strict header boundaries so composite Dr/Cr columns do not displace Debit amount columns.
+* **Explicit Opening & Closing Balance Capture**: Detects `OPENING BALANCE`, `BALANCE B/F`, and `CLOSING BALANCE` rows as true mathematical anchors.
+* **Overdraft & Signed Balances**: Accurately handles negative balances and overdraft amounts (`-Rs.X` and `Dr` balances).
 
 ---
 
 ## Version 1.9.0 (November 2026)
 
-FinSight India v1.9.0 brings significant layout and account intelligence upgrades to the Bank & Rules workspace: **Relocation of Section Header Buttons** below descriptions across all workspace panels, **Automatic Statement File Balance Analysis** extracting opening/initial and latest closing balances with dates in brackets, an **Interactive Edit Bank Balances Popup Modal**, and **Real-Time Automatic Balance Updates** whenever statement files are uploaded, removed, or modified.
-
----
-
-### Highlights & Key Improvements
-
-#### 1. Header Action Buttons Moved Below Descriptions
-- **Clean Responsive Layout**: In the Bank & Rules workspace, the primary action buttons (`Add Bank`, `Upload Files`, `Manage All`, `Manage Transfers`, and `Re-apply Rules`) have been moved directly below their respective section descriptions.
-- **Unconstrained Descriptions**: Section titles and descriptive guidance now span the full card width without line-wrapping congestion on mobile viewports.
-- **Unified Action Hierarchy**: All five workspace cards follow the exact same visual pattern: Title → Description → Uniform Action Button (`h-8 px-3 rounded-xl text-xs font-semibold`).
-
-#### 2. Automatic Statement File Balance Analysis
-- **Statement Balance Ingestion**: Both Excel/CSV matrix parsers and PDF statement extractors now automatically detect and capture running balances, opening balance entries, and closing balance amounts directly from bank statement files (supporting SBI, HDFC, ICICI, Axis, Kotak, UBI, etc.).
-- **Initial & Latest Bank Balances**: For each bank card in Section 1 (My Banks), FinSight automatically calculates:
-  - **Latest Bank Balance**: e.g., `Latest Balance: ₹54,320.50 (28 Oct 2026)`
-  - **Initial Bank Balance**: e.g., `Initial Balance: ₹12,100.00 (1 Apr 2026)`
-- **Dates in Brackets**: Formatted Indian calendar dates are cleanly displayed in brackets next to each balance.
-- **Net Flow Fallback**: For statement files without explicit balance columns, initial and closing balances are derived from chronological transaction dates and net cash flow movements.
-
-#### 3. Interactive Edit Bank Balance Popup Window
-- **Edit Balances on Demand**: Each bank card features an edit balance icon (`<Edit3 size={12} />`) opening a dedicated popup modal.
-- **Granular Baseline Controls**: Users can adjust Initial / Opening Balance (₹) and Initial Date, as well as Latest / Closing Balance (₹) and Latest Date.
-- **"Re-Calculate from Statements"**: Instant button inside the modal to re-analyze uploaded statement files and reset manual overrides back to statement-derived figures.
-- **Persistent Storage**: Saved balances and dates persist safely in device `localStorage`.
-
-#### 4. Automatic Balance Updates on Statement Changes
-- **Live Reactive Synchronization**: When new statements are uploaded, files re-assigned, or existing statements deleted, bank balances and their corresponding date ranges recalculate and update automatically in real time without requiring manual intervention.
+* **Header Action Buttons Moved Below Descriptions**: Primary action buttons across all five workspace sections moved directly below section descriptions for clean mobile layout.
+* **Automatic Statement File Balance Analysis**: Ingests statement balance data, extracting Initial Balance and Latest Balance with formatted calendar dates in brackets.
+* **Interactive Edit Bank Balance Modal**: Granular manual baseline controls to override or adjust balances, with a "Re-Calculate from Statements" button.
+* **Live Reactive Synchronization**: Bank balances and date ranges update automatically in real time whenever statements are uploaded, re-assigned, or deleted.
 
 ---
 
 ## Version 1.8.0 (November 2026)
 
-FinSight India v1.8.0 introduces four key UX enhancements: **Net Flow Comparison Relocation & Text Overflow Fix**, **Clickable Top Spend Merchants & Top Income Sources with Transaction Detail Drill-Down Modal**, **Relocation of Smart Bank Transfers to Bank & Rules Page** (positioned below Categories Manager), and **Standardized Uniform Design Structure for Header Action Buttons** across the Bank & Rules workspace.
-
----
-
-### Highlights & Key Improvements
-
-#### 1. Net Flow Comparison Relocation & Text Overflow Fix
-- **Moved to Bottom of Analysis Page**: The Spend vs. Earning Net Flow Comparison card now sits permanently at the bottom of the Analysis tab, visible beneath whichever breakdown (Spend Outflow or Earnings Inflow) is actively selected at the top.
-- **Fixed Column Clipping & Overflow**: Redesigned the table layout with robust proportions (Category 34% with clean truncation, Spend 22%, Earning 22%, and Net Flow 22% with minimum 460px width constraint and smooth horizontal scroll on narrow mobile screens).
-- **Tabular Numerals & Signed Currency**: All rupee figures now render with `whitespace-nowrap tabular-nums` and clean sign prefixes (`+₹` or `-₹`), preventing line wraps or awkward negative signs.
-- **Header Net Flow Summary**: Added responsive badges at the top of the comparison card showing total Outflow, total Inflow, and net cash balance at a glance.
-- **Interactive Ledger Filtering**: Tapping any category row in the Net Flow table instantly filters the Transactions Ledger to that category.
-
-#### 2. Clickable Top Spend Merchants & Top Income Sources with Drill-Down Popup
-- **Interactive Merchant Rows**: Tapping any merchant under "Top Spend Merchants & Payees" or payer under "Top Income Sources & Payers" opens an interactive transaction detail popup window.
-- **Comprehensive Payee Overview**: Displays merchant/payer name, category badge, direction (Outflow vs. Inflow), and total transaction volume and count within the active date/account scope.
-- **Full Transaction List**: Displays every matching transaction with its date, bank badge (with color dot), full narration (untruncated with clean line wrapping), category, and signed amount.
-- **Tap to Edit / Recategorize**: Tapping any individual transaction in the popup immediately opens the transaction edit dialog to modify categories, narration, amount, or transfer links.
-- **"View in Ledger" Shortcut**: Quick button to pre-filter the ledger to transactions matching that merchant name.
-
-#### 3. Smart Bank Transfers Moved to Bank & Rules Page
-- **Clean Transactions Tab**: Removed the Smart Bank Transfers banner from the Transactions Ledger, giving maximum screen real estate to transaction filtering and browsing.
-- **Dedicated Section Below Categories Manager**: Embedded a full Smart Bank Transfers manager card in the Bank & Rules page directly beneath Section 3 (Categories Manager) and above Section 4 (Auto-Categorization Rules).
-- **Overview & Quick Controls**: Shows active paired transfer count, total volume, "Exclude from totals" toggle, and a preview of the latest 5 linked transfer pairs with bank-to-bank badges.
-- **Direct Manager Integration**: Seamlessly launches the Smart Bank Transfers Manager dialog for custom clearing windows, manual linking, and pair unlinking.
-
-#### 4. Uniform Design & Size Structure for Bank & Rules Buttons
-- **Standardized Header Action Buttons**: Standardized all primary section actions in the Bank & Rules page ("Add Bank", "Upload Files", "Manage All", "Manage Transfers", and "Re-apply Rules") to a cohesive uniform structure.
-- **Unified Dimensions & Geometry**: Exact same height (`h-8`), horizontal padding (`px-3`), corner radius (`rounded-xl`), font weight (`text-xs font-semibold`), icon size (`size={14}`), and layout (`flex items-center gap-1.5 shrink-0`).
-- **Refined Tinted Theme**: Polished tinted background badges with 30% border opacity and active scale animations, creating balanced visual harmony across all sections.
+* **Net Flow Comparison Relocation & Overflow Fix**: Moved comparison table to the bottom of the Analysis page with balanced column layout, tabular numerals, and horizontal scroll support.
+* **Clickable Top Spend Merchants & Income Sources**: Tapping any merchant or income payer opens an interactive drill-down modal showing all matching transactions.
+* **Smart Bank Transfers Moved to Banks Page**: Relocated the transfers card from Ledger to the Banks & Rules page below Categories Manager.
+* **Standardized Header Action Buttons**: Unified dimensions (`h-8`, `px-3`, `rounded-xl`, `text-xs font-semibold`) across all workspace section buttons.
 
 ---
 
 ## Version 1.7.0 (November 2026)
 
-FinSight India v1.7.0 introduces major workflow and visual enhancements to the Transactions Ledger: an interactive **Multi-Select Transactions Suite with Bulk Category Assignment**, a **Redesigned Transaction Type Filter Popup Window** (replacing the native HTML select with visual cards for All Types, Debit, and Credit), and a **Redesigned Category Picker Popup Window** mirroring the design language of the filter window with real-time search, category color swatches, transaction count badges, and touch-optimized selection across bulk actions and transaction editing.
-
----
-
-### Highlights & Key Improvements
-
-#### 1. Multi-Select Transactions & Bulk Category Changes
-- **Individual Checkbox Selection**: Each transaction row in the Transactions Ledger now features a responsive selection checkbox with clear checked/unchecked indicators.
-- **Bulk Action Floating Banner**: Selecting one or more transactions dynamically displays a sleek action bar showcasing the active selection count, "Select All" / "Deselect All", and a primary "Change Category" action.
-- **Bulk Category Application**: Tapping "Change Category" opens the Category Picker window; selecting any category updates all selected transactions at once and marks them with `isManualCategory: true` to prevent automatic rules from overwriting your classifications.
-- **Toast Confirmation**: Displays an immediate feedback notification detailing the number of transactions updated and resets the active selection.
-
-#### 2. Redesigned Transaction Type Popup Window
-- **Replaced Native `<select>`**: Replaced the native HTML dropdown with an elegant, responsive trigger button that dynamically displays the active type filter with dedicated icon badges (`Layers`, `TrendingDown`, or `TrendingUp`).
-- **Card-Based Type Selector Window**:
-  - **All Types**: Displays total transactions count with clean slate styling.
-  - **Debit Only (Expenses / Outflows)**: Features a rose indicator, live total debit expense amount, and transaction count.
-  - **Credit Only (Income / Inflows)**: Features an emerald indicator, live total credit income amount, and transaction count.
-  - Selected cards feature glowing borders and checkmark indicators with instant tap-to-select and quick "Reset to All" controls.
-
-#### 3. Redesigned Category Popup Window (Consistent with Filter Window)
-- **Visual Parity**: Built with the exact same visual design system as the multi-category filter window (screen-centered dark backdrop, rounded slate card, search bar with clear button, and action footer).
-- **Rich Category Cards**: Every category displays a dedicated color dot matching the application's color palette, category title, and a badge with the count of existing transactions in that bucket.
-- **Universal Category Selection**: Used for bulk category changes on multi-selected transactions as well as for selecting categories inside the Edit Transaction and Add Transaction modals, replacing basic native dropdowns with a search-enabled visual picker.
-- **Color Dots in Category Filter**: Enhanced the existing Multi-Option Category Filter modal to include the same colored indicator dots for each category row.
+* **Multi-Select Transactions Suite**: Responsive checkboxes on every transaction row with dynamic bulk action bar for bulk category changes.
+* **Redesigned Transaction Type Popup**: Replaced native select with a card-based modal for All Types, Debits Only, and Credits Only with live totals.
+* **Redesigned Category Picker Popup**: Full-screen centered modal with real-time search, category color swatches, and transaction count badges.
 
 ---
 
 ## Version 1.6.1 (November 2026)
 
-FinSight India v1.6.1 is an immediate hotfix update resolving an initialization runtime exception that caused a blank screen on startup in v1.6.0:
-
----
-
-### Highlights & Key Improvements
-
-#### 1. Resolved Blank Screen Initialization Crash (Temporal Dead Zone Fix)
-- **Root Cause**: In v1.6.0, an automatic category assignment `useEffect` was positioned before the declaration of `transferPairs = useMemo(...)`. Because React evaluates dependency arrays synchronously during component execution, JavaScript threw an uncaught `ReferenceError: Cannot access 'transferPairs' before initialization` (Temporal Dead Zone violation) on startup, crashing React before mounting and causing a blank screen.
-- **Resolution**: Reordered the `useEffect` hook to execute cleanly after `transferPairs` and `transferMap` are fully initialized. Refactored the updater to use functional state updates (`setTxns(prev => hasChange ? updated : prev)`), guaranteeing stability and eliminating re-render thrashing.
-
-#### 2. Native React ErrorBoundary with Self-Recovery Controls
-- **Fail-Safe UI Shell**: Wrapped the application root in an interactive `<ErrorBoundary>` component.
-- **Zero Silent Failures**: If any unexpected runtime error ever occurs, users are shown an informative recovery card with the error details, a "Reload Application" button, and a "Clear Cache & Restart" option rather than an unresponsive blank screen.
+* **Resolved Blank Screen Startup Crash**: Fixed Temporal Dead Zone (`ReferenceError`) on `transferPairs` initialization in React `useEffect`.
+* **Interactive Error Boundary**: Wrapped application root in a recovery shell with "Reload Application" and "Clear Cache & Restart" buttons.
 
 ---
 
 ## Version 1.6.0 (November 2026)
 
-FinSight India v1.6.0 delivers core visual, architectural, and workflow refinements: **Automatic 'Bank Transfer' Category Assignment** for smart-detected and manually linked cross-bank transfers, a **Focused Ledger-Exclusive Smart Bank Transfer Banner** (removed from Overview and Analysis tabs), a **Clean Minimal Top App Bar** (removing the 5 cluttering top action buttons), **Removal of "Manage Categories" from the Analysis tab**, **Comprehensive Text Overflow Fixes** across all category analysis and merchant views, a **Centered Modal Export Dialog** (eliminating off-screen dropdown clipping on mobile viewports), and **Universal File Manager APK Icon Visibility** across Android file explorers.
+* **Automatic 'Bank Transfer' Category Synchronization**: Detected or linked transfer pairs automatically receive `'Bank Transfer'` category across both legs.
+* **Focused Ledger Transfer Banner**: Scoped the transfer notification banner exclusively to the Transactions tab.
+* **Clean Minimal Top App Bar**: Removed 5 redundant action buttons from the top bar for a clean header.
+* **Screen-Centered Export Modal**: Replaced absolute dropdown with fixed centered dialog for PDF, Excel, and CSV exports.
+* **Universal File Manager APK Icon**: Flat raster icons across all density buckets with explicit manifest attributes for complete thumbnail visibility.
 
 ---
 
-### Highlights & Key Improvements
+## Version 1.5.0 (November 2026)
 
-#### 1. Automatic 'Bank Transfer' Category Assignment
-- **Synchronized Categorization**: When two transactions are paired as a Smart Bank Transfer (debit in Bank A matching credit in Bank B), both legs are automatically assigned the `'Bank Transfer'` category in real time.
-- **Manual Link Integration**: Manually linking two transactions via the Transfer Linker instantly sets both transactions to `'Bank Transfer'` with `isManualCategory: true`.
-- **Intelligent Unlink Reversion**: Unlinking a transfer pair resets both transactions back to their direction-aware automatic categories so they seamlessly rejoin their appropriate spending or earning buckets.
-
-#### 2. Focused Ledger-Exclusive Smart Bank Transfer Banner
-- **Removed from Overview & Analysis**: The Smart Bank Transfer notification and exclusion toggle has been removed from the global app shell and dashboard/analysis tabs, keeping high-level summaries uncluttered.
-- **Dedicated Transactions Ledger Home**: The Smart Bank Transfer banner and its quick "Edit / Manage" controls are now positioned exclusively at the top of the Transactions (`LEDGER`) tab where users inspect and reconcile ledger entries.
-
-#### 3. Clean Minimalist Top App Bar
-- **Header De-Cluttering**: Removed the 5 redundant quick-action buttons (*Transfers*, *Backup*, *Categories*, *+ Bank*, and *Upload*) from the sticky top navigation bar.
-- **Streamlined Visual Hierarchy**: The header now cleanly highlights the custom FinSight India branding, version badge, bank/file/transaction counters, and active transfer badge without crowding mobile screens.
-
-#### 4. Streamlined Analysis Tab
-- **Removed "Manage Categories" Action**: Removed the category management button from the Category Analysis tab to keep the interface purely focused on spending breakdowns, earning inflows, and net-flow comparisons.
-
-#### 5. Mobile Text Overflow & Truncation Fix in Analysis Page
-- **Horizontal Overflow Prevention**: Fixed category names, merchant strings, and amount labels overflowing screen boundaries on smaller mobile devices.
-- **Responsive Sub-Mode Bar**: Added `overflow-x-auto` to the Spend / Earnings / Net Flow mode selector so button labels remain fully accessible on narrow viewports.
-- **Fluid Breakdown Lists**: Applied `min-w-0 flex-1 truncate` to category rows and top payees/merchants, ensuring amounts and percentages always stay anchored within the screen.
-- **Net Flow Table Width Constraint**: Constrained the Net Flow comparison table with `min-w-[420px]` inside an `overflow-x-auto` container with horizontal scroll support.
-
-#### 6. Screen-Centered Export Modal Dialog
-- **Eliminated Dropdown Off-Screen Clipping**: Replaced the previous `absolute` positioned dropdown menu (which clipped off-screen when buttons wrapped on mobile displays) with a fixed, centered modal dialog (`fixed inset-0 bg-black/75 z-50 flex items-center justify-center`).
-- **Enhanced Export Experience**: Features large, touch-friendly selection cards for PDF Statement Report, Excel XLSX, and RFC 4180 CSV, an explicit summary of selected transactions, backdrop dismiss, and a dedicated close button.
-
-#### 7. File Manager APK Icon Visibility
-- **Universal Launcher & File Manager Icon Assets**: Added flat raster PNG icons (`ic_launcher.png`, `ic_launcher_round.png`) across all density buckets (`mdpi`, `hdpi`, `xhdpi`, `xxhdpi`, `xxxhdpi`) in both `mipmap` and `drawable` resource folders.
-- **Explicit Manifest Attributes**: Added explicit `android:icon`, `android:roundIcon`, and `android:logo` declarations to both `<application>` and the launcher `<activity>` in `AndroidManifest.xml`.
-- **Automated CI Manifest Deployment**: Added an automated CI workflow step ensuring custom manifest attributes are permanently stamped into every generated release build, ensuring full thumbnail visibility in Files by Google, Samsung My Files, and third-party file explorers.
-
----
-
-FinSight India v1.5.0 introduces comprehensive enhancements to transaction control, data export reliability, mobile UI layout, categorization accuracy, and temporal filtering: an **Interactive Smart Bank Transfer Management & Manual Linking Suite**, a **Universal Native Android Save & Share Engine** (resolving WebView export saving failures), a **Mobile Text-Overflow Fix** in the Transactions Ledger, **Smarter & Accurate Debit/Credit Direction Categorization**, and a **Multi-Select Period Duration Filter** (`Weekwise`, `Monthwise`, `Quarterwise`, `Yearwise`, `Presets`, and `Custom`).
-
----
-
-### Highlights & Key Improvements
-
-#### 1. Interactive Smart Bank Transfer Editing & Management
-- **Unlink False-Positive Transfer Pairs**: Users can inspect any auto-detected transfer pair in the dedicated Inspector or Manager and unlink it with a single tap. Unlinked pairs are remembered so automated detection will not re-link them.
-- **Manual Transfer Linking**: Allows linking transfers that auto-detection missed (e.g. slight date delays or non-standard narrations). Tapping "Link as Bank Transfer" in the transaction modal opens an interactive counterpart picker matching the opposite transaction direction.
-- **Smart Bank Transfers Manager**: Dedicated management modal showing total paired transfers and volume, with configurable clearing windows (Same Day, 1 Day, 2 Days, 3 Days, 5 Days), unlinked history reset, and one-tap categorization as "Bank Transfer".
-- **Direct Linkage in Transaction Edit Modal**: When inspecting an individual transaction, its paired transfer counterpart and bank are displayed with an immediate option to unlink.
-
-#### 2. Native Android File Export & Share Engine
-- **Resolved WebView Download Failures**: On Android/Capacitor WebView, standard HTML `<a download>` links and `blob:` navigation fail silently without saving files. v1.5.0 integrates `@capacitor/filesystem` and `@capacitor/share` to write exported files to cache and launch the native Android Share Sheet ("Save to Downloads", Google Drive, WhatsApp, etc.).
-- **Universal Multi-Platform Support**: Automatically routes through native FileProvider and Share Sheet on Android devices while falling back to instant browser downloads on desktop/web environments.
-- **Covers All Exports & Backups**: Applies to PDF Statement Reports, formatted Excel (`.xlsx`) workbooks, RFC 4180 CSV files, and full JSON workspace backups.
-
-#### 3. Mobile Text Overflow & Truncation Fix in Transactions Ledger
-- **Prevented Horizontal Blowout**: Continuous unbroken Indian banking narrations (such as `UPI/431289471928/MR-RAMESH-KUMAR...`) previously pushed amounts and edit icons off-screen on mobile devices.
-- **Fluid Responsive Layout**: Applied flex constraints (`min-w-0 flex-1 overflow-hidden`), word breaks (`break-words break-all`), multi-line line-clamping (`line-clamp-2`), and right-column shrinkage protection (`shrink-0 text-right`), ensuring clean display on any screen width.
-
-#### 4. Smarter & Accurate Debit and Credit Transaction Categorization
-- **Direction-Aware Rule Evaluation**: Introduced transaction direction scope (`scope: 'CREDIT' | 'DEBIT' | 'BOTH'`) to categorization rules. Credits are never accidentally tagged with debit categories (or vice-versa).
-- **Eliminated Salary Over-Tagging**: Prevented unmatched credit transactions from being blindly defaulted to `Salary & Income`.
-- **Targeted Indian Banking Context Rules**: Discrete token recognition for interest credits (`int.pd`, `sb int`, `quarterly int`), cashbacks/rewards (`cred cashback`, `gpay reward`), refunds, tax refunds (`it refund`), dividends, ATM cash withdrawals, and utility/credit card bills.
-
-#### 5. Multi-Select Period Duration Filter
-- **Multi-Select Period Modes**: Users can now filter transactions across multiple periods at once:
-  - **Weekwise**: Multi-select ISO weeks with live transaction counts.
-  - **Monthwise**: Multi-select calendar months (e.g. compare Jan and Mar).
-  - **Quarterwise**: Multi-select fiscal/calendar quarters (`Q1`, `Q2`, `Q3`, `Q4`).
-  - **Yearwise**: Multi-select calendar years.
-- **Convenient Presets & Custom Range**: Alongside multi-select periods, includes instant quick presets (`Last 7 Days`, `Last 30 Days`, `This Month`, `Last 3 Months`, `This Year`), `All Time`, and `Custom Date Range` with single-tap reset.
+* **Interactive Smart Bank Transfer Management**: Unlinking false-positive pairs with persistence, manual counterpart pairing, and configurable clearing windows.
+* **Universal Native Android Save & Share Engine**: Integrated `@capacitor/filesystem` and `@capacitor/share` to resolve silent WebView download failures.
+* **Mobile Text Overflow Fix in Ledger**: Added flexible word-break constraints and line clamps to prevent long Indian banking narrations from breaking layout.
+* **Direction-Aware Categorization (`scope: CREDIT | DEBIT | BOTH`)**: Prevents salary or credit tags from being assigned to debit expenses.
+* **Multi-Select Period Duration Filters**: Introduced Weekwise, Monthwise, Quarterwise, and Yearwise multi-select filters alongside presets and custom ranges.
 
 ---
 
 ## Version 1.4.0 (November 2026)
 
-FinSight India v1.4.0 brings major enhancements to classification precision, user control, and report generation: a **Smart Token-Boundary Auto-Categorization Engine** eliminating false positive tags (such as over-tagging Fuel & Transport), **Persistent Manual Transaction Categories** that never revert on app restart or rules refresh, an interactive **Multi-Option Category Filter with Reset Action** in the Ledger, and a comprehensive **Formatted Export Suite (PDF, Excel XLSX, and CSV)**.
-
----
-
-### Highlights & Key Improvements
-
-#### 1. Smart Token-Boundary Auto-Categorization Engine
-- **Eliminated False Positives**: Resolved an issue where unrelated transactions (e.g. city names like *Kolkata* or *Solapur*, finance company names like *Cholamandalam*, or challan keywords like *Violation*) were falsely tagged under `Fuel & Transport` because of naive substring matches like `ola`.
-- **Discrete Token Boundary Matching**: All keywords are compiled into bounded regular expressions matching word boundaries `(^|[^a-z0-9])(keyword)([^a-z0-9]|$)`, ensuring keywords match as distinct tokens rather than substrings inside other words.
-- **Refined Keyword Rules**: Cleaned up ambiguous short keywords across categories, prioritizing exact UPI handles, merchant IDs, and distinct Indian financial identifiers.
-
-#### 2. Persistent Manual Transaction Categories
-- **Zero Category Overwrites on Restart**: Fixed the bug where category changes manually assigned in the "Edit Transaction" or "Add Transaction" dialogs disappeared when reloading or relaunching the application.
-- **Manual Override Stamp**: Introduced `isManualCategory: true` in the transaction data model. Manual classifications permanently bypass automated rule re-evaluations and background runs.
-- **Visual Feedback & Reversion**: Added a "Manual Tag" badge in the transaction edit modal with an instant option to revert back to auto-categorization if desired.
-
-#### 3. Multi-Option Category Filter with Instant Clear Action
-- **Multi-Category Selection**: Upgraded the category filter in the Transactions (`LEDGER`) tab from a single-item select to a multi-option modal allowing simultaneous inspection of multiple spending verticals (e.g. analyzing `Food & Dining` and `Groceries` together).
-- **Search & Bulk Controls**: Real-time category search filter, live transaction count badges per category, "Select All", and a single-tap "Clear / Reset Filter" button.
-- **Active Filter Dismiss Pill**: Prominently displays the count of active category filters with an instant `✕` button to restore all categories in a single tap.
-
-#### 4. Formatted Export Suite (PDF, CSV, and XLSX)
-- **High-Quality PDF Statement Export**:
-  - Generates crisp, print-ready PDF statements via `jspdf` and `jspdf-autotable`.
-  - Deep slate branding header (`#0f172a`), export scope metadata (Bank, Category Filter, Date Range, Generation Timestamp).
-  - Executive KPI summary card: Total Outflow (Debit), Total Inflow (Credit), and Net Cash Balance.
-  - Alternating shaded data rows with colored amounts (Green for Inflow, Red for Outflow), auto-wrapping narration text, and running page numbers.
-- **Formatted Excel Workbook (`.xlsx`)**:
-  - Generated via SheetJS (`xlsx`) with automated column width calculations.
-  - Formatted transaction data with automated summary totals rows (Total Debits, Total Credits, Net Balance).
-- **Standardized RFC 4180 CSV**:
-  - Encoded with UTF-8 BOM (`\uFEFF`) and proper quotation escaping for seamless compatibility with Microsoft Excel, Google Sheets, LibreOffice, and tax software.
-- **Context-Aware Scoping**: All export formats automatically respect the user's active Ledger filters (selected banks, date ranges, multi-category selections, search query, and smart transfer exclusions).
+* **Smart Token-Boundary Regex Categorization**: Bounded regular expressions prevent false-positive category matching (e.g., matching `ola` inside city names).
+* **Persistent Manual Categories**: Introduced `isManualCategory: true` ensuring user-assigned categories survive app restarts and rule re-evaluations.
+* **Multi-Option Category Filter in Ledger**: Searchable category filter modal with live transaction counts, Select All, and instant Clear button.
+* **Comprehensive Formatted Export Suite**: Print-ready PDF statements with KPI cards, formatted Excel workbooks with totals, and RFC 4180 CSV with UTF-8 BOM.
 
 ---
 
 ## Version 1.3.0 (November 2026)
 
-FinSight India v1.3.0 brings full **Material Design 3 (MD3) Adaptive Icon Compliance**, **Conflict-Free Updates** with a persistent release signing keystore, **Smart Bank Transfer Matching** between accounts, a comprehensive **Backup & Restore Manager** with granular item selection, and **Dual Category Analysis** showing both Spend and Earning breakdowns independently.
-
----
-
-### Highlights & Key Improvements
-
-#### 1. Material Design 3 (MD3) Launcher Icon Compliance & App Drawer Fix
-- **Visibility Fix**: Resolves the invisible launcher icon issue in modern Android app drawers caused by default white-on-white asset templates.
-- **Adaptive Icon Architecture**:
-  - **Background**: Deep brand slate `#0f172a` with subtle emerald gradient arc.
-  - **Foreground**: Precision-centered vector containing the FinSight Rupee-Pulse Lens and stylized ascending bars, scaled within the strict 66% safe zone (72dp within 108dp canvas) so no OEM mask (circle, squircle, teardrop) clips the logo.
-  - **Themed Icons (Monochrome)**: Full Android 13+ dynamic Material You themed icon support (`ic_launcher_monochrome.xml`) tinting with user wallpaper accents.
-- **Multi-Density Fallbacks**: Full raster PNG suites across `mdpi`, `hdpi`, `xhdpi`, `xxhdpi`, and `xxxhdpi` for legacy Android OS and third-party launchers.
-
-#### 2. Conflict-Free Update Installation Over Previous Versions
-- **Persistent Release Keystore**: Added a dedicated, permanent release keystore (`certs/finsight-release-key.keystore` and base64 fallback) committed to the repository.
-- **Consistent Signatures**: Eliminates `INSTALL_FAILED_UPDATE_INCOMPATIBLE` signature mismatch errors when updating newer APK releases over older builds without uninstalling.
-- **Auto-Incrementing Version Code**: GitHub Actions automatically computes strictly increasing `versionCode` ($1000 + \text{run\_number}$) preventing package manager version regressions.
-
-#### 3. Smart Bank Transfer Detection Between Accounts
-- **Automated Transfer Pairing**: Scans transactions across accounts to detect when money transferred out of Bank A matches a deposit into Bank B:
-  - Opposite transaction types (DEBIT in Bank A $\leftrightarrow$ CREDIT in Bank B)
-  - Identical transaction amount
-  - Matching within a 2-day date clearing window
-  - Keyword and 6-16 digit reference token (UTR/RRN) matching
-- **Internal Transfer Exclusion Toggle**: Option to exclude internal bank transfers from total spend and total income calculations to prevent artificial inflation of expenses and earnings.
-- **Interactive Transfer Badges**: Visual indicator in the Ledger (`↔ Transfer Bank A ➔ Bank B`) with a dedicated details modal showing both paired debit and credit records.
-
-#### 4. Granular Backup & Restore Manager
-- **Complete Workspace Export**: One-click download of a structured JSON backup file (`FinSight_India_Backup_v1.3.0_YYYY-MM-DD.json`).
-- **Itemized Restore Selection**:
-  - ☑ Banks
-  - ☑ Statement Files Metadata
-  - ☑ Custom Categories
-  - ☑ Auto-Categorization Rules & Keywords
-  - ☑ Transactions Ledger
-- **Flexible Restoration Modes**:
-  - **Merge with existing**: Combines imported records without creating duplicates.
-  - **Replace entire data**: Overwrites workspace cleanly with the backup file.
-
-#### 5. Dual Category Analysis (Spend AND Earnings Breakdown)
-- **Spend Breakdown (Outflow)**: Donut chart, category percentage distribution, outflow channels, and top merchants for debits.
-- **Earnings Breakdown (Inflow)**: Donut chart, income source distribution, inflow channels, and top deposit payers for credits.
-- **Net Flow Comparison**: Side-by-side comparison table showing Spend, Earning, and Net Balance (surplus/deficit) per category.
+* **Material Design 3 Adaptive Launcher Icon**: Safe-zone compliant adaptive vector foreground, themed monochrome icon, and multi-density fallbacks.
+* **Persistent Release Keystore & Conflict-Free Updates**: Permanent release keystore (`certs/finsight-release-key.keystore`) eliminating update installation signature conflicts.
+* **Smart Bank Transfer Detection**: Automated cross-bank matching with 2-day clearing window and internal transfer exclusion toggle.
+* **Granular Backup & Restore Manager**: Structured JSON workspace backups with itemized restoration (Banks, Files, Categories, Rules, Transactions).
+* **Dual Category Analysis**: Separate Spend Outflow and Earnings Inflow breakdown views with side-by-side Net Flow comparison.
 
 ---
 
 ## Version 1.2.0 (November 2026)
 
-FinSight India v1.2.0 introduces **Union Bank of India (UBI)** bank statement support, an expanded Indian financial taxonomy with a dedicated **Categories Manager UI**, an interactive **Auto-Categorization Rules Engine** with instant transaction re-evaluation, a multi-preset **Duration / Date-Range Filter** in the Transactions Ledger, and **Automated Cloud Release APK Signing** via GitHub Actions.
+* **Union Bank of India (UBI) Support**: Added auto-detection and column mapping for Union Bank of India statements.
+* **Categories Manager UI**: Full CRUD interface for custom categories with cascading renames across all transactions and rules.
+* **Interactive Auto-Categorization Rules**: Rules list with keyword tags and real-time transaction re-evaluation.
+* **Duration & Date-Range Filter Presets**: Added quick time filters (`7D`, `30D`, `This Month`, `3M`, `This Year`, `Custom`) to the Ledger.
+* **Automated Cloud Release Signing**: GitHub Actions CI/CD pipeline producing signed release APK artifacts on push.
 
 ---
 
-### Verification & Compatibility
-- **Node.js**: Compatible with Node 18, 20, 22, and 26.
-- **Android Platform**: Capacitor 6 on Android API 22+ (Android 5.1 through Android 15).
-- **Privacy Standard**: 100% on-device local storage (`localStorage`). No servers, zero data exfiltration.
+## Version 1.1.0 (November 2026)
+
+* **Custom Vector Brand Identity**: Introduced the **Rupee-Pulse Lens** logo across application headers, splash screens, and launcher icons.
+* **Clean Slate Onboarding**: Removed sample data and hardcoded starter banks for an authentic clean-slate onboarding experience.
+* **Full Bank & Statement File CRUD**: Complete bank management and statement file inspector with metadata tracking.
+
+---
+
+## Version 1.0.0 (October 2026)
+
+* **Initial Application Architecture**: Offline React + Capacitor hybrid architecture for multi-bank statement analysis.
+* **Multi-Format Ingestion**: Client-side parsing for Excel (`.xlsx`, `.xls`), CSV, and PDF statements via SheetJS and Mozilla PDF.js.
+* **Cashflow Segregation**: Multi-bank cashflow tracking with monthly, quarterly, and yearly aggregation.
+* **Transactions Ledger**: Searchable transaction ledger with inline add, edit, and delete controls.
+* **Excel Data Export**: Client-side workbook export for analyzed transaction records.
